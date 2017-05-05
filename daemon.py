@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
-# Created by Adam Melton (Dokument) initially and edited by Scott King (Lvl4Sword)
+# Originally created by Adam Melton (Dokument) / modified by Scott King (Lvl4Sword)
+# Modified for the RZZT collective (rzzt.io) for use in the Taskhive project (taskhive.io)
 # Distributed under the MIT/X11 software license. See http://www.opensource.org/licenses/mit-license.php.
 # https://bitmessage.org/wiki/API_Reference for API documentation
 
