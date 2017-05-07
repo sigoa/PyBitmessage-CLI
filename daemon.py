@@ -158,6 +158,8 @@ class my_bitmessage(object):
                     config.write(configfile)
                 print('Enabled')
                 restartBmNotify()
+                return True
+
             elif uInput in ['n', 'no']:
                 print('************************************************************')
                 print('Daemon will not work when the API is disabled.')
@@ -171,9 +173,8 @@ class my_bitmessage(object):
         # API correctly setup
         elif apiEnabled is True:
             # Everything is as it should be
-            self.usrPrompt = True
-            self.main()
-
+            return True
+ 
         # API information was not present.
         else:
             print('{0} is not properly configured!\n'.format(str(self.keysPath)))
