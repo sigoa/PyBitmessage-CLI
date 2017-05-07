@@ -80,7 +80,7 @@ class my_bitmessage(object):
     # Prompts the user to restart Bitmessage.
     def restartBmNotify(self):
         print('*******************************************************************')
-        print('     WARNING: If Bitmessage is running locally, you must restart it now.')
+        print('WARNING: If Bitmessage is running locally, you must restart it now.')
         print('*******************************************************************\n')
 
 
@@ -90,8 +90,7 @@ class my_bitmessage(object):
 
         try:
             return config.getboolean(section,field)
-        except Exception as e:
-            print(e)
+        except Exception:
             return False
 
 
@@ -103,17 +102,20 @@ class my_bitmessage(object):
     def lookupAppdataFolder(self):
         if sys.platform.startswith('darwin'):
             if 'HOME' in environ:
-                dataFolder = path.join(os.environ['HOME'], 'Library/Application support/', APPNAME) + '/'
+                dataFolder = path.join(os.environ['HOME'],
+                                       'Library/Application support/',
+                                       APPNAME) + '/'
             else:
-                print('     Could not find your home folder.')
-                print('     Please report this message and your OS X version at:')
-                print('     https://github.com/rezizt/taskhive/')
+                print('Could not find your home folder.')
+                print('Please report this message and your OS X version at:')
+                print('https://github.com/rezizt/taskhive/')
                 sys.exit()
-
         elif sys.platform.startswith('win'):
-            dataFolder = path.join(environ['APPDATA'], APPNAME) + '\\'
+            dataFolder = path.join(environ['APPDATA'],
+                                   APPNAME) + '\\'
         else:
-            dataFolder = path.expanduser(path.join('~', '.config/' + APPNAME + '/'))
+            dataFolder = path.expanduser(path.join('~',
+                                        '.config/' + APPNAME + '/'))
         return dataFolder
 
 
@@ -154,38 +156,33 @@ class my_bitmessage(object):
                 config.set('bitmessagesettings','apienabled','true')
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
-
-                print('Done')
+                print('Enabled')
                 restartBmNotify()
-                return True
-
             elif uInput in ['n', 'no']:
                 print('************************************************************')
                 print('Daemon will not work when the API is disabled.')
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
                 print('************************************************************\n')
-                self.usrPrompt = True
-                self.main()
-
             else:
                 print('Invalid Entry\n')
-                self.usrPrompt = True
-                self.main()
+            self.usrPrompt = True
+            self.main()
+
         # API correctly setup
         elif apiEnabled is True:
             # Everything is as it should be
-            return True
+            self.usrPrompt = True
+            self.main()
 
         # API information was not present.
         else:
-            print('{0} not properly configured!\n'.format(str(self.keysPath)))
+            print('{0} is not properly configured!\n'.format(str(self.keysPath)))
             uInput = self.userInput('Would you like to do this now, (Y)/(n)')
 
             # User said yes so initalize the api by
             # writing these values to the keys.dat file
             if uInput in ['yes', 'y']:
                 print('')
-
                 apiUsr = self.userInput('API Username')
                 apiPwd = self.userInput('API Password')
                 apiInterface = self.userInput('API Interface. (127.0.0.1)')
@@ -195,10 +192,6 @@ class my_bitmessage(object):
 
                 if daemon not in ['true', 'false']:
                     print('Invalid Entry for Daemon.\n')
-                    uInput = 1
-                    self.main()
-
-                print('-----------------------------------\n')
 
                 '''
                 sets the bitmessage port to stop the warning about the api
@@ -216,21 +209,18 @@ class my_bitmessage(object):
                 config.set('bitmessagesettings', 'daemon', daemon)
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
-
                 print('Finished configuring the keys.dat file with API information.\n')
                 restartBmNotify()
-                return True
 
-            elif uInput == 'n':
+            elif uInput in ['no', 'n']:
                 print('***********************************************************')
-                print('     Please refer to the Bitmessage Wiki on how to setup the API.')
-                print('     ***********************************************************\n')
-                self.usrPrompt = True
-                self.main()
+                print('Please refer to the Bitmessage Wiki on how to setup the API.')
+                print('***********************************************************\n')
             else:
-                print('     \nInvalid entry\n')
-                self.usrPrompt = True
-                self.main()
+                print('\nInvalid entry\n')
+            self.usrPrompt = True
+            self.main()
+
 
 
     def apiData(self):
@@ -243,8 +233,7 @@ class my_bitmessage(object):
         try:
             config.get('bitmessagesettings','port')
             appDataFolder = ''
-        except Exception as e:
-            print(e)
+        except Exception:
             # Could not load the keys.dat file in the program directory.
             # Perhaps it is in the appdata directory.
             appDataFolder = self.lookupAppdataFolder()
@@ -254,8 +243,7 @@ class my_bitmessage(object):
 
             try:
                 config.get('bitmessagesettings','port')
-            except Exception as e:
-                print(e)
+            except Exception:
                 # keys.dat was not there either, something is wrong.
                 print('******************************************************************')
                 print('     There was a problem trying to access the Bitmessage keys.dat file')
@@ -280,15 +268,14 @@ class my_bitmessage(object):
                 self.usrPrompt = True
                 self.main()
 
-        # checks to make sure that everyting is configured correctly.
+        # checks to make sure that everything is configured correctly.
         # Excluding apiEnabled, it is checked after.
         try:
             config.get('bitmessagesettings', 'apiport')
             config.get('bitmessagesettings', 'apiinterface')
             config.get('bitmessagesettings', 'apiusername')
             config.get('bitmessagesettings', 'apipassword')
-        except Exception as e:
-            print(e)
+        except Exception:
             # Initalize the keys.dat file with API information
             self.apiInit('')
 
@@ -322,8 +309,7 @@ class my_bitmessage(object):
 
         try:
             result = self.api.add(2,3)
-        except Exception as e:
-            print(e)
+        except Exception:
             return False
 
         if result == 5:
@@ -341,8 +327,7 @@ class my_bitmessage(object):
         config.read(self.keysPath)
         try:
             port = config.get('bitmessagesettings', 'port')
-        except Exception as e:
-            print(e)
+        except Exception:
             print('File not found.\n')
             self.usrPrompt = False
             self.main()
@@ -532,8 +517,7 @@ class my_bitmessage(object):
         print('\n{0} {1} {2}\n'.format(Label, self.address, Enabled))
         try:
             print(self.api.listSubscriptions())
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -546,8 +530,7 @@ class my_bitmessage(object):
         password = password.encode('base64')
         try:
             print(self.api.createChan(password))
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             main(self)
@@ -560,8 +543,7 @@ class my_bitmessage(object):
         password = password.encode('base64')
         try:
             print(self.api.joinChan(password, self.address))
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -572,8 +554,7 @@ class my_bitmessage(object):
             self.address = self.userInput('Enter channel address')
         try:
             print(self.api.leaveChan(self.address))
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -585,8 +566,7 @@ class my_bitmessage(object):
             jsonAddresses = json.loads(self.api.listAddresses())
             # Number of addresses
             numAddresses = len(jsonAddresses['addresses'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -616,8 +596,7 @@ class my_bitmessage(object):
             addressLabel = lbl.encode('base64')
             try:
                 generatedAddress = self.api.createRandomAddress(addressLabel)
-            except Exception as e:
-                print(e)
+            except Exception:
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -629,8 +608,7 @@ class my_bitmessage(object):
             passphrase = passphrase.encode('base64')
             try:
                 generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
-            except Exception as e:
-                print(e)
+            except Exception:
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -785,8 +763,7 @@ class my_bitmessage(object):
                 jsonAddresses = json.loads(self.api.listAddresses())
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
-            except Exception as e:
-                print(e)
+            except Exception:
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -850,8 +827,7 @@ class my_bitmessage(object):
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
             print('Message Status:', self.api.getStatus(ackData), '\n')
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -860,13 +836,11 @@ class my_bitmessage(object):
     # sends a broadcast
     def sendBrd(fromAddress, subject, message):
         if fromAddress == '':
-
             try:
                 jsonAddresses = json.loads(self.api.listAddresses())
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
-            except Exception as e:
-                print(e)
+            except Exception:
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -930,8 +904,7 @@ class my_bitmessage(object):
         try:
             ackData = self.api.sendBroadcast(fromAddress, subject, message)
             print('Message Status: {0}\n'.format(self.api.getStatus(ackData)))
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -943,8 +916,7 @@ class my_bitmessage(object):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -983,8 +955,7 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1018,8 +989,7 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1079,12 +1049,11 @@ class my_bitmessage(object):
         print('')
 
     # Opens a message for reading
-    def readMsg(msgNum):
+    def readMsg(self, msgNum):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1155,8 +1124,7 @@ class my_bitmessage(object):
         forwardORreply = forwardORreply.lower()
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1217,8 +1185,7 @@ class my_bitmessage(object):
             # gets the message ID via the message index number
             msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
             msgAck = self.api.trashMessage(msgId)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1233,8 +1200,7 @@ class my_bitmessage(object):
             # gets the message ID via the message index number
             msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
             msgAck = self.api.trashSentMessage(msgId)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1257,14 +1223,12 @@ class my_bitmessage(object):
 
             # if api is too old then fail
             if 'API Error 0020' in response:
-
                 return
             addressBook = json.loads(response)
             for entry in addressBook['addresses']:
                 if entry['address'] not in knownAddresses:
                     knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1273,13 +1237,13 @@ class my_bitmessage(object):
         try:
             response = api.listAddresses2()
             # if api is too old just return then fail
-            if 'API Error 0020' in response: return
+            if 'API Error 0020' in response:
+                return
             addresses = json.loads(response)
             for entry in addresses['addresses']:
                 if entry['address'] not in knownAddresses:
                     knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1307,8 +1271,7 @@ class my_bitmessage(object):
             print('')
 
 
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1319,8 +1282,7 @@ class my_bitmessage(object):
             response = self.api.addAddressBookEntry(address, label.encode('base64'))
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1331,49 +1293,45 @@ class my_bitmessage(object):
             response = api.deleteAddressBookEntry(address)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
 
 
-    def getAPIErrorCode(response):
+    def getAPIErrorCode(self, response):
         if 'API Error' in response:
             # if we got an API error return the number by getting the number
             # after the second space and removing the trailing colon
             return int(response.split()[2][:-1])
 
 
-    def markMessageRead(messageID):
+    def markMessageRead(self, messageID):
         try:
             response = self.api.getInboxMessageByID(messageID, True)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
 
 
-    def markMessageUnread(messageID):
+    def markMessageUnread(self, messageID):
         try:
             response = api.getInboxMessageByID(messageID, False)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
 
 
-    def markAllMessagesRead():
+    def markAllMessagesRead(self):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1385,8 +1343,7 @@ class my_bitmessage(object):
     def markAllMessagesUnread():
         try:
             inboxMessages = json.loads(api.getAllInboxMessages())['inboxMessages']
-        except Exception as e:
-            print(e)
+        except Exception:
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1398,71 +1355,67 @@ class my_bitmessage(object):
     # Main user menu
     def UI(self, usrInput):
         if usrInput in ['help', 'h', '?']:
-            print('\n---------------------------------------------------------------------------')
-            print('|                https://github.com/rezizt/Taskhive                       |')
-            print('|-------------------------------------------------------------------------|')
-            print('|   Command                | Description                                  |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| (h)elp                   | This help file.                              |')
-            print('| apiTest                  | Tests the API                                |')
-            print('| addInfo                  | Returns address information (If valid)       |')
-            print('| bmSettings               | BitMessage settings                          |')
-            print('| e(x)it                   | Use anytime to return to main menu           |')
-            print('| (q)uit                   | Quits the program                            |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| listAddresses            | Lists all of the users addresses             |')
-            print('| generateAddress          | Generates a new address                      |')
-            print('| getAddress               | Get determinist address from passphrase      |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| listAddressBookEntries   | Lists entries from the Address Book          |')
-            print('| addAddressBookEntry      | Add address to the Address Book              |')
-            print('| deleteAddressBookEntry   | Deletes address from the Address Book        |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| subscribe                | Subscribes to an address                     |')
-            print('| unsubscribe              | Unsubscribes from an address                 |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| create                   | Creates a channel                            |')
-            print('| join                     | Joins a channel                              |')
-            print('| leave                    | Leaves a channel                             |')
-            print('|--------------------------|----------------------------------------------|')
-            print('| inbox                    | Lists the message information for the inbox  |')
-            print('| outbox                   | Lists the message information for the outbox |')
-            print('| send                     | Send a new message or broadcast              |')
-            print('| unread                   | Lists all unread inbox messages              |')
-            print('| read                     | Reads a message from the inbox or outbox     |')
-            print('| save                     | Saves message to text file                   |')
-            print('| delete                   | Deletes a message or all messages            |')
-            print('---------------------------------------------------------------------------')
+            print('\n-----------------------------------------------------------------------')
+            print('|                   https://github.com/rezizt/Taskhive                 |')
+            print('|----------------------------------------------------------------------|')
+            print('|   Command               | Description                                |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| help                    | This help file.                            |')
+            print('| apiTest                 | Tests the API                              |')
+            print('| addInfo                 | Returns address information (If valid)     |')
+            print('| bmSettings              | BitMessage settings                        |')
+            print('| exit                    | Use anytime to return to main menu         |')
+            print('| quit                    | Quits the program                          |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| listAddresses           | Lists all of the users addresses           |')
+            print('| generateAddress         | Generates a new address                    |')
+            print('| getAddress              | Get deterministic address from passphrase  |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| listAddressBookEntries  | Lists entries from the Address Book        |')
+            print('| addAddressBookEntry     | Add address to the Address Book            |')
+            print('| deleteAddressBookEntry  | Deletes address from the Address Book      |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| subscribe               | Subscribes to an address                   |')
+            print('| unsubscribe             | Unsubscribes from an address               |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| create                  | Creates a channel                          |')
+            print('| join                    | Joins a channel                            |')
+            print('| leave                   | Leaves a channel                           |')
+            print('|-------------------------|--------------------------------------------|')
+            print('| inbox                   | Lists message information for the inbox    |')
+            print('| outbox                  | Lists message information for the outbox   |')
+            print('| send                    | Send a new message or broadcast            |')
+            print('| unread                  | Lists all unread inbox messages            |')
+            print('| read                    | Reads a message from the inbox or outbox   |')
+            print('| save                    | Saves message to text file                 |')
+            print('| delete                  | Deletes a message or all messages          |')
+            print('------------------------------------------------------------------------')
             self.main()
 
         # tests the API Connection.
         elif usrInput in ['apitest']:
-            if apiTest() is True:
+            if self.apiTest() is True:
                 print('API connection test has: PASSED\n')
             else:
                 print('API connection test has: FAILED\n')
             self.main()
 
         elif usrInput in ['addinfo']:
-            try:
-                tmp_address = self.userInput('\nEnter the Bitmessage Address.')
-                address_information = self.api.decodeAddress(tmp_address)
-                address_information = eval(address_information)
+            tmp_address = self.userInput('\nEnter the Bitmessage Address.')
+            address_information = self.api.decodeAddress(tmp_address)
+            address_information = eval(address_information)
 
+            print('\n------------------------------')
 
-                print('\n------------------------------')
+            if 'success' in str(address_information.get('status')):
+                print('Valid Address')
+                print('Address Version: {0}'.format(str(address_information.get('addressVersion'))))
+                print('Stream Number: {0}'.format((address_information.get('streamNumber'))))
+            else:
+                print('Invalid Address!')
 
-                if 'success' in str(address_information.get('status')):
-                    print('Valid Address')
-                    print('Address Version: {0}'.format(str(address_information.get('addressVersion'))))
-                    print('Stream Number: {0}'.format((address_information.get('streamNumber'))))
-                else:
-                    print('Invalid Address!')
-
-                print('------------------------------\n')
-                self.main()
-            except Exception as e:
-                print(e)
+            print('------------------------------\n')
+            self.main()
 
         # tests the API Connection.
         elif usrInput in ['bmsettings']:
@@ -1566,17 +1519,17 @@ class my_bitmessage(object):
             self.main()
 
         elif usrInput in ['inbox']:
-            print('Loading...\n')
+            print('Loading...')
             self.inbox()
             self.main()
 
         elif usrInput in ['unread']:
-            print('Loading...\n')
+            print('Loading...')
             self.inbox(True)
             self.main()
 
         elif usrInput in ['outbox']:
-            print('Loading...\n')
+            print('Loading...')
             self.outbox()
             self.main()
 
@@ -1598,12 +1551,8 @@ class my_bitmessage(object):
         elif usrInput in ['read']:
             uInput = self.userInput('Would you like to read a message from the (I)nbox or (O)utbox?')
 
-            if uInput not in ['inbox', 'outbox', 'i', 'o']:
-                print('Invalid Input.\n')
-                self.usrPrompt = True
-                self.main()
-
-            msgNum = int(userInput('What is the number of the message you wish to open?'))
+            if uInput in ['inbox', 'outbox', 'i', 'o']:
+                msgNum = int(self.userInput('What is the number of the message you wish to open?'))
 
             if uInput in ['inbox', 'i']:
                 print('Loading...\n')
@@ -1663,6 +1612,10 @@ class my_bitmessage(object):
                 else:
                     print('Invalid Entry\n')
                     self.usrPrompt = True
+            else:
+                print('Invalid Input.\n')
+                self.usrPrompt = True
+                self.main()
 
             self.main()
 
@@ -1679,7 +1632,7 @@ class my_bitmessage(object):
                 numMessages = len(inboxMessages['inboxMessages'])
 
                 while True:
-                    msgNum = int(userInput('What is the number of the message you wish to save?'))
+                    msgNum = int(self.userInput('What is the number of the message you wish to save?'))
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
@@ -1695,7 +1648,7 @@ class my_bitmessage(object):
                 numMessages = len(outboxMessages['sentMessages'])
 
                 while True:
-                    msgNum = int(userInput('What is the number of the message you wish to save?'))
+                    msgNum = int(self.userInput('What is the number of the message you wish to save?'))
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
