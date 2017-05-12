@@ -1,7 +1,8 @@
 #!/usr/bin/env python2.7
 # Originally created by Adam Melton (Dokument) / modified by Scott King (Lvl4Sword)
 # Modified for the RZZT collective (rzzt.io) for use in the Taskhive project (taskhive.io)
-# Distributed under the MIT/X11 software license. See http://www.opensource.org/licenses/mit-license.php.
+# Distributed under the MIT/X11 software license
+# See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
 
 import ConfigParser
@@ -37,10 +38,6 @@ class my_bitmessage(object):
         self.break_here = False
 
 
-    def preformat_text(self, format_this):
-        print('{0}\n'.format(format_this))
-
-
     # Checks input for exit or quit. Also formats for input, etc
     def userInput(self, message):
         # First time running
@@ -51,17 +48,7 @@ class my_bitmessage(object):
         uInput = raw_input('> ').lower().strip()
 
         self.verifyCancel(uInput)
-
-        # Returns the user to the main menu
-        if uInput in ['exit', 'x']:
-            self.usrPrompt = True
-            self.main()
-        # Quits the program
-        elif uInput in ['quit', 'q']:
-            self.preformat_text('Bye')
-            sys.exit()
-        else:
-            return uInput
+        return uInput
 
 
     def verifyCancel(self, uInput):
@@ -87,7 +74,6 @@ class my_bitmessage(object):
     def safeConfigGetBoolean(self, section, field):
         config = ConfigParser.SafeConfigParser()
         config.read(self.keysPath)
-
         try:
             return config.getboolean(section,field)
         except Exception:
@@ -121,7 +107,6 @@ class my_bitmessage(object):
 
     def configInit(self):
         config = ConfigParser.SafeConfigParser()
-
         config.add_section('bitmessagesettings')
 
         '''
@@ -139,7 +124,7 @@ class my_bitmessage(object):
             config.write(configfile)
 
         print('{0} Initalized in the same directory as daemon.py'.format(str(self.keysName)))
-        print('You will now need to configure the {0} file.\n'.format(str(self.keysName)))
+        print('You will now need to configure the {0} file.'.format(str(self.keysName)))
 
 
     def apiInit(self, apiEnabled):
@@ -157,7 +142,7 @@ class my_bitmessage(object):
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
                 print('Enabled')
-                restartBmNotify()
+                self.restartBmNotify()
                 return True
 
             elif uInput in ['n', 'no']:
@@ -177,13 +162,12 @@ class my_bitmessage(object):
  
         # API information was not present.
         else:
-            print('{0} is not properly configured!\n'.format(str(self.keysPath)))
+            print('{0} is not properly configured!'.format(str(self.keysPath)))
             uInput = self.userInput('Would you like to do this now, (Y)/(n)')
 
             # User said yes so initalize the api by
             # writing these values to the keys.dat file
             if uInput in ['yes', 'y']:
-                print('')
                 apiUsr = self.userInput('API Username')
                 apiPwd = self.userInput('API Password')
                 apiInterface = self.userInput('API Interface. (127.0.0.1)')
@@ -211,7 +195,7 @@ class my_bitmessage(object):
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
                 print('Finished configuring the keys.dat file with API information.\n')
-                restartBmNotify()
+                self.restartBmNotify()
 
             elif uInput in ['no', 'n']:
                 print('***********************************************************')
@@ -246,16 +230,16 @@ class my_bitmessage(object):
                 config.get('bitmessagesettings','port')
             except Exception:
                 # keys.dat was not there either, something is wrong.
+                print('\n******************************************************************')
+                print('There was a problem trying to access the Bitmessage keys.dat file')
+                print('             or keys.dat is not set up correctly')
+                print('Make sure that daemon is in the same directory as Bitmessage. ')
                 print('******************************************************************')
-                print('     There was a problem trying to access the Bitmessage keys.dat file')
-                print('                    or keys.dat is not set up correctly')
-                print('       Make sure that daemon is in the same directory as Bitmessage. ')
-                print('     ******************************************************************\n')
 
                 uInput = self.userInput('Would you like to create keys.dat in the local directory, (Y)/(n)?')
 
                 if uInput in ['y', 'yes']:
-                    configInit()
+                    self.configInit()
                     self.keysPath = self.keysName
                     self.usrPrompt = False
                     self.main()
@@ -307,7 +291,6 @@ class my_bitmessage(object):
     # Tests the API connection to bitmessage.
     # Returns true if it is connected.
     def apiTest(self):
-
         try:
             result = self.api.add(2,3)
         except Exception:
@@ -324,11 +307,14 @@ class my_bitmessage(object):
         config = ConfigParser.SafeConfigParser()
         self.keysPath = 'keys.dat'
 
+        # https://docs.python.org/2/library/configparser.html#ConfigParser.RawConfigParser.read
+        # TODO
         # Read the keys.dat
         config.read(self.keysPath)
         try:
             port = config.get('bitmessagesettings', 'port')
-        except Exception:
+        except Exception as e:
+            print(e)
             print('File not found.\n')
             self.usrPrompt = False
             self.main()
@@ -465,7 +451,7 @@ class my_bitmessage(object):
                         print('Changes Made.\n')
                         with open(self.keysPath, 'wb') as configfile:
                             config.write(configfile)
-                        restartBmNotify()
+                        self.restartBmNotify()
                         break
 
 
@@ -480,7 +466,7 @@ class my_bitmessage(object):
 
     def validAddress(self, address):
         address_information = self.api.decodeAddress(address)
-        address_information = eval(address_information)
+        print(address_information)
 
         if 'success' in str(address_information.get('status')):
             return True
@@ -593,36 +579,28 @@ class my_bitmessage(object):
     # Generate address
     def genAdd(self, lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe):
         # Generates a new address with the user defined label. non-deterministic
-        if deterministic is False:
-            addressLabel = lbl.encode('base64')
-            try:
+        try:
+            if deterministic is False:
+                addressLabel = lbl.encode('base64')
                 generatedAddress = self.api.createRandomAddress(addressLabel)
-            except Exception:
-                print('Connection Error\n')
-                self.usrPrompt = False
-                self.main()
-
-            return generatedAddress
-
-        # Generates a new deterministic address with the user inputs
-        elif deterministic is True:
-            passphrase = passphrase.encode('base64')
-            try:
+                return generatedAddress
+            # Generates a new deterministic address with the user inputs
+            elif deterministic is True:
+                passphrase = passphrase.encode('base64')
                 generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
-            except Exception:
-                print('Connection Error\n')
-                self.usrPrompt = False
-                self.main()
-            return generatedAddress
-        else:
-            return 'Entry Error'
+                return generatedAddress
+            else:
+                return 'Entry Error'
+        except Exception:
+            print('Connection Error\n')
+            self.usrPrompt = False
+            self.main()
 
 
     # Allows attachments and messages/broadcats to be saved
     def saveFile(fileName, fileData):
-
         # This section finds all invalid characters and replaces them with ~
-        fileName = fileName.replace(' ', '')
+        fileName = fileName.strip()
         fileName = fileName.replace('/', '~')
         #fileName = fileName.replace('\\', '~') How do I get this to work...?
         fileName = fileName.replace(':', '~')
@@ -638,7 +616,7 @@ class my_bitmessage(object):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        filePath = directory +'/'+ fileName
+        filePath = directory + '/' + fileName
 
         # Begin saving to file
         with open(filePath, 'wb+') as f:
@@ -670,11 +648,11 @@ class my_bitmessage(object):
             # Converts to kilobytes
             invSize = (invSize / 1024)
             # Rounds to two decimal places
-            round(invSize,2)
+            round(invSize, 2)
 
             # If over 500KB
             if invSize > 500.0:
-                print('WARNING:The file that you are trying to attach is {0} KB and will take considerable time to send.\n'.format(invSize))
+                print('WARNING:The file that you are trying to attach is {0}KB and will take considerable time to send.\n'.format(invSize))
                 uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
 
                 if uInput not in ['y']:
@@ -703,7 +681,7 @@ class my_bitmessage(object):
                 time.sleep(2)
 
             # Alert the user that the encoding process may take some time
-            print('Encoding Attachment, Please Wait ...\n')
+            print('Encoding attachment, please wait ...\n')
 
             # Begin the actual encoding
             with open(filePath, 'rb') as f:
@@ -1393,6 +1371,16 @@ class my_bitmessage(object):
             print('------------------------------------------------------------------------')
             self.main()
 
+        # Returns the user to the main menu
+        elif usrInput in ['exit']:
+            self.usrPrompt = True
+            self.main()
+
+        # Quits the program
+        elif usrInput in ['quit']:
+            print('\nBye')
+            sys.exit()
+
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest() is True:
@@ -1404,7 +1392,7 @@ class my_bitmessage(object):
         elif usrInput in ['addinfo']:
             tmp_address = self.userInput('\nEnter the Bitmessage Address.')
             address_information = self.api.decodeAddress(tmp_address)
-            address_information = eval(address_information)
+            print(address_information)
 
             print('\n------------------------------')
 
@@ -1444,7 +1432,7 @@ class my_bitmessage(object):
 
                 lbl = self.userInput('Label the new address:')
                 passphrase = self.userInput('Enter the Passphrase.')
-                numOfAdd = int(userInput('How many addresses would you like to generate?'))
+                numOfAdd = int(self.userInput('How many addresses would you like to generate?'))
                 addVNum = 3
                 streamNum = 1
                 isRipe = self.userInput('Shorten the address, (Y)/(n)')
@@ -1470,10 +1458,9 @@ class my_bitmessage(object):
                 null = ''
                 lbl = self.userInput('Enter the label for the new address.')
 
-                print(self.genAdd(self, lbl, deterministic, null, null, null, null, null))
+                print(self.genAdd(lbl, deterministic, null, null, null, null, null))
                 self.main()
 
-            else:
                 print('Invalid input\n')
                 self.main()
 
@@ -1786,7 +1773,7 @@ class my_bitmessage(object):
             self.main()
 
         else:
-            print('{0} is not a command.\n'.format(usrInput))
+            print('{0} is not a command.\n'.format(self.usrInput))
             self.usrPrompt = True
             self.main()
 
