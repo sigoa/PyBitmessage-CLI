@@ -134,7 +134,7 @@ class my_bitmessage(object):
         config = ConfigParser.SafeConfigParser()
         config.read(self.keysPath)
 
-        # API information there but the api is disabled.uInput
+        # API information there but the api is disabled
         if apiEnabled is False:
             print('The API is not enabled.')
             uInput = self.userInput('Would you like to enable it now? Y/n: ')
