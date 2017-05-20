@@ -173,10 +173,10 @@ class my_bitmessage(object):
             if uInput in ['yes', 'y']:
                 apiUsr = self.userInput('API Username')
                 apiPwd = self.userInput('API Password')
-                apiInterface = self.userInput('API Interface. (127.0.0.1)')
-                apiPort = self.userInput('API Port')
-                apiEnabled = self.userInput('API Enabled? (True) or (False)')
-                daemon = self.userInput('Daemon mode Enabled? (True) or (False)')
+                apiInterface = self.userInput('API Interface (127.0.0.1)')
+                apiPort = self.userInput('API Port (8444)')
+                apiEnabled = self.userInput('API Enabled? (True) / (False)')
+                daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
 
                 if daemon not in ['true', 'false']:
                     print('Invalid Entry for Daemon.\n')
