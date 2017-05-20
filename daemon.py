@@ -47,22 +47,7 @@ class my_bitmessage(object):
         else:
             print('\n{0}'.format(message))
         uInput = raw_input('> ').lower().strip()
-
-        self.verifyCancel(uInput)
         return uInput
-
-
-    def verifyCancel(self, uInput):
-        if uInput in ['c']:
-            self.usrPrompt = True
-            print('')
-            self.main()
-        elif self.address is None:
-            self.break_here = True
-        elif self.validAddress(self.address) is False:
-            print('Invalid. ''c'' to cancel. Please try again.\n')
-        else:
-            self.break_here = True
 
 
     # Prompts the user to restart Bitmessage.
@@ -478,9 +463,12 @@ class my_bitmessage(object):
 
     def validAddress(self, address):
         address_information = self.api.decodeAddress(address)
+        print('?')
+        address_information = eval(address_information)
         print(address_information)
+        print(address_information.get('status'))
 
-        if 'success' in str(address_information.get('status')):
+        if 'success' in address_information.get('status'):
             return True
         else:
             return False
@@ -563,8 +551,7 @@ class my_bitmessage(object):
             self.main()
 
     # Lists all of the addresses and their info
-    def listAdd():
-
+    def listAdd(self):
         try:
             jsonAddresses = json.loads(self.api.listAddresses())
             # Number of addresses
@@ -588,7 +575,7 @@ class my_bitmessage(object):
             if len(label) > 19:
                 label = label[:16] + '...'
 
-            print('|{0}|{1}|{2}|{3}|{4}|'.format(str(addNum).ljust(3), label.ljust(19), address.ljust(37), stream.ljust(1), enabled.ljust(7)))
+            print('|{0}|{1}|{2}|{3}|{4}|'.format(str(addNum).ljust(3), label.ljust(19), self.address.ljust(37), stream.ljust(1), enabled.ljust(7)))
 
         print('--------------------------------------------------------------------------\n')
 
@@ -912,8 +899,7 @@ class my_bitmessage(object):
 
     # Lists the messages by: Message Number, To Address Label,
     # From Address Label, Subject, Received Time
-    def inbox(unreadOnly = False):
-
+    def inbox(self, unreadOnly):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
@@ -925,6 +911,7 @@ class my_bitmessage(object):
 
         messagesPrinted = 0
         messagesUnread = 0
+        messagesgetLabelForAddressUnread = 0
         # processes all of the messages in the inbox
         for msgNum in range (0, numMessages):
             message = inboxMessages['inboxMessages'][msgNum]
@@ -935,15 +922,15 @@ class my_bitmessage(object):
                 # Message Number
                 print('Message Number: {0}'.format(msgNum))
                 # Get the to address
-                print('To: {0}'.format(getLabelForAddress(message['toAddress'])))
+                print('To: {0}'.format(self.getLabelForAddress(message['toAddress'])))
                 # Get the from address
-                print('From: {0}'.format(getLabelForAddress(message['fromAddress'])))
+                print('From: {0}'.format(self.getLabelForAddress(message['fromAddress'])))
                 # Get the subject
                 print('Subject: {0}'.format(message['subject'].decode('base64')))
                 print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
                 messagesPrinted += 1
                 if not message['read']:
-                    messagesUnread += 1
+                    messagesgetLabelForAddressUnread += 1
 
             if messagesPrinted % 20 == 0 and messagesPrinted != 0:
                 uInput = self.userInput('(Press Enter to continue or type (Exit) to return to the main menu.)')
@@ -1214,17 +1201,17 @@ class my_bitmessage(object):
             self.main()
         return msgAck
 
-    def getLabelForAddress(self):
-        if self.address in knownAddresses:
-            return knownAddresses[self.address]
+    def getLabelForAddress(self, message):
+        if self.address in self.knownAddresses:
+            return self.knownAddresses[self.address]
         else:
-            buildKnownAddresses()
-            if self.address in knownAddresses:
-                return knownAddresses[self.address]
+            self.buildKnownAddresses()
+            if self.address in self.knownAddresses:
+                return self.knownAddresses[self.address]
         return self.address
 
 
-    def buildKnownAddresses():
+    def buildKnownAddresses(self):
         # add from address book
         try:
             response = self.api.listAddressBookEntries()
@@ -1234,8 +1221,8 @@ class my_bitmessage(object):
                 return
             addressBook = json.loads(response)
             for entry in addressBook['addresses']:
-                if entry['address'] not in knownAddresses:
-                    knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
+                if entry['address'] not in self.knownAddresses:
+                    self.knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1244,14 +1231,14 @@ class my_bitmessage(object):
 
         # add from my addresses
         try:
-            response = api.listAddresses2()
+            response = self.api.listAddresses2()
             # if api is too old just return then fail
             if 'API Error 0020' in response:
                 return
             addresses = json.loads(response)
             for entry in addresses['addresses']:
-                if entry['address'] not in knownAddresses:
-                    knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
+                if entry['address'] not in self.knownAddresses:
+                    self.knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1302,7 +1289,7 @@ class my_bitmessage(object):
 
     def deleteAddressFromAddressBook(address):
         try:
-            response = api.deleteAddressBookEntry(address)
+            response = self.api.deleteAddressBookEntry(address)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
         except Exception as e:
@@ -1333,7 +1320,7 @@ class my_bitmessage(object):
 
     def markMessageUnread(self, messageID):
         try:
-            response = api.getInboxMessageByID(messageID, False)
+            response = self.api.getInboxMessageByID(messageID, False)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
         except Exception as e:
@@ -1507,7 +1494,7 @@ class my_bitmessage(object):
             phrase = self.userInput('Enter the address passphrase.')
             print('Working...\n')
             self.address = getAddress(phrase,4,1)
-            print('Address: {0}\n'.format(address))
+            print('Address: {0}\n'.format(self.address))
             self.usrPrompt = True
             self.main()
 
@@ -1546,7 +1533,7 @@ class my_bitmessage(object):
 
         elif usrInput in ['inbox']:
             print('Loading...')
-            self.inbox()
+            self.inbox(False)
             self.main()
 
         elif usrInput in ['unread']:
@@ -1811,7 +1798,7 @@ class my_bitmessage(object):
             self.main()
 
         else:
-            print('{0} is not a command.\n'.format(self.usrInput))
+            print('{0} is not a command.\n'.format(usrInput))
             self.usrPrompt = True
             self.main()
 
