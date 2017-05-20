@@ -911,7 +911,6 @@ class my_bitmessage(object):
 
         messagesPrinted = 0
         messagesUnread = 0
-        messagesgetLabelForAddressUnread = 0
         # processes all of the messages in the inbox
         for msgNum in range (0, numMessages):
             message = inboxMessages['inboxMessages'][msgNum]
@@ -930,7 +929,7 @@ class my_bitmessage(object):
                 print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
                 messagesPrinted += 1
                 if not message['read']:
-                    messagesgetLabelForAddressUnread += 1
+                    messagesUnread += 1
 
             if messagesPrinted % 20 == 0 and messagesPrinted != 0:
                 uInput = self.userInput('(Press Enter to continue or type (Exit) to return to the main menu.)')
