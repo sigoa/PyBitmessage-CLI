@@ -1,6 +1,7 @@
 #!/usr/bin/env python2.7
-# Originally created by Adam Melton (Dokument) / modified by Scott King (Lvl4Sword)
-# Modified for the RZZT collective (rzzt.io) for use in the Taskhive project (taskhive.io)
+# Originally created by Adam Melton (Dokument)
+# Modified by Scott King (Lvl4Sword)
+# Modified for use in the Taskhive project (taskhive.io)
 # Distributed under the MIT/X11 software license
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
@@ -76,7 +77,9 @@ class my_bitmessage(object):
         config.read(self.keysPath)
         try:
             return config.getboolean(section,field)
-        except Exception:
+        except Exception as e:
+            print(e)
+            print('safeConfigGetBoolean')
             return False
 
 
@@ -131,7 +134,7 @@ class my_bitmessage(object):
         config = ConfigParser.SafeConfigParser()
         config.read(self.keysPath)
 
-        # API information there but the api is disabled.
+        # API information there but the api is disabled.uInput
         if apiEnabled is False:
             print('The API is not enabled.')
             uInput = self.userInput('Would you like to enable it now? Y/n: ')
@@ -218,7 +221,9 @@ class my_bitmessage(object):
         try:
             config.get('bitmessagesettings','port')
             appDataFolder = ''
-        except Exception:
+        except Exception as e:
+            print(e)
+            print('apiData 1')
             # Could not load the keys.dat file in the program directory.
             # Perhaps it is in the appdata directory.
             appDataFolder = self.lookupAppdataFolder()
@@ -228,7 +233,9 @@ class my_bitmessage(object):
 
             try:
                 config.get('bitmessagesettings','port')
-            except Exception:
+            except Exception as e:
+                print(e)
+                print('apiData 2')
                 # keys.dat was not there either, something is wrong.
                 print('\n******************************************************************')
                 print('There was a problem trying to access the Bitmessage keys.dat file')
@@ -260,7 +267,9 @@ class my_bitmessage(object):
             config.get('bitmessagesettings', 'apiinterface')
             config.get('bitmessagesettings', 'apiusername')
             config.get('bitmessagesettings', 'apipassword')
-        except Exception:
+        except Exception as e:
+            print(e)
+            print('apiData 3')
             # Initalize the keys.dat file with API information
             self.apiInit('')
 
@@ -293,7 +302,9 @@ class my_bitmessage(object):
     def apiTest(self):
         try:
             result = self.api.add(2,3)
-        except Exception:
+        except Exception as e:
+            print(e)
+            print('apiTest')
             return False
 
         if result == 5:
@@ -315,6 +326,7 @@ class my_bitmessage(object):
             port = config.get('bitmessagesettings', 'port')
         except Exception as e:
             print(e)
+            print('bmSettings')
             print('File not found.\n')
             self.usrPrompt = False
             self.main()
@@ -504,7 +516,8 @@ class my_bitmessage(object):
         print('\n{0} {1} {2}\n'.format(Label, self.address, Enabled))
         try:
             print(self.api.listSubscriptions())
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -517,7 +530,8 @@ class my_bitmessage(object):
         password = password.encode('base64')
         try:
             print(self.api.createChan(password))
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             main(self)
@@ -530,7 +544,8 @@ class my_bitmessage(object):
         password = password.encode('base64')
         try:
             print(self.api.joinChan(password, self.address))
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -541,7 +556,8 @@ class my_bitmessage(object):
             self.address = self.userInput('Enter channel address')
         try:
             print(self.api.leaveChan(self.address))
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -553,7 +569,8 @@ class my_bitmessage(object):
             jsonAddresses = json.loads(self.api.listAddresses())
             # Number of addresses
             numAddresses = len(jsonAddresses['addresses'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -591,7 +608,8 @@ class my_bitmessage(object):
                 return generatedAddress
             else:
                 return 'Entry Error'
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -660,7 +678,7 @@ class my_bitmessage(object):
                     return ''
             # If larger than 180MB, discard
             elif invSize > 184320.0:
-                print('Attachment too big, maximum allowed size:180MB\n')
+                print('Attachment too big, maximum allowed size is 180MB\n')
                 self.main()
 
             # Gets the length of the filepath excluding the filename
@@ -731,18 +749,19 @@ class my_bitmessage(object):
     # With no arguments sent, sendMsg fills in the blanks
     # subject and message must be encoded before they are passed
     def sendMsg(self, toAddress, fromAddress, subject, message):
-        if validAddress(toAddress) is False:
+        if self.validAddress(toAddress) is False:
             while True:
                 toAddress = self.userInput('What is the To Address?')
                 if self.break_here:
                     break
 
-        if validAddress(fromAddress) is False:
+        if self.validAddress(fromAddress) is False:
             try:
                 jsonAddresses = json.loads(self.api.listAddresses())
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
-            except Exception:
+            except Exception as e:
+                print(e)
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -769,7 +788,7 @@ class my_bitmessage(object):
                             break
 
                     if found is False:
-                        if validAddress(fromAddress) is False:
+                        if self.validAddress(fromAddress) is False:
                             print('Invalid Address. Please try again.\n')
                         else:
                             # processes all of the addresses
@@ -806,7 +825,8 @@ class my_bitmessage(object):
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
             print('Message Status:', self.api.getStatus(ackData), '\n')
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -819,7 +839,8 @@ class my_bitmessage(object):
                 jsonAddresses = json.loads(self.api.listAddresses())
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
-            except Exception:
+            except Exception as e:
+                print(e)
                 print('Connection Error\n')
                 self.usrPrompt = False
                 self.main()
@@ -845,7 +866,7 @@ class my_bitmessage(object):
                             break
 
                     if found is False:
-                        if validAddress(fromAddress) is False:
+                        if self.validAddress(fromAddress) is False:
                             print('Invalid Address. Please try again.\n')
                         else:
                             # processes all of the addresses
@@ -883,7 +904,8 @@ class my_bitmessage(object):
         try:
             ackData = self.api.sendBroadcast(fromAddress, subject, message)
             print('Message Status: {0}\n'.format(self.api.getStatus(ackData)))
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -895,7 +917,8 @@ class my_bitmessage(object):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -934,7 +957,8 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -968,7 +992,8 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1032,7 +1057,8 @@ class my_bitmessage(object):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1103,7 +1129,8 @@ class my_bitmessage(object):
         forwardORreply = forwardORreply.lower()
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1131,7 +1158,7 @@ class my_bitmessage(object):
                     self.usrPrompt = True
                     print('')
                     self.main()
-                elif validAddress(toAdd) is False:
+                elif self.validAddress(toAdd) is False:
                     print('Invalid Address. ''c'' to cancel. Please try again.\n')
                 else:
                     break
@@ -1164,7 +1191,8 @@ class my_bitmessage(object):
             # gets the message ID via the message index number
             msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
             msgAck = self.api.trashMessage(msgId)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1179,7 +1207,8 @@ class my_bitmessage(object):
             # gets the message ID via the message index number
             msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
             msgAck = self.api.trashSentMessage(msgId)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1207,7 +1236,8 @@ class my_bitmessage(object):
             for entry in addressBook['addresses']:
                 if entry['address'] not in knownAddresses:
                     knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1222,7 +1252,8 @@ class my_bitmessage(object):
             for entry in addresses['addresses']:
                 if entry['address'] not in knownAddresses:
                     knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1250,7 +1281,8 @@ class my_bitmessage(object):
             print('')
 
 
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1261,7 +1293,8 @@ class my_bitmessage(object):
             response = self.api.addAddressBookEntry(address, label.encode('base64'))
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1272,7 +1305,8 @@ class my_bitmessage(object):
             response = api.deleteAddressBookEntry(address)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1290,7 +1324,8 @@ class my_bitmessage(object):
             response = self.api.getInboxMessageByID(messageID, True)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1301,7 +1336,8 @@ class my_bitmessage(object):
             response = api.getInboxMessageByID(messageID, False)
             if 'API Error' in response:
                 return getAPIErrorCode(response)
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1310,7 +1346,8 @@ class my_bitmessage(object):
     def markAllMessagesRead(self):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -1322,7 +1359,8 @@ class my_bitmessage(object):
     def markAllMessagesUnread():
         try:
             inboxMessages = json.loads(api.getAllInboxMessages())['inboxMessages']
-        except Exception:
+        except Exception as e:
+            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
