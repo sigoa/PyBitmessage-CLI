@@ -804,7 +804,7 @@ class my_bitmessage(object):
 
             uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
             if uInput == 'y':
-                message = message + '\n\n' + attachment()
+                message = message + '\n\n' + self.attachment()
 
             message = message.encode('base64')
 
@@ -883,7 +883,7 @@ class my_bitmessage(object):
 
                 uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
                 if uInput == 'y':
-                    message = message + '\n\n' + attachment()
+                    message = message + '\n\n' + self.attachment()
 
                 message = message.encode('base64')
 
@@ -1158,7 +1158,7 @@ class my_bitmessage(object):
 
         uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
         if uInput in ['yes', 'y']:
-            newMessage = newMessage + '\n\n' + attachment()
+            newMessage = newMessage + '\n\n' + self.attachment()
 
         newMessage = newMessage + '\n\n------------------------------------------------------\n'
         newMessage = newMessage + message
@@ -1343,7 +1343,7 @@ class my_bitmessage(object):
 
     def markAllMessagesUnread(self):
         try:
-            inboxMessages = json.loads(api.getAllInboxMessages())['inboxMessages']
+            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1639,7 +1639,7 @@ class my_bitmessage(object):
                 self.main()
 
             if uInput in ['inbox', 'i']:
-                inboxMessages = json.loads(api.getAllInboxMessages())
+                inboxMessages = json.loads(self.api.getAllInboxMessages())
                 numMessages = len(inboxMessages['inboxMessages'])
 
                 while True:
@@ -1655,7 +1655,7 @@ class my_bitmessage(object):
                 message =  inboxMessages['inboxMessages'][msgNum]['message']
 
             elif uInput in ['outbox', 'o']:
-                outboxMessages = json.loads(api.getAllSentMessages())
+                outboxMessages = json.loads(self.api.getAllSentMessages())
                 numMessages = len(outboxMessages['sentMessages'])
 
                 while True:
@@ -1681,7 +1681,7 @@ class my_bitmessage(object):
             uInput = self.userInput('Would you like to delete a message from the (I)nbox or (O)utbox?')
 
             if uInput in ['inbox', 'i']:
-                inboxMessages = json.loads(api.getAllInboxMessages())
+                inboxMessages = json.loads(self.api.getAllInboxMessages())
                 numMessages = len(inboxMessages['inboxMessages'])
 
                 while True:
@@ -1715,7 +1715,7 @@ class my_bitmessage(object):
                 else:
                     self.usrPrompt = True
             elif uInput in ['outbox', 'o']:
-                outboxMessages = json.loads(api.getAllSentMessages())
+                outboxMessages = json.loads(self.api.getAllSentMessages())
                 numMessages = len(outboxMessages['sentMessages'])
                 
                 while True:
@@ -1760,7 +1760,7 @@ class my_bitmessage(object):
             self.main()
 
         elif usrInput in ['listaddressbookentries']:
-            res = listAddressBookEntries()
+            res = self.listAddressBookEntries()
             if res == 20:
                 print('Error: API function not supported.\n')
             self.usrPrompt = True
@@ -1769,7 +1769,7 @@ class my_bitmessage(object):
         elif usrInput in ['addaddressbookentry']:
             self.address = self.userInput('Enter address')
             label = self.userInput('Enter label')
-            res = addAddressToAddressBook(address, label)
+            res = self.addAddressToAddressBook(address, label)
             if res == 16:
                 print('Error: Address already exists in Address Book.\n')
             if res == 20:
@@ -1779,19 +1779,19 @@ class my_bitmessage(object):
 
         elif usrInput in ['deleteaddressbookentry']:
             self.address = self.userInput('Enter address')
-            res = deleteAddressFromAddressBook(address)
+            res = self.deleteAddressFromAddressBook(address)
             if res == 20:
                 print('Error: API function not supported.\n')
             self.usrPrompt = True
             self.main()
 
         elif usrInput in ['markallmessagesread']:
-            markAllMessagesRead()
+            self.markAllMessagesRead()
             self.usrPrompt = True
             self.main()
 
         elif usrInput in ['markallmessagesunread']:
-            markAllMessagesUnread()
+            self.markAllMessagesUnread()
             self.usrPrompt = True
             self.main()
 
