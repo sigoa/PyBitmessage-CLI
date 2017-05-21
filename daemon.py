@@ -627,9 +627,10 @@ class my_bitmessage(object):
 
 
     # Allows users to attach a file to their message or broadcast
-    def attachment():
+    def attachment(self):
         theAttachmentS = ''
 
+        # two while True: doesn't make sense - TODO
         while True:
             isImage = False
             theAttachment = ''
@@ -1243,7 +1244,7 @@ class my_bitmessage(object):
             self.main()
 
 
-    def listAddressBookEntries():
+    def listAddressBookEntries(self):
         try:
             response = self.api.listAddressBookEntries()
             if 'API Error' in response:
@@ -1340,7 +1341,7 @@ class my_bitmessage(object):
                 markMessageRead(message['msgid'])
 
 
-    def markAllMessagesUnread():
+    def markAllMessagesUnread(self):
         try:
             inboxMessages = json.loads(api.getAllInboxMessages())['inboxMessages']
         except Exception as e:
