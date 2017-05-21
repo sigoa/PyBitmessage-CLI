@@ -36,7 +36,6 @@ class my_bitmessage(object):
         self.keysPath = 'keys.dat'
         self.knownAddresses = {}
         self.address = None
-        self.break_here = False
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -272,7 +271,7 @@ class my_bitmessage(object):
         apiUsername = config.get('bitmessagesettings', 'apiusername')
         apiPassword = config.get('bitmessagesettings', 'apipassword')
 
-        print('API data successfully imported.\n')
+        print('API data successfully imported')
 
         # Build the api credentials
         return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername, apiPassword, apiInterface, str(apiPort))
@@ -463,10 +462,7 @@ class my_bitmessage(object):
 
     def validAddress(self, address):
         address_information = self.api.decodeAddress(address)
-        print('?')
-        address_information = eval(address_information)
-        print(address_information)
-        print(address_information.get('status'))
+        address_information = json.loads(address_information)
 
         if 'success' in address_information.get('status'):
             return True
@@ -737,9 +733,10 @@ class my_bitmessage(object):
     # subject and message must be encoded before they are passed
     def sendMsg(self, toAddress, fromAddress, subject, message):
         if self.validAddress(toAddress) is False:
-            while True:
-                toAddress = self.userInput('What is the To Address?')
-                if self.break_here:
+            while not self.validAddress(toAddress):
+                print('\nWhat is the To Address?:')
+                toAddress = raw_input('> ').strip()
+                if self.validAddress(toAddress):
                     break
 
         if self.validAddress(fromAddress) is False:
@@ -758,7 +755,8 @@ class my_bitmessage(object):
                 found = False
                 while True:
                     print('')
-                    fromAddress = self.userInput('Enter an Address or Address Label to send from.')
+                    print('Enter an Address or Address Label to send from: ')
+                    fromAddress = raw_input('> ').strip()
 
                     if fromAddress in ['exit', 'x']:
                         self.usrPrompt = True
@@ -794,7 +792,7 @@ class my_bitmessage(object):
 
             # Only one address in address book
             else:
-                print('Using the only address in the addressbook to send from.\n')
+                print('Using the only address in the addressbook to send from.')
                 fromAddress = jsonAddresses['addresses'][0]['address']
 
         if subject == '':
@@ -917,6 +915,7 @@ class my_bitmessage(object):
             # if we are displaying all messages or
             # if this message is unread then display it
             if not unreadOnly or not message['read']:
+                print(self.getLabelForAddress(message))
                 print('-----------------------------------\n')
                 # Message Number
                 print('Message Number: {0}'.format(msgNum))
@@ -955,9 +954,9 @@ class my_bitmessage(object):
             # Message Number
             print('Message Number: {0}'.format(msgNum))
             # Get the to address
-            print('To: {0}'.format(getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
+            print('To: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
             # Get the from address
-            print('From: {0}'.format(getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
+            print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
             # Get the subject
             print('Subject: {0}'.format(outboxMessages['sentMessages'][msgNum]['subject'].decode('base64')))
             # Get the subject
@@ -1026,9 +1025,9 @@ class my_bitmessage(object):
                 break
 
         # Get the to address
-        print('To: {0}'.format(getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
+        print('To: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
         # Get the from address
-        print('From: {0}'.format(getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
+        print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
         # Get the subject
         print('Subject:'.format(outboxMessages['sentMessages'][msgNum]['subject'].decode('base64')))
         #Get the status
@@ -1095,15 +1094,14 @@ class my_bitmessage(object):
 ####
 
         # Get the to address
-        print('To: {0}'.format(getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['toAddress'])))
+        print('To: {0}'.format(self.getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['toAddress'])))
         # Get the from address
-        print('From: {0}'.format(getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['fromAddress'])))
+        print('From: {0}'.format(self.getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['fromAddress'])))
         # Get the subject
         print('Subject: {0}'.format(inboxMessages['inboxMessages'][msgNum]['subject'].decode('base64')))
         print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
         print('Message:\n')
         print(message)
-        print('')
         return inboxMessages['inboxMessages'][msgNum]['msgid']
 
 
@@ -1570,7 +1568,7 @@ class my_bitmessage(object):
                 print('Loading...\n')
                 messageID = self.readMsg(msgNum)
 
-                uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)')
+                uInput = self.userInput('Would you like to keep this message unread, (Y)/(n)')
 
                 if uInput not in ['yes', 'y']:
                     self.markMessageRead(messageID)
