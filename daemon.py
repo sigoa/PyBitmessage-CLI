@@ -138,7 +138,7 @@ class my_bitmessage(object):
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
                 print('************************************************************\n')
             else:
-                print('Invalid Entry\n')
+                print('Invalid Entry')
             self.usrPrompt = True
             self.main()
 
@@ -163,7 +163,7 @@ class my_bitmessage(object):
                 daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
 
                 if daemon not in ['true', 'false']:
-                    print('Invalid Entry for Daemon.\n')
+                    print('Invalid Entry for Daemon')
 
                 '''
                 sets the bitmessage port to stop the warning about the api
@@ -189,7 +189,7 @@ class my_bitmessage(object):
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
                 print('***********************************************************\n')
             else:
-                print('\nInvalid entry\n')
+                print('Invalid entry')
             self.usrPrompt = True
             self.main()
 
@@ -936,7 +936,7 @@ class my_bitmessage(object):
 
         print('-----------------------------------')
         print('There are %d unread messages of %d messages in the inbox.' % (messagesUnread, numMessages))
-        print('-----------------------------------\n')
+        print('-----------------------------------')
 
 
     def outbox(self):
@@ -1575,7 +1575,7 @@ class my_bitmessage(object):
                     self.markMessageRead(messageID)
                     self.usrPrompt = True
 
-                uInput = self.userInput('\nWould you like to (D)elete, (F)orward, (R)eply to, or (Exit) this message?')
+                uInput = self.userInput('Would you like to (D)elete, (F)orward, (R)eply to, or (Exit) this message?')
 
                 if uInput in ['reply', 'r']:
                     print('Loading...\n')
@@ -1601,7 +1601,7 @@ class my_bitmessage(object):
                         self.usrPrompt = True
 
                 else:
-                    print('Invalid entry\n')
+                    print('Invalid entry')
                     self.usrPrompt = True
 
             elif uInput in ['outbox', 'o']:
@@ -1621,7 +1621,7 @@ class my_bitmessage(object):
                         self.usrPrompt = True
 
                 else:
-                    print('Invalid Entry\n')
+                    print('Invalid Entry')
                     self.usrPrompt = True
             else:
                 print('Invalid Input.\n')
@@ -1750,7 +1750,7 @@ class my_bitmessage(object):
                 else:
                     self.usrPrompt = True
             else:
-                print('Invalid Entry.\n')
+                print('Invalid Entry')
                 userPrompt = 1
                 self.main()
 
