@@ -6,6 +6,7 @@
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
 
+import base64
 import ConfigParser
 import datetime
 import getopt
@@ -461,9 +462,7 @@ class my_bitmessage(object):
 
 
     def validAddress(self, address):
-        address_information = self.api.decodeAddress(address)
-        address_information = json.loads(address_information)
-
+        address_information = json.loads(self.api.decodeAddress(address))
         if 'success' in address_information.get('status'):
             return True
         else:
@@ -472,34 +471,52 @@ class my_bitmessage(object):
 
     def getAddress(self, passphrase, vNumber, sNumber):
         # passphrase must be encoded
-        passphrase = passphrase.encode('base64')
+        passphrase = base64.b64encode(passphrase)
         return self.api.getDeterministicAddress(passphrase,vNumber,sNumber)
 
 
     def subscribe(self):
         while True:
-            self.address = self.userInput('What address would you like to subscribe to?')
+            print('Address you would like to subscribe to:')
+            address = raw_input('> ').strip()
+            if self.validAddress(address):
+                print('Enter a label for this address:')
+                label = raw_input('> ').strip()
+                label = base64.b64encode(label)
+                break
+            elif address.lower() in ['exit', 'x']:
+                self.main()
+            else:
+                print('Not a valid address, please try again.')
 
-        label = self.userInput('Enter a label for this address.')
-        label = label.encode('base64')
-
-        self.api.addSubscription(self.address, label)
-        print('You are now subscribed to: {0}\n'.format(self.address))
+        self.api.addSubscription(address, label)
+        print('You are now subscribed to: {0}\n'.format(address))
 
 
     def unsubscribe(self):
         while True:
-            self.address = self.userInput('What address would you like to unsubscribe from?')
-        uInput = self.userInput('Are you sure, (Y)/(n)')
+            address = raw_input('What address would you like to unsubscribe from?').strip()
+            if address in ['exit', 'x']:
+                self.main()
 
-        self.api.deleteSubscription(self.address)
-        print('You are now unsubscribed from: ' + self.address + '\n')
+            uInput = self.userInput('Are you sure, (Y)/(n)')
+            if uInput in ['y', 'yes']:
+                self.api.deleteSubscription(address)
+                print('You are now unsubscribed from: ' + address + '\n')
+            else:
+                print("You weren't unsubscribed from anything!")
+                break
 
 
     def listSubscriptions(self):
-        print('\n{0} {1} {2}\n'.format(Label, self.address, Enabled))
         try:
-            print(self.api.listSubscriptions())
+            total_subscriptions = self.api.listSubscriptions()
+            print(total_subscriptions)
+            for each in total_subscriptions:
+                print(each)
+                print('\n{0} {1} {2}\n'.format(each['label'],
+                                               each['address'],
+                                               each['enabled']))
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -513,7 +530,7 @@ class my_bitmessage(object):
         print('Enter channel name:')
         password = raw_input('> ').strip()
         print('\n')
-        password = password.encode('base64')
+        password = base64.b64encode(password)
         try:
             print(self.api.createChan(password))
         except Exception as e:
@@ -531,7 +548,7 @@ class my_bitmessage(object):
                 print('Enter channel name:')
                 password = raw_input('> ').strip()
                 if password:
-                    password = password.encode('base64')
+                    password = base64.b64encode(password)
                     break
         try:
             print(self.api.joinChan(password, address))
@@ -591,12 +608,12 @@ class my_bitmessage(object):
         # Generates a new address with the user defined label. non-deterministic
         try:
             if deterministic is False:
-                addressLabel = lbl.encode('base64')
+                addressLabel = base64.b64encode(lbl)
                 generatedAddress = self.api.createRandomAddress(addressLabel)
                 return generatedAddress
             # Generates a new deterministic address with the user inputs
             elif deterministic is True:
-                passphrase = passphrase.encode('base64')
+                passphrase = base64.b64encode(passphrase)
                 generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
                 return generatedAddress
             else:
@@ -631,7 +648,7 @@ class my_bitmessage(object):
 
         # Begin saving to file
         with open(filePath, 'wb+') as f:
-            f.write(fileData.decode('base64'))
+            f.write(base64.b64decode(fileData))
 
         print('Successfully saved {0}\n'.format(filePath))
 
@@ -699,7 +716,7 @@ class my_bitmessage(object):
             with open(filePath, 'rb') as f:
                 # Reads files up to 180MB, the maximum size for Bitmessage
                 data = f.read(188743680)
-                data = data.encode('base64')
+                data = base64.b64encode(data)
 
             # If it is an image, include image tags in the message
             if isImage is True:
@@ -810,7 +827,7 @@ class my_bitmessage(object):
 
         if subject == '':
             subject = self.userInput('Enter your Subject.')
-            subject = subject.encode('base64')
+            subject = base64.b64encode(subject)
         if message == '':
             message = self.userInput('Enter your Message.')
 
@@ -818,7 +835,7 @@ class my_bitmessage(object):
             if uInput == 'y':
                 message = message + '\n\n' + self.attachment()
 
-            message = message.encode('base64')
+            message = base64.b64encode(message)
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
@@ -889,7 +906,7 @@ class my_bitmessage(object):
 
         if subject == '':
                 subject = self.userInput('Enter your Subject.')
-                subject = subject.encode('base64')
+                subject = base64.b64encode(subject)
         if message == '':
                 message = self.userInput('Enter your Message.')
 
@@ -897,7 +914,7 @@ class my_bitmessage(object):
                 if uInput == 'y':
                     message = message + '\n\n' + self.attachment()
 
-                message = message.encode('base64')
+                message = base64.b64encode(message)
 
         try:
             ackData = self.api.sendBroadcast(fromAddress, subject, message)
@@ -937,7 +954,7 @@ class my_bitmessage(object):
                 # Get the from address
                 print('From: {0}'.format(self.getLabelForAddress(message['fromAddress'])))
                 # Get the subject
-                print('Subject: {0}'.format(message['subject'].decode('base64')))
+                print('Subject: {0}'.format(base64.b64decode(message['subject'])))
                 print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
                 messagesPrinted += 1
                 if not message['read']:
@@ -971,7 +988,7 @@ class my_bitmessage(object):
             # Get the from address
             print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
             # Get the subject
-            print('Subject: {0}'.format(outboxMessages['sentMessages'][msgNum]['subject'].decode('base64')))
+            print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
             # Get the subject
             print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
 
@@ -1003,7 +1020,7 @@ class my_bitmessage(object):
             self.main()
 
         #Begin attachment detection
-        message = outboxMessages['sentMessages'][msgNum]['message'].decode('base64')
+        message = base64.b64decode(outboxMessages['sentMessages'][msgNum]['message'])
 
         # Allows multiple messages to be downloaded/saved
         while True:
@@ -1042,13 +1059,14 @@ class my_bitmessage(object):
         # Get the from address
         print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
         # Get the subject
-        print('Subject:'.format(outboxMessages['sentMessages'][msgNum]['subject'].decode('base64')))
+        print('Subject:'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
         #Get the status
         print('Status:'.format(outboxMessages['sentMessages'][msgNum]['status']))
         print('Last Action Time:'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
         print('Message:\n')
         print(message)
         print('')
+
 
     # Opens a message for reading
     def readMsg(self, msgNum):
@@ -1069,7 +1087,7 @@ class my_bitmessage(object):
 # Begin attachment detection
 ####
 
-        message = inboxMessages['inboxMessages'][msgNum]['message'].decode('base64')
+        message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
         # Allows multiple messages to be downloaded/saved
         while True:
@@ -1111,7 +1129,7 @@ class my_bitmessage(object):
         # Get the from address
         print('From: {0}'.format(self.getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['fromAddress'])))
         # Get the subject
-        print('Subject: {0}'.format(inboxMessages['inboxMessages'][msgNum]['subject'].decode('base64')))
+        print('Subject: {0}'.format(base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])))
         print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
         print('Message:\n')
         print(message)
@@ -1135,10 +1153,10 @@ class my_bitmessage(object):
         # Address it was sent To, now the From address
         fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
         # Message that you are replying too.
-        message = inboxMessages['inboxMessages'][msgNum]['message'].decode('base64')
+        message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
         subject = inboxMessages['inboxMessages'][msgNum]['subject']
-        subject = subject.decode('base64')
+        subject = base64.b64decode(subject)
 
         if forwardORreply == 'reply':
             # Address it was From, now the To address
@@ -1164,7 +1182,7 @@ class my_bitmessage(object):
             self.usrPrompt = False
             self.main()
 
-        subject = subject.encode('base64')
+        subject = base64.b64encode(subject)
 
         newMessage = self.userInput('Enter your Message.')
 
@@ -1174,7 +1192,7 @@ class my_bitmessage(object):
 
         newMessage = newMessage + '\n\n------------------------------------------------------\n'
         newMessage = newMessage + message
-        newMessage = newMessage.encode('base64')
+        newMessage = base64.b64encode(newMessage)
 
         self.sendMsg(toAdd, fromAdd, subject, newMessage)
 
@@ -1232,7 +1250,7 @@ class my_bitmessage(object):
             addressBook = json.loads(response)
             for entry in addressBook['addresses']:
                 if entry['address'] not in self.knownAddresses:
-                    self.knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
+                    self.knownAddresses[entry['address']] = '%s (%s)' % (base64.b64decode(entry['label']), entry['address'])
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1248,7 +1266,7 @@ class my_bitmessage(object):
             addresses = json.loads(response)
             for entry in addresses['addresses']:
                 if entry['address'] not in self.knownAddresses:
-                    self.knownAddresses[entry['address']] = '%s (%s)' % (entry['label'].decode('base64'), entry['address'])
+                    self.knownAddresses[entry['address']] = '%s (%s)' % (base64.b64decode(entry['label']), entry['address'])
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1269,7 +1287,7 @@ class my_bitmessage(object):
                 print('|--------------------|---------------------------------------|')
 
                 for entry in addressBook['addresses']:
-                    label = entry['label'].decode('base64')
+                    label = base64.b64decode(entry['label'])
                     address = entry['address']
                     if len(label) > 19:
                         label = label[:16] + '...'
@@ -1288,7 +1306,7 @@ class my_bitmessage(object):
 
     def addAddressToAddressBook(self, address, label):
         try:
-            response = self.api.addAddressBookEntry(address, label.encode('base64'))
+            response = self.api.addAddressBookEntry(address, base64.b64encode(label))
             if 'API Error' in response:
                 return self.getAPIErrorCode(response)
         except Exception as e:
@@ -1656,32 +1674,40 @@ class my_bitmessage(object):
                 numMessages = len(inboxMessages['inboxMessages'])
 
                 while True:
-                    msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                    try:
+                        msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                    except ValueError:
+                        if msgNum in ['exit', 'x']:
+                            self.main()
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
                     else:
                         break
 
-                subject =  inboxMessages['inboxMessages'][msgNum]['subject'].decode('base64')
+                subject = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])
                 # Don't decode since it is done in the saveFile function
-                message =  inboxMessages['inboxMessages'][msgNum]['message']
+                message = inboxMessages['inboxMessages'][msgNum]['message']
 
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
                 numMessages = len(outboxMessages['sentMessages'])
 
                 while True:
-                    msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                    try:
+                        msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                    except ValueError:
+                        if msgNum in ['exit', 'x']:
+                            self.main()
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
                     else:
                         break
 
-                subject =  outboxMessages['sentMessages'][msgNum]['subject'].decode('base64')
+                subject = base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])
                 # Don't decode since it is done in the saveFile function
-                message =  outboxMessages['sentMessages'][msgNum]['message']
+                message = outboxMessages['sentMessages'][msgNum]['message']
             
             subject = '{0}.txt'.format(subject)
             self.saveFile(subject, message)
@@ -1699,6 +1725,9 @@ class my_bitmessage(object):
 
                 while True:
                     msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the inbox.')
+
+                    if msgNum in ['exit', 'x']:
+                        self.main()
 
                     if msgNum in ['all', 'a']:
                         break
