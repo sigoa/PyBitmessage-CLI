@@ -45,8 +45,12 @@ class my_bitmessage(object):
         if message == '':
             pass
         else:
-            print('\n{0}'.format(message))
-        uInput = raw_input('> ').lower().strip()
+            print('{0}'.format(message))
+        try:
+            uInput = raw_input('> ').lower().strip()
+        except (EOFError, KeyboardInterrupt):
+            print('')
+            sys.exit()
         return uInput
 
 
@@ -54,7 +58,7 @@ class my_bitmessage(object):
     def restartBmNotify(self):
         print('*******************************************************************')
         print('WARNING: If Bitmessage is running locally, you must restart it now.')
-        print('*******************************************************************\n')
+        print('*******************************************************************')
 
 
     def safeConfigGetBoolean(self, section, field):
@@ -207,8 +211,6 @@ class my_bitmessage(object):
             config.get('bitmessagesettings','port')
             appDataFolder = ''
         except Exception as e:
-            print(e)
-            print('apiData 1')
             # Could not load the keys.dat file in the program directory.
             # Perhaps it is in the appdata directory.
             appDataFolder = self.lookupAppdataFolder()
@@ -219,8 +221,6 @@ class my_bitmessage(object):
             try:
                 config.get('bitmessagesettings','port')
             except Exception as e:
-                print(e)
-                print('apiData 2')
                 # keys.dat was not there either, something is wrong.
                 print('\n******************************************************************')
                 print('There was a problem trying to access the Bitmessage keys.dat file')
@@ -254,7 +254,6 @@ class my_bitmessage(object):
             config.get('bitmessagesettings', 'apipassword')
         except Exception as e:
             print(e)
-            print('apiData 3')
             # Initalize the keys.dat file with API information
             self.apiInit('')
 
@@ -288,8 +287,6 @@ class my_bitmessage(object):
         try:
             result = self.api.add(2,3)
         except Exception as e:
-            print(e)
-            print('apiTest')
             return False
 
         if result == 5:
@@ -301,17 +298,15 @@ class my_bitmessage(object):
     # Allows the viewing and modification of keys.dat settings.
     def bmSettings(self):
         config = ConfigParser.SafeConfigParser()
-        self.keysPath = 'keys.dat'
-
         # https://docs.python.org/2/library/configparser.html#ConfigParser.RawConfigParser.read
         # TODO
         # Read the keys.dat
         config.read(self.keysPath)
+
         try:
             port = config.get('bitmessagesettings', 'port')
         except Exception as e:
             print(e)
-            print('bmSettings')
             print('File not found.\n')
             self.usrPrompt = False
             self.main()
@@ -352,7 +347,6 @@ class my_bitmessage(object):
         print('socksauthentication = {0}'.format(str(socksauthentication)))
         print('socksusername = {0}'.format(socksusername))
         print('sockspassword = {0}'.format(sockspassword))
-        print('')
 
         uInput = self.userInput('Would you like to modify any of these settings, (Y)/(n)')
 
@@ -360,89 +354,89 @@ class my_bitmessage(object):
             # loops if they mistype the setting name, they can exit the loop with 'exit')
             while True:
                 invalidInput = False
-                uInput = self.userInput('What setting would you like to modify?')
-                print('')
+                uInput = self.userInput('\nWhat setting would you like to modify?')
 
-                if uInput == 'port':
-                    print('Current port number: {0}'.format(port))
+                if uInput in ['exit', 'x']:
+                    break
+
+                elif uInput == 'port':
+                    print('Current port number: {0}\n'.format(port))
                     uInput = self.userInput('Enter the new port number.')
                     config.set('bitmessagesettings', 'port', str(uInput))
 
                 elif uInput == 'startonlogon':
-                    print('Current status: {0}'.format(str(startonlogon)))
+                    print('Current status: {0}\n'.format(str(startonlogon)))
                     uInput = self.userInput('Enter the new status.')
                     config.set('bitmessagesettings', 'startonlogon', str(uInput))
 
                 elif uInput == 'minimizetotray':
-                    print('Current status: {0}'.format(str(minimizetotray)))
+                    print('Current status: {0}\n'.format(str(minimizetotray)))
                     uInput = self.userInput('Enter the new status.')
                     config.set('bitmessagesettings', 'minimizetotray', str(uInput))
 
                 elif uInput == 'showtraynotifications':
-                    print('Current status: {0}'.format(str(showtraynotifications)))
+                    print('Current status: {0}\n'.format(str(showtraynotifications)))
                     uInput = self.userInput('Enter the new status.')
                     config.set('bitmessagesettings', 'showtraynotifications', str(uInput))
 
                 elif uInput == 'startintray':
-                    print('Current status: {0}'.format(str(startintray)))
+                    print('Current status: {0}\n'.format(str(startintray)))
                     uInput = self.userInput('Enter the new status.')
                     config.set('bitmessagesettings', 'startintray', str(uInput))
 
                 elif uInput == 'defaultnoncetrialsperbyte':
-                    print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
+                    print('Current default nonce trials per byte: {0}\n'.format(defaultnoncetrialsperbyte))
                     uInput = self.userInput('Enter the new defaultnoncetrialsperbyte.')
                     config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', str(uInput))
 
                 elif uInput == 'defaultpayloadlengthextrabytes':
-                    print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
+                    print('Current default payload length extra bytes: {0}\n'.format(defaultpayloadlengthextrabytes))
                     uInput = self.userInput('Enter the new defaultpayloadlengthextrabytes.')
                     config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', str(uInput))
 
                 elif uInput == 'daemon':
-                    print('Current status: {0}'.format(str(daemon)))
+                    print('Current status: {0}\n'.format(str(daemon)))
                     uInput = self.userInput('Enter the new status.')
                     config.set('bitmessagesettings', 'daemon', str(uInput))
 
                 elif uInput == 'socksproxytype':
                     print('Current socks proxy type: {0}'.format(socksproxytype))
-                    print('Possibilities: ''none'', ''SOCKS4a'', ''SOCKS5''')
-                    uInput = self.userInput('Enter the new socksproxytype.')
+                    print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'\n")
+                    uInput = self.userInput('Enter the new socksproxytype')
                     config.set('bitmessagesettings', 'socksproxytype', str(uInput))
 
                 elif uInput == 'sockshostname':
-                    print('Current socks host name: {0}'.format(sockshostname))
-                    uInput = self.userInput('Enter the new sockshostname.')
+                    print('Current socks host name: {0}\n'.format(sockshostname))
+                    uInput = self.userInput('Enter the new sockshostname')
                     config.set('bitmessagesettings', 'sockshostname', str(uInput))
 
                 elif uInput == 'socksport':
-                    print('Current socks port number: {0}'.format(socksport))
-                    uInput = self.userInput('Enter the new socksport.')
+                    print('Current socks port number: {0}\n'.format(socksport))
+                    uInput = self.userInput('Enter the new socksport')
                     config.set('bitmessagesettings', 'socksport', str(uInput))
 
                 elif uInput == 'socksauthentication':
-                    print('Current status: {0}'.format(str(socksauthentication)))
-                    uInput = self.userInput('Enter the new status.')
+                    print('Current status: {0}\n'.format(str(socksauthentication)))
+                    uInput = self.userInput('Enter the new status')
                     config.set('bitmessagesettings', 'socksauthentication', str(uInput))
 
                 elif uInput == 'socksusername':
-                    print('Current socks username: {0}'.format(socksusername))
-                    uInput = self.userInput('Enter the new socksusername.')
+                    print('Current socks username: {0}\n'.format(socksusername))
+                    uInput = self.userInput('Enter the new socksusername')
                     config.set('bitmessagesettings', 'socksusername', str(uInput))
 
                 elif uInput == 'sockspassword':
-                    print('Current socks password: {0}'.format(sockspassword))
-                    uInput = self.userInput('Enter the new password.')
+                    print('Current socks password: {0}\n'.format(sockspassword))
+                    uInput = self.userInput('Enter the new sockspassword')
                     config.set('bitmessagesettings', 'sockspassword', str(uInput))
-
 
                 else:
                     print('Invalid input. Please try again.\n')
                     invalidInput = True
 
-
                 # don't prompt if they made a mistake. 
-                if invalidInput != True:
-                    uInput = self.userInput('Would you like to change another setting, (Y)/(n)')
+                if not invalidInput and uInput not in ['exit', 'x']:
+                    uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)')
 
                     if uInput != 'y':
                         print('Changes Made.\n')
@@ -477,10 +471,10 @@ class my_bitmessage(object):
 
     def subscribe(self):
         while True:
-            print('Address you would like to subscribe to:')
+            print('\nAddress you would like to subscribe to:')
             address = raw_input('> ').strip()
             if self.validAddress(address):
-                print('Enter a label for this address:')
+                print('\nEnter a label for this address:')
                 label = raw_input('> ').strip()
                 label = base64.b64encode(label)
                 break
@@ -490,19 +484,19 @@ class my_bitmessage(object):
                 print('Not a valid address, please try again.')
 
         self.api.addSubscription(address, label)
-        print('You are now subscribed to: {0}\n'.format(address))
+        print('You are now subscribed to: {0}'.format(address))
 
 
     def unsubscribe(self):
         while True:
-            address = raw_input('What address would you like to unsubscribe from?').strip()
+            address = raw_input('\nAddress to unsubscribe from? (exit for main menu)').strip()
             if address in ['exit', 'x']:
                 self.main()
 
             uInput = self.userInput('Are you sure, (Y)/(n)')
             if uInput in ['y', 'yes']:
                 self.api.deleteSubscription(address)
-                print('You are now unsubscribed from: ' + address + '\n')
+                print('You are now unsubscribed from: ' + address)
             else:
                 print("You weren't unsubscribed from anything!")
                 break
@@ -576,7 +570,6 @@ class my_bitmessage(object):
     def listAdd(self):
         try:
             jsonAddresses = json.loads(self.api.listAddresses())
-            print(jsonAddresses)
             # Number of addresses
             numAddresses = len(jsonAddresses['addresses'])
         except Exception as e:
@@ -585,22 +578,27 @@ class my_bitmessage(object):
             self.usrPrompt = False
             self.main()
 
-        print('--------------------------------------------------------------------------')
-        print('| # |       Label       |               Address               |S#|Enabled|')
-        print('|---|-------------------|-------------------------------------|--|-------|')
+        print('---------------------------------------------------------------------------')
+        print('| #  |       Label       |               Address               |S#|Enabled|')
+        print('|----|-------------------|-------------------------------------|--|-------|')
         # processes all of the addresses and lists them out
         for addNum in range (0, numAddresses):
             label = str(jsonAddresses['addresses'][addNum]['label'])
-            self.address = str(jsonAddresses['addresses'][addNum]['address'])
+            address = str(jsonAddresses['addresses'][addNum]['address'])
             stream = str(jsonAddresses['addresses'][addNum]['stream'])
             enabled = str(jsonAddresses['addresses'][addNum]['enabled'])
 
             if len(label) > 19:
                 label = label[:16] + '...'
 
-            print('|{0}|{1}|{2}|{3}|{4}|'.format(str(addNum).ljust(3), label.ljust(19), self.address.ljust(37), stream.ljust(1), enabled.ljust(7)))
+            if len(str(addNum)) > 999:
+                addNum = '999+'
 
-        print('--------------------------------------------------------------------------\n')
+            # Proper formatting
+            print('|{0:^4}|{1:^19}|{2:^37}|{3:^2}|{4:^7}|'.format(str(addNum), label, address,
+                                                                  stream, enabled))
+
+        print('---------------------------------------------------------------------------')
 
 
     # Generate address
@@ -1393,12 +1391,12 @@ class my_bitmessage(object):
             print('|----------------------------------------------------------------------|')
             print('|   Command               | Description                                |')
             print('|-------------------------|--------------------------------------------|')
-            print('| help                    | This help file.                            |')
+            print('| help or h or ?          | This help file.                            |')
             print('| apiTest                 | Tests the API                              |')
             print('| addInfo                 | Returns address information (If valid)     |')
             print('| bmSettings              | BitMessage settings                        |')
-            print('| exit                    | Use anytime to return to main menu         |')
-            print('| quit                    | Quits the program                          |')
+            print('| exit or x               | Use anytime to return to main menu         |')
+            print('| quit or q               | Quits the program                          |')
             print('|-------------------------|--------------------------------------------|')
             print('| listAddresses           | Lists all of the users addresses           |')
             print('| generateAddress         | Generates a new address                    |')
@@ -1432,38 +1430,38 @@ class my_bitmessage(object):
 
         # Quits the program
         elif usrInput in ['quit']:
-            print('\nBye')
-            sys.exit()
+            sys.exit(0)
 
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest() is True:
-                print('API connection test has: PASSED\n')
+                print('API connection test has: PASSED')
             else:
-                print('API connection test has: FAILED\n')
+                print('API connection test has: FAILED')
             self.main()
 
         elif usrInput in ['addinfo']:
-            tmp_address = self.userInput('\nEnter the Bitmessage Address.')
-            address_information = self.api.decodeAddress(tmp_address)
-            print(address_information)
+            while True:
+                print('\nEnter the Bitmessage Address:')
+                address = raw_input('> ').strip()
+                if address in ['exit', 'x']:
+                    break
+                try:
+                    address_information = json.loads(str(self.api.decodeAddress(address)))
+                except AttributeError:
+                    print('Invalid address!')
 
-            print('\n------------------------------')
-
-            if 'success' in str(address_information.get('status')):
-                print('Valid Address')
-                print('Address Version: {0}'.format(str(address_information.get('addressVersion'))))
-                print('Stream Number: {0}'.format((address_information.get('streamNumber'))))
-            else:
-                print('Invalid Address!')
-
-            print('------------------------------\n')
-            self.main()
+                if 'success' in address_information['status']:
+                    print('Valid address!')
+                    print('Address Version: {0}'.format(address_information['addressVersion']))
+                    print('Stream Number: {0}'.format(address_information['streamNumber']))
+                    self.main()
+                else:
+                    print('Invalid address!')
 
         # tests the API Connection.
         elif usrInput in ['bmsettings']:
             self.bmSettings()
-            print('')
             self.main()
 
         # Quits the application
@@ -1481,29 +1479,32 @@ class my_bitmessage(object):
             uInput = self.userInput('\nWould you like to create a (D)eterministic or (R)andom address?')
 
             # Creates a deterministic address
-            if uInput == 'd' or uInput == 'determinstic':
+            if uInput in ['deterministic', 'd']:
                 deterministic = True
 
-                lbl = self.userInput('Label the new address:')
-                passphrase = self.userInput('Enter the Passphrase.')
-                numOfAdd = int(self.userInput('How many addresses would you like to generate?'))
+                lbl = self.userInput('\nLabel the new address:')
+                passphrase = self.userInput('\nEnter the Passphrase.')
+                
+                numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
                 addVNum = 3
                 streamNum = 1
                 isRipe = self.userInput('Shorten the address, (Y)/(n)')
+
+                if isRipe not in ['exit', 'x']:
+                    print('Generating, please wait...')
+                else:
+                    self.usrPrompt = True
+                    self.main()
 
                 if isRipe in ['yes', 'y']:
                     ripe = True
                     print(self.genAdd(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe))
                     self.main()
-                elif isRipe in ['no', 'n']:
+                else:
                     ripe = False
                     print(self.genAdd(lbl, deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe))
                     self.main()
-                elif isRipe in ['exit', 'x']:
-                    self.usrPrompt = True
-                    self.main()
-                else:
-                    print('Invalid input\n')
+
                     self.main()
 
             # Creates a random address with user-defined label
@@ -1841,7 +1842,7 @@ class my_bitmessage(object):
             self.main()
 
         else:
-            print('{0} is not a command.\n'.format(usrInput))
+            print('{0} is not a command.'.format(usrInput))
             self.usrPrompt = True
             self.main()
 
@@ -1858,11 +1859,11 @@ class my_bitmessage(object):
                 self.api = xmlrpclib.ServerProxy(self.apiData())
 
                 if self.apiTest() is False:
-                    print('****************************************************************')
-                    print('WARNING: You are not connected to the Bitmessage client.')
-                    print('Either Bitmessage is not running or your settings are incorrect.')
-                    print('Use the command ''apiTest'' or ''bmSettings'' to resolve this issue.')
-                    print('****************************************************************')
+                    print("\n****************************************************************")
+                    print("    WARNING: You are not connected to the Bitmessage client.")
+                    print("Either Bitmessage is not running or your settings are incorrect.")
+                    print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
+                    print("****************************************************************")
 
             elif self.usrPrompt is True:
                 pass
