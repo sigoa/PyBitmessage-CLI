@@ -530,7 +530,7 @@ class my_bitmessage(object):
             print(e)
             print('Connection Error\n')
             self.usrPrompt = False
-            main(self)
+            self.main()
 
 
     def joinChan(self):
@@ -542,7 +542,8 @@ class my_bitmessage(object):
             if password:
                 password = base64.b64encode(password)
                 try:
-                    print(self.api.joinChan(password, address))
+                    if 'success' in self.api.joinChan(password, address):
+                        print('Successfully joined {0}'.format(address))
                 except Exception as e:
                     print(e)
                     print('Connection Error\n')
@@ -554,11 +555,11 @@ class my_bitmessage(object):
         while True:
             print('\nEnter channel address:')
             address = raw_input('> ').strip()
+            if self.validAddress(address):
+                break
         try:
             if 'success' in self.api.leaveChan(address):
-                print('?')
-            else:
-                print('!')
+                print('Successfully left {0}'.format(address))
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1011,8 +1012,6 @@ Encoding:base64
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
-                
-        print('')
     
         if msgNum >= numMessages:
             print('Invalid Message Number.\n')
@@ -1044,12 +1043,10 @@ Encoding:base64
 
                 uInput = self.userInput('Attachment Detected. Would you like to save the attachment, (Y)/(n)')
                 if uInput in ['y', 'yes']:
-
                     attachment = message[attPos+9:attEndPos]
                     self.saveFile(fileName,attachment)
 
                 message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
-
             else:
                 break
 
