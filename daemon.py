@@ -347,7 +347,7 @@ class my_bitmessage(object):
 
         uInput = self.userInput('Would you like to modify any of these settings, (Y)/(n)')
 
-        if uInput == 'y':
+        if uInput in ['yes', 'y']:
             # loops if they mistype the setting name, they can exit the loop with 'exit')
             while True:
                 invalidInput = False
@@ -443,7 +443,7 @@ class my_bitmessage(object):
                         break
 
 
-        elif uInput == 'n':
+        elif uInput in ['no', 'n']:
             self.usrPrompt = True
             self.main()
         else:
@@ -866,7 +866,7 @@ Encoding:base64
                 while True:
                     fromAddress = self.userInput('\nEnter an Address or Address Label to send from.')
 
-                    if fromAddress == 'exit':
+                    if fromAddress in ['exit', 'x']:
                         self.usrPrompt = True
                         self.main()
 
@@ -911,7 +911,7 @@ Encoding:base64
                 message = self.userInput('Enter your Message.')
 
                 uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
-                if uInput == 'y':
+                if uInput in ['yes', 'y']:
                     message = message + '\n\n' + self.attachment()
 
                 message = base64.b64encode(message)
@@ -960,6 +960,7 @@ Encoding:base64
                 if not message['read']:
                     messagesUnread += 1
 
+            # TODO - why use the %?
             if messagesPrinted % 20 == 0 and messagesPrinted != 0:
                 uInput = self.userInput('(Press Enter to continue or type (Exit) to return to the main menu.)')
 
@@ -994,6 +995,7 @@ Encoding:base64
 
             print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
 
+            # TODO - why use the %?
             if msgNum % 20 == 0 and msgNum != 0:
                 uInput = self.userInput('Press Enter to continue or type ''Exit'' to return to the main menu.')
 
