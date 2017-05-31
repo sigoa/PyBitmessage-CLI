@@ -36,7 +36,6 @@ class my_bitmessage(object):
         self.keysName = 'keys.dat'
         self.keysPath = 'keys.dat'
         self.knownAddresses = {}
-        self.address = None
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -754,7 +753,6 @@ Encoding:base64
             print('Another attachment was not added.')
 
         theAttachmentS = theAttachmentS + theAttachment
-        print(theAttachmentS)
         return theAttachmentS
 
 
@@ -840,7 +838,6 @@ Encoding:base64
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-            print(ackData)
             print('Message Status:', self.api.getStatus(ackData), '\n')
         except Exception as e:
             print(e)
@@ -875,10 +872,10 @@ Encoding:base64
                     # processes all of the addresses
                     for addNum in range (0, numAddresses):
                         label = jsonAddresses['addresses'][addNum]['label']
-                        self.address = jsonAddresses['addresses'][addNum]['address']
+                        address = jsonAddresses['addresses'][addNum]['address']
                         # address entered was found and is a label
                         if fromAddress == label:
-                            fromAddress = self.address
+                            fromAddress = address
                             found = True
                             break
 
@@ -888,9 +885,9 @@ Encoding:base64
                         else:
                             # processes all of the addresses
                             for addNum in range (0, numAddresses):
-                                self.address = jsonAddresses['addresses'][addNum]['address']
+                                address = jsonAddresses['addresses'][addNum]['address']
                                 # address entered was found in our addressbook
-                                if fromAddress == self.address:
+                                if fromAddress == address:
                                     found = True
                                     break
 
@@ -926,6 +923,7 @@ Encoding:base64
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
+
 
     # Lists the messages by: Message Number, To Address Label,
     # From Address Label, Subject, Received Time
@@ -1226,6 +1224,7 @@ Encoding:base64
             self.usrPrompt = False
             self.main()
         return msgAck
+
 
     def getLabelForAddress(self, address):
         if self.knownAddresses:
