@@ -56,9 +56,9 @@ class my_bitmessage(object):
 
     # Prompts the user to restart Bitmessage.
     def restartBmNotify(self):
-        print('*******************************************************************')
+        print('-------------------------------------------------------------------')
         print('WARNING: If Bitmessage is running locally, you must restart it now.')
-        print('*******************************************************************')
+        print('-------------------------------------------------------------------')
 
 
     def safeConfigGetBoolean(self, section, field):
@@ -138,10 +138,10 @@ class my_bitmessage(object):
                 return True
 
             elif uInput in ['n', 'no']:
-                print('\n************************************************************')
+                print('\n------------------------------------------------------------')
                 print('        Daemon will not work when the API is disabled.')
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                print('************************************************************')
+                print('------------------------------------------------------------')
             else:
                 print('Invalid Entry')
             self.usrPrompt = True
@@ -190,9 +190,9 @@ class my_bitmessage(object):
                 self.restartBmNotify()
 
             elif uInput in ['no', 'n']:
-                print('***********************************************************')
+                print('------------------------------------------------------------')
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                print('***********************************************************\n')
+                print('------------------------------------------------------------\n')
             else:
                 print('Invalid entry')
             self.usrPrompt = True
@@ -274,7 +274,6 @@ class my_bitmessage(object):
 
         # Build the api credentials
         return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername, apiPassword, apiInterface, str(apiPort))
-
 #####
 # End keys.dat interactions
 #####
@@ -626,7 +625,7 @@ class my_bitmessage(object):
 
 
     # Allows attachments and messages/broadcats to be saved
-    def saveFile(fileName, fileData):
+    def saveFile(self, fileName, fileData):
         # This section finds all invalid characters and replaces them with ~
         fileName = fileName.strip()
         fileName = fileName.replace('/', '~')
@@ -672,88 +671,90 @@ class my_bitmessage(object):
                 print('{0} was not found on your filesystem or can not be opened.\n'.format(filePath))
                 pass
 
-        while True:
-            invSize = os.path.getsize(filePath)
-            # Converts to kilobytes
-            invSize = (invSize / 1024)
-            # Rounds to two decimal places
-            round(invSize, 2)
+        invSize = os.path.getsize(filePath)
+        # Converts to kilobytes
+        invSize = (invSize / 1024)
+        # Rounds to two decimal places
+        round(invSize, 2)
 
-            # If over 500KB
-            if invSize > 500.0:
-                print('WARNING:The file that you are trying to attach is {0}KB and will take considerable time to send.'.format(invSize))
-                uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
+        # If over 200KB
+        if invSize > 200.0:
+            print('WARNING: The maximum message size including attachments, body, and headers is 262,144 bytes.')
+            print("If you reach over this limit, your message won't send.")
+            uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
 
-                if uInput not in ['y']:
-                    print('Attachment discarded.\n')
-                    return ''
-            # If larger than 180MB, discard
-            elif invSize > 184320.0:
-                print('Attachment too big, maximum allowed size is 180MB\n')
-                self.main()
+            if uInput not in ['yes', 'y']:
+                print('Attachment discarded.\n')
+                return ''
 
-            # Gets the length of the filepath excluding the filename
-            pathLen = len(str(ntpath.basename(filePath)))
-            # reads the filename
-            fileName = filePath[(len(str(filePath)) - pathLen):]
+        # If larger than 262KB, discard
+        elif invSize > 262.0:
+            print('Attachment too big, maximum allowed size is 262KB\n')
+            self.main()
 
-            # Tests if it is an image file
-            filetype = imghdr.what(filePath)
-            if filetype is not None:
-                print('---------------------------------------------------')
-                print('Attachment detected as an Image.')
-                print('<img> tags will automatically be included,')
-                print('allowing the recipient to view the image')
-                print('using the ''View HTML code...'' option in Bitmessage.')
-                print('---------------------------------------------------\n')
-                isImage = True
-                time.sleep(2)
+        # Gets the length of the filepath excluding the filename
+        pathLen = len(str(ntpath.basename(filePath)))
+        # reads the filename
+        fileName = filePath[(len(str(filePath)) - pathLen):]
 
-            # Alert the user that the encoding process may take some time
-            print('Encoding attachment, please wait ...\n')
+        # Tests if it is an image file
+        filetype = imghdr.what(filePath)
+        if filetype is not None:
+            print('---------------------------------------------------')
+            print('Attachment detected as an Image.')
+            print('<img> tags will automatically be included,')
+            print('allowing the recipient to view the image')
+            print('using the ''View HTML code...'' option in Bitmessage.')
+            print('---------------------------------------------------\n')
+            isImage = True
+            time.sleep(2)
 
-            # Begin the actual encoding
-            with open(filePath, 'rb') as f:
-                # Reads files up to 180MB, the maximum size for Bitmessage
-                data = f.read(188743680)
-                data = base64.b64encode(data)
+        # Alert the user that the encoding process may take some time
+        print('Encoding attachment, please wait ...\n')
 
-            # If it is an image, include image tags in the message
-            if isImage is True:
-                theAttachment = """
-    <!-- Note: Image attachment below. Please use the right click 'View HTML code ...' option to view it. -->
-    <!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
+        # Begin the actual encoding
+        with open(filePath, 'rb') as f:
+            # Reads files up to 180MB, the maximum size for Bitmessage
+            data = f.read(188743680)
+            data = base64.b64encode(data)
 
-    Filename:{0}
-    Filesize:{1}KB
-    Encoding:base64
+        # If it is an image, include image tags in the message
+        if isImage is True:
+            theAttachment = """
+<!-- Note: Image attachment below. Please use the right click "View HTML code ..." option to view it. -->
+<!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
 
-    <center>
-        <div id='image'>
-            <img alt = '{2}' src='data:image/{3};base64, {4}' />
-        </div>
-    </center>""".format(fileName,invSize,fileName,filetype,data)
-            # Else it is not an image so do not include the embedded image code.
-            else:
-                theAttachment = """
-    <!-- Note: File attachment below. Please use a base64 decoder, or Daemon, to save it. -->
-    <!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
+Filename:{0}
+Filesize:{1}KB
+Encoding:base64
 
-    Filename:{0}
-    Filesize:{1}KB
-    Encoding:base64
+<center>
+    <div id="image">
+        <img alt = "{2}" src='data:image/{3};base64, {4}' />
+    </div>
+</center>""".format(fileName, invSize, fileName, filetype, data)
+        # Else it is not an image so do not include the embedded image code.
+        else:
+            theAttachment = """
+<!-- Note: File attachment below. Please use a base64 decoder, or Daemon, to save it. -->
+<!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
 
-    <attachment alt = '{2}' src='data:file/{3};base64, {4}' />""".format(fileName,invSize,fileName,fileName,data)
+Filename:{0}
+Filesize:{1}KB
+Encoding:base64
 
-            uInput = self.userInput('Would you like to add another attachment, (Y)/(n)')
+<attachment alt = "{2}" src='data:file/{3};base64, {4}' />""".format(fileName, invSize, fileName, fileName, data)
 
-            # Allows multiple attachments to be added to one message
-            if uInput in ['yes', 'y']:
-                theAttachmentS = '{0}{1}\n\n'.format(str(theAttachmentS), str(theAttachment))
-            elif uInput in ['no', 'n']:
-                break
+        uInput = self.userInput('Would you like to add another attachment, (Y)/(n)')
+
+        # Allows multiple attachments to be added to one message
+        if uInput in ['yes', 'y']:
+            theAttachmentS = '{0}{1}\n\n'.format(str(theAttachmentS), str(theAttachment))
+        else:
+            print('Another attachment was not added.')
 
         theAttachmentS = theAttachmentS + theAttachment
+        print(theAttachmentS)
         return theAttachmentS
 
 
@@ -839,6 +840,7 @@ class my_bitmessage(object):
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
+            print(ackData)
             print('Message Status:', self.api.getStatus(ackData), '\n')
         except Exception as e:
             print(e)
@@ -945,14 +947,13 @@ class my_bitmessage(object):
             # if we are displaying all messages or
             # if this message is unread then display it
             if not unreadOnly or not message['read']:
-                print(self.getLabelForAddress(message))
                 print('-----------------------------------\n')
                 # Message Number
                 print('Message Number: {0}'.format(msgNum))
                 # Get the to address
-                print('To: {0}'.format(self.getLabelForAddress(message['toAddress'])))
+                print('To: {0}'.format(message['toAddress']))
                 # Get the from address
-                print('From: {0}'.format(self.getLabelForAddress(message['fromAddress'])))
+                print('From: {0}'.format(message['fromAddress']))
                 # Get the subject
                 print('Subject: {0}'.format(base64.b64decode(message['subject'])))
                 print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
@@ -1047,7 +1048,7 @@ class my_bitmessage(object):
                 if uInput in ['y', 'yes']:
 
                     attachment = message[attPos+9:attEndPos]
-                    saveFile(fileName,attachment)
+                    self.saveFile(fileName,attachment)
 
                 message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
 
@@ -1063,9 +1064,7 @@ class my_bitmessage(object):
         #Get the status
         print('Status:'.format(outboxMessages['sentMessages'][msgNum]['status']))
         print('Last Action Time:'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-        print('Message:\n')
-        print(message)
-        print('')
+        print('Message: {0}\n'.format(message))
 
 
     # Opens a message for reading
@@ -1110,10 +1109,9 @@ class my_bitmessage(object):
                     fileName = 'Attachment'
 
                 uInput = self.userInput('Attachment Detected. Would you like to save the attachment, (Y)/(n)')
-                if uInput == 'y' or uInput == 'yes':
-
+                if uInput in ['yes', 'y']:
                     attachment = message[attPos+9:attEndPos]
-                    saveFile(fileName,attachment)
+                    self.saveFile(fileName,attachment)
 
                 message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
 
@@ -1230,13 +1228,16 @@ class my_bitmessage(object):
         return msgAck
 
     def getLabelForAddress(self, address):
-        if address in self.knownAddresses:
-            return self.knownAddresses[address]
-        else:
-            self.buildKnownAddresses()
+        if self.knownAddresses:
+            print(self.knownAddresses)
             if address in self.knownAddresses:
                 return self.knownAddresses[address]
-        return address
+            else:
+                self.buildKnownAddresses()
+                print(self.knownAddresses)
+                if address in self.knownAddresses:
+                    return self.knownAddresses[address]
+            return address
 
 
     def buildKnownAddresses(self):
@@ -1562,17 +1563,17 @@ class my_bitmessage(object):
             self.main()
 
         elif usrInput in ['inbox']:
-            print('Loading...')
+            print('Loading...\n')
             self.inbox(False)
             self.main()
 
         elif usrInput in ['unread']:
-            print('Loading...')
+            print('Loading...\n')
             self.inbox(True)
             self.main()
 
         elif usrInput in ['outbox']:
-            print('Loading...')
+            print('Loading...\n')
             self.outbox()
             self.main()
 
@@ -1595,10 +1596,14 @@ class my_bitmessage(object):
             uInput = self.userInput('\nWould you like to read a message from the (I)nbox or (O)utbox?')
 
             if uInput in ['inbox', 'outbox', 'i', 'o']:
-                msgNum = self.userInput('\nWhat is the number of the message you wish to open?')
+                try:
+                    msgNum = self.userInput('\nWhat is the number of the message you wish to open?')
+                    msgNum = int(msgNum)
+                except ValueError:
+                    print("That's not a whole number")
 
             if uInput in ['inbox', 'i']:
-                print('Loading...')
+                print('Loading...\n')
                 messageID = self.readMsg(msgNum)
 
                 uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)')
@@ -1607,16 +1612,16 @@ class my_bitmessage(object):
                     self.markMessageRead(messageID)
                     self.usrPrompt = True
 
-                uInput = self.userInput('\nWould you like to (D)elete, (F)orward, (R)eply to, or (Exit) this message?')
+                uInput = self.userInput('\nWould you like to (D)elete, (F)orward, or (R)eply to this message?')
 
                 if uInput in ['reply', 'r']:
-                    print('Loading...')
+                    print('Loading...\n')
                     print('')
                     self.replyMsg(msgNum,'reply')
                     self.usrPrompt = True
 
                 elif uInput in ['forward', 'f']:
-                    print('Loading...')
+                    print('Loading...\n')
                     print('')
                     self.replyMsg(msgNum,'forward')
                     self.usrPrompt = True
@@ -1631,6 +1636,9 @@ class my_bitmessage(object):
                         self.usrPrompt = True
                     else:
                         self.usrPrompt = True
+
+                elif uInput in ['exit', 'x']:
+                    self.usrPrompt = True
 
                 else:
                     print('Invalid entry')
@@ -1858,19 +1866,19 @@ class my_bitmessage(object):
         try:
             if self.usrPrompt is False:
                 print('')
-                print('----------------------------------')
-                print('| Bitmessage Daemon by Lvl4Sword  |')
-                print('|    Version 0.4 for BM 0.6.2     |')
-                print('----------------------------------')
+                print(' --------------------------------')
+                print('| Bitmessage Daemon by Lvl4Sword |')
+                print('|    Version 0.4 for BM 0.6.2    |')
+                print(' --------------------------------')
                 # Connect to BitMessage using these api credentials
                 self.api = xmlrpclib.ServerProxy(self.apiData())
 
                 if self.apiTest() is False:
-                    print("\n****************************************************************")
+                    print("\n----------------------------------------------------------------")
                     print("    WARNING: You are not connected to the Bitmessage client.")
                     print("Either Bitmessage is not running or your settings are incorrect.")
                     print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
-                    print("****************************************************************")
+                    print("----------------------------------------------------------------")
 
             elif self.usrPrompt is True:
                 pass
