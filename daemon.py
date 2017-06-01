@@ -47,10 +47,34 @@ class my_bitmessage(object):
             print('{0}'.format(message))
         try:
             uInput = raw_input('> ').lower().strip()
+            if uInput in ['exit', 'x']:
+                self.usrPrompt = True
+                self.main()
+            elif uInput in ['quit', 'q']:
+                print('Bye\n')
+                sys.exit(0)
+            else:
+                return uInput
         except (EOFError, KeyboardInterrupt):
             print('')
             sys.exit()
-        return uInput
+
+
+    def userInputStrip(self, message):
+        print('{0}'.format(message))
+        try:
+            uInput = raw_input('> ').strip()
+            if uInput.lower() in ['exit', 'x']:
+                self.usrPrompt = True
+                self.main()
+            elif uInput.lower() in ['quit', 'q']:
+                print('Bye\n')
+                sys.exit(0)
+            else:
+                return uInput
+        except (EOFError, KeyboardInterrupt):
+            print('')
+            sys.exit()
 
 
     # Prompts the user to restart Bitmessage.
@@ -67,7 +91,6 @@ class my_bitmessage(object):
             return config.getboolean(section,field)
         except Exception as e:
             print(e)
-            print('safeConfigGetBoolean')
             return False
 
 
@@ -132,7 +155,7 @@ class my_bitmessage(object):
                 config.set('bitmessagesettings','apienabled','true')
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
-                print('Enabled')
+                print('API now Enabled')
                 self.restartBmNotify()
                 return True
 
@@ -353,10 +376,7 @@ class my_bitmessage(object):
                 invalidInput = False
                 uInput = self.userInput('\nWhat setting would you like to modify?')
 
-                if uInput in ['exit', 'x']:
-                    break
-
-                elif uInput == 'port':
+                if uInput == 'port':
                     print('Current port number: {0}\n'.format(port))
                     uInput = self.userInput('Enter the new port number.')
                     config.set('bitmessagesettings', 'port', str(uInput))
@@ -432,13 +452,13 @@ class my_bitmessage(object):
                     invalidInput = True
 
                 # don't prompt if they made a mistake. 
-                if not invalidInput and uInput not in ['exit', 'x']:
+                if not invalidInput:
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)')
 
                     if uInput != 'y':
-                        print('Changes Made.\n')
                         with open(self.keysPath, 'wb') as configfile:
                             config.write(configfile)
+                        print('Changes made\n')
                         self.restartBmNotify()
                         break
 
@@ -468,15 +488,11 @@ class my_bitmessage(object):
 
     def subscribe(self):
         while True:
-            print('\nAddress you would like to subscribe to:')
-            address = raw_input('> ').strip()
+            address = self.userInputStrip('\nAddress you would like to subscribe to:')
             if self.validAddress(address):
-                print('\nEnter a label for this address:')
-                label = raw_input('> ').strip()
+                label = self.userInputStrip('\nEnter a label for this address:')
                 label = base64.b64encode(label)
                 break
-            elif address.lower() in ['exit', 'x']:
-                self.main()
             else:
                 print('Not a valid address, please try again.')
 
@@ -486,20 +502,15 @@ class my_bitmessage(object):
 
     def unsubscribe(self):
         while True:
-            print('\nEnter the address to unsubscribe from:')
-            address = raw_input('> ').strip()
-            if address in ['exit', 'x']:
-                self.usrPrompt = True
-                self.main()
-            else:
-                if self.validAddress(address):
-                    uInput = self.userInput('\nAre you sure, (Y)/(n)')
-                    if uInput in ['y', 'yes']:
-                        self.api.deleteSubscription(address)
-                        print('You are now unsubscribed from: ' + address)
-                    else:
-                        print("You weren't unsubscribed from anything.")
-                    break
+            address = self.userInputStrip('\nEnter the address to unsubscribe from:')
+            if self.validAddress(address):
+                uInput = self.userInput('\nAre you sure, (Y)/(n)')
+                if uInput in ['y', 'yes']:
+                    self.api.deleteSubscription(address)
+                    print('You are now unsubscribed from: ' + address)
+                else:
+                    print("You weren't unsubscribed from anything.")
+                break
 
 
     def listSubscriptions(self):
@@ -521,8 +532,7 @@ class my_bitmessage(object):
 
 
     def createChan(self):
-        print('\nEnter channel name:')
-        password = raw_input('> ').strip()
+        password = self.userInputStrip('\nEnter channel name:')
         password = base64.b64encode(password)
         try:
             print('Channel password: ' + self.api.createChan(password))
@@ -534,11 +544,9 @@ class my_bitmessage(object):
 
 
     def joinChan(self):
-        print('\nEnter channel address:')
-        address = raw_input('> ').strip()
+        address = self.userInputStrip('\nEnter channel address:')
         if self.validAddress(address):
-            print('\nEnter channel name:')
-            password = raw_input('> ').strip()
+            password = self.userInputStrip('\nEnter channel name:')
             if password:
                 password = base64.b64encode(password)
                 try:
@@ -553,8 +561,7 @@ class my_bitmessage(object):
 
     def leaveChan(self):
         while True:
-            print('\nEnter channel address:')
-            address = raw_input('> ').strip()
+            address = self.userInputStrip('\nEnter channel address:')
             if self.validAddress(address):
                 break
         try:
@@ -660,8 +667,7 @@ class my_bitmessage(object):
             isImage = False
             theAttachment = ''
 
-            print('\nPlease enter the path to the attachment or just the attachment name if in this folder.')
-            filePath = raw_input('> ').strip()
+            filePath = self.userInputStrip('\nPlease enter the path to the attachment')
             print('\n')
 
             try:
@@ -762,8 +768,7 @@ Encoding:base64
     def sendMsg(self, toAddress, fromAddress, subject, message):
         if self.validAddress(toAddress) is False:
             while not self.validAddress(toAddress):
-                print('\nWhat is the To Address?:')
-                toAddress = raw_input('> ').strip()
+                toAddress = self.userInputStrip('\nWhat is the To Address?')
                 if self.validAddress(toAddress):
                     break
 
@@ -782,12 +787,7 @@ Encoding:base64
             if numAddresses > 1:
                 found = False
                 while True:
-                    print('\nEnter an Address or Address Label to send from: ')
-                    fromAddress = raw_input('> ').strip()
-
-                    if fromAddress in ['exit', 'x']:
-                        self.usrPrompt = True
-                        self.main()
+                    fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from')
 
                     # processes all of the addresses
                     for addNum in range (0, numAddresses):
@@ -823,23 +823,21 @@ Encoding:base64
                 fromAddress = jsonAddresses['addresses'][0]['address']
 
         if subject == '':
-            print('\nEnter your Subject.')
-            subject = raw_input('> ').strip()
+            subject = self.userInputStrip('\nEnter your subject')
             subject = base64.b64encode(subject)
 
         if message == '':
-            print('\nEnter your Message.')
-            message = raw_input('> ').strip()
+            message = self.userInputStrip('\nEnter your message.')
 
             uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').strip()
 
             if uInput in ['yes', 'y']:
-                message = message + '\n\n' + self.attachment()
+                message = '{0}\n\n{1}'.format(message, self.attachment())
             message = base64.b64encode(message)
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-            print('Message Status:', self.api.getStatus(ackData), '\n')
+            print('Message Status: {0}\n'.format(self.api.getStatus(ackData)))
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -865,10 +863,6 @@ Encoding:base64
                 found = False
                 while True:
                     fromAddress = self.userInput('\nEnter an Address or Address Label to send from.')
-
-                    if fromAddress in ['exit', 'x']:
-                        self.usrPrompt = True
-                        self.main()
 
                     # processes all of the addresses
                     for addNum in range (0, numAddresses):
@@ -1422,15 +1416,6 @@ Encoding:base64
             print('------------------------------------------------------------------------')
             self.main()
 
-        # Returns the user to the main menu
-        elif usrInput in ['exit']:
-            self.usrPrompt = True
-            self.main()
-
-        # Quits the program
-        elif usrInput in ['quit']:
-            sys.exit(0)
-
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest() is True:
@@ -1441,10 +1426,7 @@ Encoding:base64
 
         elif usrInput in ['addinfo']:
             while True:
-                print('\nEnter the Bitmessage Address:')
-                address = raw_input('> ').strip()
-                if address in ['exit', 'x']:
-                    break
+                address = self.userInputStrip('\nEnter the Bitmessage Address:')
                 try:
                     address_information = json.loads(str(self.api.decodeAddress(address)))
                 except AttributeError:
@@ -1462,11 +1444,6 @@ Encoding:base64
         elif usrInput in ['bmsettings']:
             self.bmSettings()
             self.main()
-
-        # Quits the application
-        elif usrInput in ['quit', 'q']:
-            print('Bye\n')
-            sys.exit()
 
         # Lists all of the identities in the addressbook
         elif usrInput in ['listaddresses']:
@@ -1488,12 +1465,7 @@ Encoding:base64
                 addVNum = 3
                 streamNum = 1
                 isRipe = self.userInput('Shorten the address, (Y)/(n)')
-
-                if isRipe not in ['exit', 'x']:
-                    print('Generating, please wait...')
-                else:
-                    self.usrPrompt = True
-                    self.main()
+                print('Generating, please wait...')
 
                 if isRipe in ['yes', 'y']:
                     ripe = True
@@ -1608,7 +1580,6 @@ Encoding:base64
 
                 if uInput not in ['yes', 'y']:
                     self.markMessageRead(messageID)
-                    self.usrPrompt = True
 
                 uInput = self.userInput('\nWould you like to (D)elete, (F)orward, or (R)eply to this message?')
 
@@ -1616,13 +1587,11 @@ Encoding:base64
                     print('Loading...\n')
                     print('')
                     self.replyMsg(msgNum,'reply')
-                    self.usrPrompt = True
 
                 elif uInput in ['forward', 'f']:
                     print('Loading...\n')
                     print('')
                     self.replyMsg(msgNum,'forward')
-                    self.usrPrompt = True
 
                 elif uInput in ['delete', 'd']:
                     # Prevent accidental deletion
@@ -1631,16 +1600,8 @@ Encoding:base64
                     if uInput in ['yes', 'y']:
                         self.delMsg(msgNum)
                         print('Message Deleted.')
-                        self.usrPrompt = True
-                    else:
-                        self.usrPrompt = True
-
-                elif uInput in ['exit', 'x']:
-                    self.usrPrompt = True
-
                 else:
                     print('Invalid entry')
-                    self.usrPrompt = True
 
             elif uInput in ['outbox', 'o']:
                 self.readSentMsg(msgNum)
@@ -1654,18 +1615,12 @@ Encoding:base64
                     if uInput in ['yes', 'y']:
                         self.delSentMsg(msgNum)
                         print('Message Deleted.')
-                        self.usrPrompt = True
-                    else:
-                        self.usrPrompt = True
-
                 else:
                     print('Invalid Entry')
-                    self.usrPrompt = True
+                self.usrPrompt
             else:
                 print('Invalid Input.\n')
-                self.usrPrompt = True
-                self.main()
-
+            self.usrPrompt = True
             self.main()
 
         elif usrInput in ['save']:
@@ -1684,8 +1639,7 @@ Encoding:base64
                     try:
                         msgNum = int(self.userInput('What is the number of the message you wish to save?'))
                     except ValueError:
-                        if msgNum in ['exit', 'x']:
-                            self.main()
+                        print("That's not a whole number.")
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
@@ -1704,8 +1658,7 @@ Encoding:base64
                     try:
                         msgNum = int(self.userInput('What is the number of the message you wish to save?'))
                     except ValueError:
-                        if msgNum in ['exit', 'x']:
-                            self.main()
+                        print("That's not a whole number.")
 
                     if msgNum >= numMessages:
                         print('Invalid Message Number.\n')
@@ -1732,9 +1685,6 @@ Encoding:base64
 
                 while True:
                     msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the inbox.')
-
-                    if msgNum in ['exit', 'x']:
-                        self.main()
 
                     if msgNum in ['all', 'a']:
                         break
@@ -1803,11 +1753,6 @@ Encoding:base64
                 userPrompt = 1
                 self.main()
 
-        elif usrInput in ['exit']:
-            print('You are already at the main menu. Use ''quit'' to quit.\n')
-            self.usrPrompt = True
-            self.main()
-
         elif usrInput in ['listaddressbookentries']:
             res = self.listAddressBookEntries()
             if res == 20:
@@ -1816,10 +1761,8 @@ Encoding:base64
             self.main()
 
         elif usrInput in ['addaddressbookentry']:
-            print('\nEnter address.')
-            address = raw_input('> ').strip()
-            print('\nEnter label.')
-            label = raw_input('> ').strip()
+            address = self.userInputStrip('\nEnter address')
+            label = self.userInputStrip('\nEnter label')
             res = self.addAddressToAddressBook(address, label)
             if res == 16:
                 print('Error: Address already exists in Address Book.')
@@ -1830,8 +1773,7 @@ Encoding:base64
 
         elif usrInput in ['deleteaddressbookentry']:
             while True:
-                print('\nEnter address')
-                address = raw_input('> ').strip()
+                address = self.userInputStrip('\nEnter address')
                 if self.validAddress(address):
                     res = self.deleteAddressFromAddressBook(address)
                     if res == 20:
