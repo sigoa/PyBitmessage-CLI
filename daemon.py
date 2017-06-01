@@ -544,9 +544,9 @@ class my_bitmessage(object):
 
 
     def joinChan(self):
-        address = self.userInputStrip('\nEnter channel address:')
+        address = self.userInputStrip('\nEnter Channel Address:')
         if self.validAddress(address):
-            password = self.userInputStrip('\nEnter channel name:')
+            password = self.userInputStrip('\nEnter Channel Name:')
             if password:
                 password = base64.b64encode(password)
                 try:
@@ -561,14 +561,30 @@ class my_bitmessage(object):
 
     def leaveChan(self):
         while True:
-            address = self.userInputStrip('\nEnter channel address:')
+            address = self.userInputStrip('\nEnter Channel Address or Label:')
             if self.validAddress(address):
                 break
+            else:
+                jsonAddresses = json.loads(self.api.listAddresses())
+                # Number of addresses
+                numAddresses = len(jsonAddresses['addresses'])
+                # processes all of the addresses and lists them out
+                for addNum in range (0, numAddresses):
+                    label = str(jsonAddresses['addresses'][addNum]['label'])
+                    jsonAddress = str(jsonAddresses['addresses'][addNum]['address'])
+                    if '[chan] {0}'.format(address) == label:
+                        address = jsonAddress
+                        found = True
+                        break
+            if found:
+                break
         try:
-            if 'success' in self.api.leaveChan(address):
+            leavingChannel = self.api.leaveChan(address)
+            if leavingChannel == 'success':
                 print('Successfully left {0}'.format(address))
+            else:
+                print(leavingChannel)
         except Exception as e:
-            print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
@@ -833,8 +849,11 @@ Encoding:base64
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-            if self.api.getStatus(ackData) == 'doingmsgpow':
+            sendMessage = self.api.getStatus(ackData)
+            if sendMessage == 'doingmsgpow':
                 print('Sent!')
+            else:
+                print(sendMessage)
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -859,40 +878,35 @@ Encoding:base64
             if numAddresses > 1:
                 found = False
                 while True:
-                    fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from.')
+                    fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from')
 
-                    # processes all of the addresses
-                    for addNum in range (0, numAddresses):
-                        label = jsonAddresses['addresses'][addNum]['label']
-                        address = jsonAddresses['addresses'][addNum]['address']
-                        # address entered was found and is a label
-                        if fromAddress == label:
-                            fromAddress = address
-                            found = True
-                            break
-
-                    if found is False:
-                        if self.validAddress(fromAddress) is False:
+                    if not self.validAddress(fromAddress):
+                        # processes all of the addresses
+                        for addNum in range (0, numAddresses):
+                            label = jsonAddresses['addresses'][addNum]['label']
+                            # address entered was a label and is found
+                            if fromAddress == label:
+                                found = True
+                                break
+                        if not found:
                             print('Invalid Address. Please try again.\n')
+
+                    else:
+                        for addNum in range (0, numAddresses):
+                            address = jsonAddresses['addresses'][addNum]['address']
+                            # address entered was found in our address book
+                            if fromAddress == address:
+                                found = True
+                                break
+                        if not found:
+                            print('The address entered is not one of yours. Please try again.\n')
                         else:
-                            # processes all of the addresses
-                            for addNum in range (0, numAddresses):
-                                address = jsonAddresses['addresses'][addNum]['address']
-                                # address entered was found in our addressbook
-                                if fromAddress == address:
-                                    found = True
-                                    break
-
-                            if found is False:
-                                print('The address entered is not one of yours. Please try again.\n')
-
-                    if found is True:
-                        # Address was found
-                        break
+                            # Address was found
+                            break
 
             # Only one address in address book
             else:
-                print('Using the only address in the addressbook to send from.\n')
+                print('Using the only address in the addressbook to send from.')
                 fromAddress = jsonAddresses['addresses'][0]['address']
 
         if subject == '':
@@ -909,7 +923,11 @@ Encoding:base64
 
         try:
             ackData = self.api.sendBroadcast(fromAddress, subject, message)
-            print('Message Status: {0}\n'.format(self.api.getStatus(ackData)))
+            sendMessage = self.api.getStatus(ackData)
+            if sendMessage == 'broadcastqueued':
+                print('Broadcast is now in the queue')
+            else:
+                print(sendMessage)
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -1052,7 +1070,7 @@ Encoding:base64
         #Get the status
         print('Status:'.format(outboxMessages['sentMessages'][msgNum]['status']))
         print('Last Action Time:'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-        print('Message: {0}\n'.format(message))
+        print('Message: {0}'.format(message))
 
 
     # Opens a message for reading
@@ -1073,7 +1091,6 @@ Encoding:base64
 ####
 # Begin attachment detection
 ####
-
         message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
         # Allows multiple messages to be downloaded/saved
@@ -1105,7 +1122,6 @@ Encoding:base64
 
             else:
                 break
-
 ####
 #End attachment Detection
 ####
@@ -1117,8 +1133,7 @@ Encoding:base64
         # Get the subject
         print('Subject: {0}'.format(base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])))
         print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-        print('Message:\n')
-        print(message)
+        print('Message: {0}'.format(message))
         return inboxMessages['inboxMessages'][msgNum]['msgid']
 
 
