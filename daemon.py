@@ -736,8 +736,8 @@ class my_bitmessage(object):
 
         # Begin the actual encoding
         with open(filePath, 'rb') as f:
-            # Reads files up to 180MB, the maximum size for Bitmessage
-            data = f.read(188743680)
+            # Reads files up to 262KB
+            data = f.read(262000)
             data = base64.b64encode(data)
 
         # If it is an image, include image tags in the message
@@ -851,9 +851,9 @@ Encoding:base64
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
             sendMessage = self.api.getStatus(ackData)
             if sendMessage == 'doingmsgpow':
-                print('Sent!')
+                print('Message Sent!')
             else:
-                print(sendMessage)
+                print('Could not send Message')
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -927,7 +927,7 @@ Encoding:base64
             if sendMessage == 'broadcastqueued':
                 print('Broadcast is now in the queue')
             else:
-                print(sendMessage)
+                print('Could not send Broadcast')
         except Exception as e:
             print(e)
             print('Connection Error\n')
