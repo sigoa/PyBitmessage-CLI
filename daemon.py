@@ -789,33 +789,29 @@ Encoding:base64
                 while True:
                     fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from')
 
-                    # processes all of the addresses
-                    for addNum in range (0, numAddresses):
-                        label = jsonAddresses['addresses'][addNum]['label']
-                        address = jsonAddresses['addresses'][addNum]['address']
-                        # address entered was a label and is found
-                        if fromAddress == label:
-                            fromAddress = address
-                            found = True
-                            break
-
-                    if found is False:
-                        if self.validAddress(fromAddress) is False:
+                    if not self.validAddress(fromAddress):
+                        # processes all of the addresses
+                        for addNum in range (0, numAddresses):
+                            label = jsonAddresses['addresses'][addNum]['label']
+                            # address entered was a label and is found
+                            if fromAddress == label:
+                                found = True
+                                break
+                        if not found:
                             print('Invalid Address. Please try again.\n')
-                        else:
-                            # processes all of the addresses
-                            for addNum in range (0, numAddresses):
-                                address = jsonAddresses['addresses'][addNum]['address']
-                                # address entered was found in our address book
-                                if fromAddress == address:
-                                    found = True
-                                    break
 
-                            if found is False:
-                                print('The address entered is not one of yours. Please try again.\n')
-                    if found is True:
-                        # Address was found
-                        break
+                    else:
+                        for addNum in range (0, numAddresses):
+                            address = jsonAddresses['addresses'][addNum]['address']
+                            # address entered was found in our address book
+                            if fromAddress == address:
+                                found = True
+                                break
+                        if not found:
+                            print('The address entered is not one of yours. Please try again.\n')
+                        else:
+                            # Address was found
+                            break
 
             # Only one address in address book
             else:
@@ -829,7 +825,7 @@ Encoding:base64
         if message == '':
             message = self.userInputStrip('\nEnter your message.')
 
-            uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').strip()
+            uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)')
 
             if uInput in ['yes', 'y']:
                 message = '{0}\n\n{1}'.format(message, self.attachment())
@@ -837,7 +833,8 @@ Encoding:base64
 
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-            print('Message Status: {0}\n'.format(self.api.getStatus(ackData)))
+            if self.api.getStatus(ackData) == 'doingmsgpow':
+                print('Sent!')
         except Exception as e:
             print(e)
             print('Connection Error\n')
@@ -862,7 +859,7 @@ Encoding:base64
             if numAddresses > 1:
                 found = False
                 while True:
-                    fromAddress = self.userInput('\nEnter an Address or Address Label to send from.')
+                    fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from.')
 
                     # processes all of the addresses
                     for addNum in range (0, numAddresses):
@@ -1204,7 +1201,7 @@ Encoding:base64
 
 
     # Deletes a specified message from the outbox
-    def delSentMsg(msgNum):
+    def delSentMsg(self, msgNum):
         
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
@@ -1720,15 +1717,17 @@ Encoding:base64
                 while True:
                     msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the inbox.')
 
-                    if msgNum in ['all', 'a']:
-                        break
-
-                    elif int(msgNum) >= numMessages:
-                        print('Invalid Message Number.\n')
-
-                    else:
-                        break
-
+                    try:
+                        if int(msgNum) >= numMessages:
+                            print('Invalid Message Number.\n')
+                        else:
+                            break
+                    except ValueError:
+                        if msgNum in ['all', 'a']:
+                            break
+                        else:
+                            print("Input a whole number, 'a', or 'all'")
+                            
                 # Prevent accidental deletion
                 uInput = self.userInput('Are you sure, (Y)/(n)')
 
@@ -1738,12 +1737,12 @@ Encoding:base64
                         # processes all of the messages in the outbox
                         for msgNum in range (0, numMessages):
                             print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
-                            delSentMsg(0)
+                            self.delSentMsg(0)
 
                         print('Outbox is empty.')
                         self.usrPrompt = True
                     else:
-                        delSentMsg(int(msgNum))
+                        self.delSentMsg(int(msgNum))
                     print('Notice: Message numbers may have changed.\n')
                     self.main()
                 else:
