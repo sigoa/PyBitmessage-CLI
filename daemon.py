@@ -547,16 +547,17 @@ class my_bitmessage(object):
         address = self.userInputStrip('\nEnter Channel Address:')
         if self.validAddress(address):
             password = self.userInputStrip('\nEnter Channel Name:')
-            if password:
-                password = base64.b64encode(password)
-                try:
-                    if 'success' in self.api.joinChan(password, address):
-                        print('Successfully joined {0}'.format(address))
-                except Exception as e:
-                    print(e)
-                    print('Connection Error\n')
-                    self.usrPrompt = False
-                    self.main()
+            password = base64.b64encode(password)
+            try:
+                joiningChannel = self.api.joinChan(password, address)
+                if joiningChannel == 'success':
+                    print('Successfully joined {0}'.format(address))
+                elif joiningChannel.endswith('list index out of range'):
+                    print("You're already in that channel")
+            except Exception as e:
+                print('Connection Error\n')
+                self.usrPrompt = False
+                self.main()
 
 
     def leaveChan(self):
