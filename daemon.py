@@ -852,8 +852,7 @@ Encoding:base64
     def sendBrd(self, fromAddress, subject, message):
         if fromAddress == '':
             try:
-                jsonAddresses = json.loads(self.api.listAddresses())
-                print(jsonAddresses)
+                jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
             except Exception as e:
@@ -950,7 +949,7 @@ Encoding:base64
             # if we are displaying all messages or
             # if this message is unread then display it
             if not unreadOnly or not message['read']:
-                print('-----------------------------------\n')
+                print('-----------------------------------')
                 # Message Number
                 print('Message Number: {0}'.format(msgNum))
                 # Get the to address
@@ -976,36 +975,33 @@ Encoding:base64
     def outbox(self):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
-            numMessages = len(outboxMessages['sentMessages'])
         except Exception as e:
             print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
-
+        numMessages = len(outboxMessages)
         # processes all of the messages in the outbox
-        for msgNum in range (0, numMessages):
-            print('-----------------------------------\n')
+        msgNum = 1
+        for each in outboxMessages['sentMessages']:
+            print('-----------------------------------')
             # Message Number
             print('Message Number: {0}'.format(msgNum))
             # Get the to address
-            print('To: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
+            print('To: {0}'.format(each['toAddress']))
             # Get the from address
-            print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
+            print('From: {0}'.format(each['fromAddress']))
             # Get the subject
-            print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
+            print('Subject: {0}'.format(base64.b64decode(each['subject'])))
             # Get the subject
-            print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
+            print('Status: {0}'.format(each['status']))
 
-            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-
-            # TODO - why use the %?
-            if msgNum % 20 == 0 and msgNum != 0:
-                uInput = self.userInput('Press Enter to continue or type ''Exit'' to return to the main menu.')
+            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(each['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+            msgNum += 1
 
         print('-----------------------------------')
         print('There are {0} messages in the outbox.'.format(numMessages))
-        print('-----------------------------------\n')
+        print('-----------------------------------')
 
 
     # Opens a sent message for reading
@@ -1080,7 +1076,7 @@ Encoding:base64
             self.main()
 
         if msgNum >= numMessages:
-            print('Invalid Message Number.\n')
+            print('Invalid Message Number.')
             self.main()
 
 ####
@@ -1538,17 +1534,17 @@ Encoding:base64
             self.main()
 
         elif usrInput in ['inbox']:
-            print('Loading...\n')
+            print('Loading...')
             self.inbox(False)
             self.main()
 
         elif usrInput in ['unread']:
-            print('Loading...\n')
+            print('Loading...')
             self.inbox(True)
             self.main()
 
         elif usrInput in ['outbox']:
-            print('Loading...\n')
+            print('Loading...')
             self.outbox()
             self.main()
 
@@ -1577,62 +1573,64 @@ Encoding:base64
                 except ValueError:
                     print("That's not a whole number")
 
-            if uInput in ['inbox', 'i']:
-                print('Loading...\n')
-                messageID = self.readMsg(msgNum)
+                if uInput in ['inbox', 'i']:
+                    print('Loading...')
+                    messageID = self.readMsg(msgNum)
 
-                uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)')
+                    uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)')
 
-                if uInput not in ['yes', 'y']:
-                    self.markMessageRead(messageID)
+                    if uInput not in ['yes', 'y']:
+                        self.markMessageRead(messageID)
 
-                uInput = self.userInput('\nWould you like to (D)elete, (F)orward, or (R)eply to this message?')
+                    uInput = self.userInput('\nWould you like to (D)elete, (F)orward, or (R)eply to this message?')
 
-                if uInput in ['reply', 'r']:
-                    print('Loading...\n')
-                    print('')
-                    self.replyMsg(msgNum,'reply')
+                    if uInput in ['reply', 'r']:
+                        print('Loading...')
+                        print('')
+                        self.replyMsg(msgNum,'reply')
 
-                elif uInput in ['forward', 'f']:
-                    print('Loading...\n')
-                    print('')
-                    self.replyMsg(msgNum,'forward')
+                    elif uInput in ['forward', 'f']:
+                        print('Loading...')
+                        print('')
+                        self.replyMsg(msgNum,'forward')
 
-                elif uInput in ['delete', 'd']:
-                    # Prevent accidental deletion
-                    uInput = self.userInput('Are you sure, (Y)/(n)')
+                    elif uInput in ['delete', 'd']:
+                        # Prevent accidental deletion
+                        uInput = self.userInput('\nAre you sure, (Y)/(n)')
 
-                    if uInput in ['yes', 'y']:
-                        self.delMsg(msgNum)
-                        print('Message Deleted.')
+                        if uInput in ['yes', 'y']:
+                            self.delMsg(msgNum)
+                            print('Message Deleted.')
+                    else:
+                        print('Invalid entry')
+
+                elif uInput in ['outbox', 'o']:
+                    self.readSentMsg(msgNum)
+                    # Gives the user the option to delete the message
+                    uInput = self.userInput('\nWould you like to (D)elete, or (Exit) this message?')
+
+                    if uInput in ['delete', 'd']:
+                        # Prevent accidental deletion
+                        uInput = self.userInput('Are you sure, (Y)/(n)') 
+
+                        if uInput in ['yes', 'y']:
+                            self.delSentMsg(msgNum)
+                            print('Message Deleted.')
+                    else:
+                        print('Invalid Entry')
+                    self.usrPrompt
                 else:
-                    print('Invalid entry')
-
-            elif uInput in ['outbox', 'o']:
-                self.readSentMsg(msgNum)
-                # Gives the user the option to delete the message
-                uInput = self.userInput('Would you like to (D)elete, or (Exit) this message?')
-
-                if uInput in ['delete', 'd']:
-                    # Prevent accidental deletion
-                    uInput = self.userInput('Are you sure, (Y)/(n)') 
-
-                    if uInput in ['yes', 'y']:
-                        self.delSentMsg(msgNum)
-                        print('Message Deleted.')
-                else:
-                    print('Invalid Entry')
-                self.usrPrompt
+                    print('Invalid Input.')
+                self.usrPrompt = True
+                self.main()
             else:
-                print('Invalid Input.\n')
-            self.usrPrompt = True
-            self.main()
+                print('Inbox or Outbox are the only possible answers.')
 
         elif usrInput in ['save']:
             uInput = self.userInput('Would you like to save a message from the (I)nbox or (O)utbox?')
 
             if uInput not in ['inbox', 'outbox', 'i', 'o']:
-                print('Invalid Input.\n')
+                print('Invalid Input.')
                 self.usrPrompt = True
                 self.main()
 
