@@ -1019,7 +1019,9 @@ Encoding:base64
             print('Invalid Message Number.\n')
             self.main()
 
-        #Begin attachment detection
+        ####
+        # Begin attachment detection
+        ####
         message = base64.b64decode(outboxMessages['sentMessages'][msgNum]['message'])
 
         # Allows multiple messages to be downloaded/saved
@@ -1053,14 +1055,14 @@ Encoding:base64
                 break
 
         # Get the to address
-        print('To: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['toAddress'])))
+        print('To: {0}'.format(outboxMessages['sentMessages'][msgNum]['toAddress']))
         # Get the from address
-        print('From: {0}'.format(self.getLabelForAddress(outboxMessages['sentMessages'][msgNum]['fromAddress'])))
+        print('From: {0}'.format(outboxMessages['sentMessages'][msgNum]['fromAddress']))
         # Get the subject
-        print('Subject:'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
+        print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
         #Get the status
-        print('Status:'.format(outboxMessages['sentMessages'][msgNum]['status']))
-        print('Last Action Time:'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+        print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
+        print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
         print('Message: {0}'.format(message))
 
 
@@ -1079,9 +1081,9 @@ Encoding:base64
             print('Invalid Message Number.')
             self.main()
 
-####
-# Begin attachment detection
-####
+        ####
+        # Begin attachment detection
+        ####
         message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
         # Allows multiple messages to be downloaded/saved
@@ -1118,9 +1120,9 @@ Encoding:base64
 ####
 
         # Get the to address
-        print('To: {0}'.format(self.getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['toAddress'])))
+        print('To: {0}'.format(inboxMessages['inboxMessages'][msgNum]['toAddress']))
         # Get the from address
-        print('From: {0}'.format(self.getLabelForAddress(inboxMessages['inboxMessages'][msgNum]['fromAddress'])))
+        print('From: {0}'.format(inboxMessages['inboxMessages'][msgNum]['fromAddress']))
         # Get the subject
         print('Subject: {0}'.format(base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])))
         print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
@@ -1131,7 +1133,6 @@ Encoding:base64
     # Allows you to reply to the message you are currently on.
     # Saves typing in the addresses and subject.
     def replyMsg(msgNum,forwardORreply):
-
         # makes it lowercase
         forwardORreply = forwardORreply.lower()
         try:
@@ -1582,7 +1583,7 @@ Encoding:base64
                     if uInput not in ['yes', 'y']:
                         self.markMessageRead(messageID)
 
-                    uInput = self.userInput('\nWould you like to (D)elete, (F)orward, or (R)eply to this message?')
+                    uInput = self.userInput('\nWould you like to (D)elete, (F)orward, (R)eply, or E(x)it this message?')
 
                     if uInput in ['reply', 'r']:
                         print('Loading...')
