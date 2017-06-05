@@ -22,7 +22,7 @@ import xmlrpclib
 from os import path, environ
 
 APPNAME = 'PyBitmessage'
-
+NULL = ''
 
 class my_bitmessage(object):
     def __init__(self):
@@ -1223,52 +1223,6 @@ Encoding:base64
         return msgAck
 
 
-    def getLabelForAddress(self, address):
-        if self.knownAddresses:
-            if address in self.knownAddresses:
-                return self.knownAddresses[address]
-            else:
-                self.buildKnownAddresses()
-                if address in self.knownAddresses:
-                    return self.knownAddresses[address]
-            return address
-
-
-    def buildKnownAddresses(self):
-        # add from address book
-        try:
-            response = self.api.listAddressBookEntries()
-
-            # if api is too old then fail
-            if 'API Error 0020' in response:
-                return
-            addressBook = json.loads(response)
-            for entry in addressBook['addresses']:
-                if entry['address'] not in self.knownAddresses:
-                    self.knownAddresses[entry['address']] = '%s (%s)' % (base64.b64decode(entry['label']), entry['address'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.usrPrompt = False
-            self.main()
-
-        # add from my addresses
-        try:
-            response = self.api.listAddresses2()
-            # if api is too old just return then fail
-            if 'API Error 0020' in response:
-                return
-            addresses = json.loads(response)
-            for entry in addresses['addresses']:
-                if entry['address'] not in self.knownAddresses:
-                    self.knownAddresses[entry['address']] = '%s (%s)' % (base64.b64decode(entry['label']), entry['address'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.usrPrompt = False
-            self.main()
-
-
     def listAddressBookEntries(self):
         try:
             response = self.api.listAddressBookEntries()
@@ -1462,39 +1416,47 @@ Encoding:base64
 
                 lbl = self.userInput('\nLabel the new address:')
                 passphrase = self.userInput('\nEnter the Passphrase.')
-                
-                numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
+
+                try:
+                    numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
+                except ValueError:
+                    print("That's not a whole number.")
+                if numOfAdd <= 0:
+                    print('How were you expecting that to work?')
+                    self.main()
                 addVNum = 3
                 streamNum = 1
-                isRipe = self.userInput('Shorten the address, (Y)/(n)')
+                isRipe = self.userInput('\nShorten the address, (Y)/(n)')
                 print('Generating, please wait...')
 
                 if isRipe in ['yes', 'y']:
                     ripe = True
-                    print(self.genAdd(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe))
-                    self.main()
                 else:
                     ripe = False
-                    print(self.genAdd(lbl, deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe))
-                    self.main()
+                genAddrs = self.genAdd(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe)
+                jsonAddresses = json.loads(genAddrs)
+                if numOfAdd >= 2:
+                    print('Addresses generated: ')
+                elif numOfAdd == 1:
+                    print('Address generated: ')
+                for each in jsonAddresses['addresses']:
+                    print(each)
 
-                    self.main()
 
             # Creates a random address with user-defined label
             elif uInput in ['random', 'r']:
                 deterministic = False
-                null = ''
                 lbl = self.userInput('\nEnter the label for the new address.')
 
-                print(self.genAdd(lbl, deterministic, null, null, null, null, null))
-                self.main()
+                print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, NULL, NULL, NULL, NULL, NULL)))
 
+            else:
                 print('Invalid input\n')
-                self.main()
+            self.main()
 
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
-            phrase = self.userInput('Enter the address passphrase.')
+            phrase = self.userInput('\nEnter the address passphrase.')
             print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
@@ -1554,13 +1516,11 @@ Encoding:base64
             uInput = self.userInput('\nWould you like to send a (M)essage or (B)roadcast?')
 
             if uInput in ['message', 'm']:
-                null = ''
-                self.sendMsg(null,null,null,null)
+                self.sendMsg(NULL,NULL,NULL,NULL)
                 self.main()
 
             elif uInput in ['broadcast', 'b']:
-                null = ''
-                self.sendBrd(null,null,null)
+                self.sendBrd(NULL,NULL,NULL)
                 self.main()
 
         # Opens a message from the inbox for viewing.
