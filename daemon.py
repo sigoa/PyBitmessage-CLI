@@ -809,17 +809,23 @@ Encoding:base64
                     if not self.validAddress(fromAddress):
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
-                            label = jsonAddresses['addresses'][addNum]['label']
+                            label = jsonAddresses['addresses'][addNum]['label'].encode('UTF-8')
+                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            if label.startswith('[chan] '):
+                                label = label.split('[chan] ')[1]
                             # address entered was a label and is found
                             if fromAddress == label:
                                 found = True
+                                fromAddress = address
                                 break
+                            else:
+                                pass
                         if not found:
                             print('Invalid Address. Please try again.\n')
 
                     else:
                         for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address']
+                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
                             # address entered was found in our address book
                             if fromAddress == address:
                                 found = True
@@ -829,6 +835,9 @@ Encoding:base64
                         else:
                             # Address was found
                             break
+
+                    if found:
+                        break
 
             # Only one address in address book
             else:
@@ -884,17 +893,23 @@ Encoding:base64
                     if not self.validAddress(fromAddress):
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
-                            label = jsonAddresses['addresses'][addNum]['label']
+                            label = jsonAddresses['addresses'][addNum]['label'].encode('UTF-8')
+                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            if label.startswith('[chan] '):
+                                label = label.split('[chan] ')[1]
                             # address entered was a label and is found
                             if fromAddress == label:
                                 found = True
+                                fromAddress = address
                                 break
+                            else:
+                                pass
                         if not found:
                             print('Invalid Address. Please try again.\n')
 
                     else:
                         for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address']
+                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
                             # address entered was found in our address book
                             if fromAddress == address:
                                 found = True
@@ -904,6 +919,9 @@ Encoding:base64
                         else:
                             # Address was found
                             break
+
+                    if found:
+                        break
 
             # Only one address in address book
             else:
