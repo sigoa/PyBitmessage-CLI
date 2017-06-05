@@ -515,20 +515,18 @@ class my_bitmessage(object):
 
     def listSubscriptions(self):
         try:
-            total_subscriptions = self.api.listSubscriptions()
-            print(total_subscriptions)
-            for each in total_subscriptions:
-                print(each)
-                print('\n{0} {1} {2}\n'.format(each['label'],
-                                               each['address'],
-                                               each['enabled']))
+            total_subscriptions = json.loads(self.api.listSubscriptions())
+            print('-------------------------------------')
+            for each in total_subscriptions['subscriptions']:
+                print('Label: {0}'.format(base64.b64decode(each['label'])))
+                print('Address: {0}'.format(each['address']))
+                print('Enabled: {0}'.format(each['enabled']))
+                print('-------------------------------------')
         except Exception as e:
             print(e)
             print('Connection Error\n')
             self.usrPrompt = False
             self.main()
-
-        print('')
 
 
     def createChan(self):
