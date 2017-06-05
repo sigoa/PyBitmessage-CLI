@@ -818,8 +818,6 @@ Encoding:base64
                                 found = True
                                 fromAddress = address
                                 break
-                            else:
-                                pass
                         if not found:
                             print('Invalid Address. Please try again.\n')
 
@@ -832,10 +830,6 @@ Encoding:base64
                                 break
                         if not found:
                             print('The address entered is not one of yours. Please try again.\n')
-                        else:
-                            # Address was found
-                            break
-
                     if found:
                         break
 
@@ -902,8 +896,6 @@ Encoding:base64
                                 found = True
                                 fromAddress = address
                                 break
-                            else:
-                                pass
                         if not found:
                             print('Invalid Address. Please try again.\n')
 
