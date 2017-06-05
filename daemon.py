@@ -108,7 +108,7 @@ class my_bitmessage(object):
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
-                print('https://github.com/rezizt/taskhive/')
+                print('https://github.com/RZZT/taskhive-core')
                 sys.exit()
         elif sys.platform.startswith('win'):
             dataFolder = path.join(environ['APPDATA'],
@@ -159,7 +159,7 @@ class my_bitmessage(object):
                 self.restartBmNotify()
                 return True
 
-            elif uInput in ['n', 'no']:
+            elif uInput in ['no', 'n']:
                 print('\n------------------------------------------------------------')
                 print('        Daemon will not work when the API is disabled.')
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
@@ -243,20 +243,20 @@ class my_bitmessage(object):
                 config.get('bitmessagesettings','port')
             except Exception as e:
                 # keys.dat was not there either, something is wrong.
-                print('\n******************************************************************')
+                print('\n------------------------------------------------------------------')
                 print('There was a problem trying to access the Bitmessage keys.dat file')
                 print('             or keys.dat is not set up correctly')
                 print('Make sure that daemon is in the same directory as Bitmessage. ')
-                print('******************************************************************')
+                print('-------------------------------------------------------------------')
 
                 uInput = self.userInput('Would you like to create keys.dat in the local directory, (Y)/(n)?')
 
-                if uInput in ['y', 'yes']:
+                if uInput in ['yes', 'y']:
                     self.configInit()
                     self.keysPath = self.keysName
                     self.usrPrompt = False
                     self.main()
-                elif uInput in ['n', 'no']:
+                elif uInput in ['no', 'n']:
                     print('Trying Again.\n')
                     self.usrPrompt = False
                     self.main()
@@ -358,7 +358,7 @@ class my_bitmessage(object):
         print('defaultnoncetrialsperbyte = {0}'.format(defaultnoncetrialsperbyte))
         print('defaultpayloadlengthextrabytes = {0}'.format(defaultpayloadlengthextrabytes))
         print('daemon = {0}'.format(str(daemon)))
-        print('------------------------------------')
+        print('-----------------------------------')
         print('|   Current Connection Settings   |')
         print('-----------------------------------')
         print('socksproxytype = {0}'.format(socksproxytype))
@@ -366,7 +366,7 @@ class my_bitmessage(object):
         print('socksport = {0}'.format(socksport))
         print('socksauthentication = {0}'.format(str(socksauthentication)))
         print('socksusername = {0}'.format(socksusername))
-        print('sockspassword = {0}'.format(sockspassword))
+        print('sockspassword = {0}\n'.format(sockspassword))
 
         uInput = self.userInput('Would you like to modify any of these settings, (Y)/(n)')
 
@@ -455,7 +455,7 @@ class my_bitmessage(object):
                 if not invalidInput:
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)')
 
-                    if uInput != 'y':
+                    if uInput not in ['yes', 'y']:
                         with open(self.keysPath, 'wb') as configfile:
                             config.write(configfile)
                         print('Changes made\n')
@@ -464,12 +464,11 @@ class my_bitmessage(object):
 
 
         elif uInput in ['no', 'n']:
-            self.usrPrompt = True
-            self.main()
+            pass
         else:
             print('Invalid input.')
-            self.usrPrompt = True
-            self.main()
+        self.usrPrompt = True
+        self.main()
 
 
     def validAddress(self, address):
@@ -505,7 +504,7 @@ class my_bitmessage(object):
             address = self.userInputStrip('\nEnter the address to unsubscribe from:')
             if self.validAddress(address):
                 uInput = self.userInput('\nAre you sure, (Y)/(n)')
-                if uInput in ['y', 'yes']:
+                if uInput in ['yes', 'y']:
                     self.api.deleteSubscription(address)
                     print('You are now unsubscribed from: ' + address)
                 else:
@@ -601,27 +600,13 @@ class my_bitmessage(object):
             self.usrPrompt = False
             self.main()
 
-        print('---------------------------------------------------------------------------')
-        print('| #  |       Label       |               Address               |S#|Enabled|')
-        print('|----|-------------------|-------------------------------------|--|-------|')
-        # processes all of the addresses and lists them out
-        for addNum in range (0, numAddresses):
-            label = str(jsonAddresses['addresses'][addNum]['label'])
-            address = str(jsonAddresses['addresses'][addNum]['address'])
-            stream = str(jsonAddresses['addresses'][addNum]['stream'])
-            enabled = str(jsonAddresses['addresses'][addNum]['enabled'])
-
-            if len(label) > 19:
-                label = label[:16] + '...'
-
-            if len(str(addNum)) > 999:
-                addNum = '999+'
-
-            # Proper formatting
-            print('|{0:^4}|{1:^19}|{2:^37}|{3:^2}|{4:^7}|'.format(str(addNum), label, address,
-                                                                  stream, enabled))
-
-        print('---------------------------------------------------------------------------')
+        print('-------------------------------------')
+        for each in jsonAddresses['addresses']:
+            print('Label: {0}'.format(each['label']))
+            print('Address: {0}'.format(each['address']))
+            print('Stream: {0}'.format(each['stream']))
+            print('Enabled: {0}'.format(each['enabled']))
+            print('-------------------------------------')
 
 
     # Generate address
@@ -743,7 +728,7 @@ class my_bitmessage(object):
         if isImage is True:
             theAttachment = """
 <!-- Note: Image attachment below. Please use the right click "View HTML code ..." option to view it. -->
-<!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
+<!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
 
 Filename:{0}
 Filesize:{1}KB
@@ -758,7 +743,7 @@ Encoding:base64
         else:
             theAttachment = """
 <!-- Note: File attachment below. Please use a base64 decoder, or Daemon, to save it. -->
-<!-- Sent using Bitmessage Daemon. https://github.com/REZIZT/Taskhive -->
+<!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
 
 Filename:{0}
 Filesize:{1}KB
@@ -789,7 +774,7 @@ Encoding:base64
 
         if self.validAddress(fromAddress) is False:
             try:
-                jsonAddresses = json.loads(self.api.listAddresses())
+                jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
             except Exception as e:
@@ -807,8 +792,8 @@ Encoding:base64
                     if not self.validAddress(fromAddress):
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
-                            label = jsonAddresses['addresses'][addNum]['label'].encode('UTF-8')
-                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            label = jsonAddresses['addresses'][addNum]['label']
+                            address = jsonAddresses['addresses'][addNum]['address']
                             if label.startswith('[chan] '):
                                 label = label.split('[chan] ')[1]
                             # address entered was a label and is found
@@ -821,7 +806,7 @@ Encoding:base64
 
                     else:
                         for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            address = jsonAddresses['addresses'][addNum]['address']
                             # address entered was found in our address book
                             if fromAddress == address:
                                 found = True
@@ -868,6 +853,7 @@ Encoding:base64
         if fromAddress == '':
             try:
                 jsonAddresses = json.loads(self.api.listAddresses())
+                print(jsonAddresses)
                 # Number of addresses
                 numAddresses = len(jsonAddresses['addresses'])
             except Exception as e:
@@ -885,8 +871,8 @@ Encoding:base64
                     if not self.validAddress(fromAddress):
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
-                            label = jsonAddresses['addresses'][addNum]['label'].encode('UTF-8')
-                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            label = jsonAddresses['addresses'][addNum]['label']
+                            address = jsonAddresses['addresses'][addNum]['address']
                             if label.startswith('[chan] '):
                                 label = label.split('[chan] ')[1]
                             # address entered was a label and is found
@@ -899,7 +885,7 @@ Encoding:base64
 
                     else:
                         for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address'].encode('UTF-8')
+                            address = jsonAddresses['addresses'][addNum]['address']
                             # address entered was found in our address book
                             if fromAddress == address:
                                 found = True
@@ -1062,7 +1048,7 @@ Encoding:base64
                     fileName = 'Attachment'
 
                 uInput = self.userInput('Attachment Detected. Would you like to save the attachment, (Y)/(n)')
-                if uInput in ['y', 'yes']:
+                if uInput in ['yes', 'y']:
                     attachment = message[attPos+9:attEndPos]
                     self.saveFile(fileName,attachment)
 
@@ -1242,12 +1228,10 @@ Encoding:base64
 
     def getLabelForAddress(self, address):
         if self.knownAddresses:
-            print(self.knownAddresses)
             if address in self.knownAddresses:
                 return self.knownAddresses[address]
             else:
                 self.buildKnownAddresses()
-                print(self.knownAddresses)
                 if address in self.knownAddresses:
                     return self.knownAddresses[address]
             return address
@@ -1400,41 +1384,41 @@ Encoding:base64
     # Main user menu
     def UI(self, usrInput):
         if usrInput in ['help', 'h', '?']:
-            print('\n-----------------------------------------------------------------------')
-            print('|                   https://github.com/rezizt/Taskhive                 |')
-            print('|----------------------------------------------------------------------|')
-            print('|   Command               | Description                                |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| help or h or ?          | This help file.                            |')
-            print('| apiTest                 | Tests the API                              |')
-            print('| addInfo                 | Returns address information (If valid)     |')
-            print('| bmSettings              | BitMessage settings                        |')
-            print('| exit or x               | Use anytime to return to main menu         |')
-            print('| quit or q               | Quits the program                          |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| listAddresses           | Lists all of the users addresses           |')
-            print('| generateAddress         | Generates a new address                    |')
-            print('| getAddress              | Get deterministic address from passphrase  |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| listAddressBookEntries  | Lists entries from the Address Book        |')
-            print('| addAddressBookEntry     | Add address to the Address Book            |')
-            print('| deleteAddressBookEntry  | Deletes address from the Address Book      |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| subscribe               | Subscribes to an address                   |')
-            print('| unsubscribe             | Unsubscribes from an address               |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| create                  | Creates a channel                          |')
-            print('| join                    | Joins a channel                            |')
-            print('| leave                   | Leaves a channel                           |')
-            print('|-------------------------|--------------------------------------------|')
-            print('| inbox                   | Lists message information for the inbox    |')
-            print('| outbox                  | Lists message information for the outbox   |')
-            print('| send                    | Send a new message or broadcast            |')
-            print('| unread                  | Lists all unread inbox messages            |')
-            print('| read                    | Reads a message from the inbox or outbox   |')
-            print('| save                    | Saves message to text file                 |')
-            print('| delete                  | Deletes a message or all messages          |')
-            print('------------------------------------------------------------------------')
+            print('-----------------------------------------------------------------------')
+            print('|                https://github.com/RZZT/taskhive-core                |')
+            print('|---------------------------------------------------------------------|')
+            print('|   Command               | Description                               |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| (h)elp or ?             | This help file                            |')
+            print('| apiTest                 | Tests the API                             |')
+            print('| addInfo                 | Returns address information (If valid)    |')
+            print('| bmSettings              | BitMessage settings                       |')
+            print('| e(x)it                  | Use anytime to return to main menu        |')
+            print('| (q)uit                  | Quits the program                         |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| listAddresses           | Lists all of the users addresses          |')
+            print('| generateAddress         | Generates a new address                   |')
+            print('| getAddress              | Get deterministic address from passphrase |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| listAddressBookEntries  | Lists entries from the Address Book       |')
+            print('| addAddressBookEntry     | Add address to the Address Book           |')
+            print('| deleteAddressBookEntry  | Deletes address from the Address Book     |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| subscribe               | Subscribes to an address                  |')
+            print('| unsubscribe             | Unsubscribes from an address              |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| create                  | Creates a channel                         |')
+            print('| join                    | Joins a channel                           |')
+            print('| leave                   | Leaves a channel                          |')
+            print('|-------------------------|-------------------------------------------|')
+            print('| inbox                   | Lists message information for the inbox   |')
+            print('| outbox                  | Lists message information for the outbox  |')
+            print('| send                    | Send a new message or broadcast           |')
+            print('| unread                  | Lists all unread inbox messages           |')
+            print('| read                    | Reads a message from the inbox or outbox  |')
+            print('| save                    | Saves message to text file                |')
+            print('| delete                  | Deletes a message or all messages         |')
+            print('-----------------------------------------------------------------------')
             self.main()
 
         # tests the API Connection.
