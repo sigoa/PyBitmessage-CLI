@@ -677,57 +677,56 @@ class my_bitmessage(object):
                 print('{0} was not found on your filesystem or can not be opened.\n'.format(filePath))
                 pass
 
-        while True:
-            invSize = os.path.getsize(filePath)
-            # Converts to kilobytes
-            invSize = (invSize / 1024)
-            # Rounds to two decimal places
-            round(invSize, 2)
+        invSize = os.path.getsize(filePath)
+        # Converts to kilobytes
+        invSize = (invSize / 1024)
+        # Rounds to two decimal places
+        round(invSize, 2)
 
-            # If over 200KB
-            if invSize > 200.0:
-                print('WARNING: The maximum message size including attachments, body, and headers is 262,144 bytes.')
-                print("If you reach over this limit, your message won't send.")
-                uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
+        # If over 200KB
+        if invSize > 200.0:
+            print('WARNING: The maximum message size including attachments, body, and headers is 262,144 bytes.')
+            print("If you reach over this limit, your message won't send.")
+            uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
 
-                if uInput not in ['yes', 'y']:
-                    print('Attachment discarded.\n')
-                    return ''
+            if uInput not in ['yes', 'y']:
+                print('Attachment discarded.\n')
+                return ''
 
-            # If larger than 262KB, discard
-            elif invSize > 262.0:
-                print('Attachment too big, maximum allowed size is 262KB\n')
-                self.main()
+        # If larger than 262KB, discard
+        elif invSize > 262.0:
+            print('Attachment too big, maximum allowed size is 262KB\n')
+            self.main()
 
-            # Gets the length of the filepath excluding the filename
-            pathLen = len(str(ntpath.basename(filePath)))
-            # reads the filename
-            fileName = filePath[(len(str(filePath)) - pathLen):]
+        # Gets the length of the filepath excluding the filename
+        pathLen = len(str(ntpath.basename(filePath)))
+        # reads the filename
+        fileName = filePath[(len(str(filePath)) - pathLen):]
 
-            # Tests if it is an image file
-            filetype = imghdr.what(filePath)
-            if filetype is not None:
-                print('---------------------------------------------------')
-                print('Attachment detected as an Image.')
-                print('<img> tags will automatically be included,')
-                print('allowing the recipient to view the image')
-                print('using the ''View HTML code...'' option in Bitmessage.')
-                print('---------------------------------------------------\n')
-                isImage = True
-                time.sleep(2)
+        # Tests if it is an image file
+        filetype = imghdr.what(filePath)
+        if filetype is not None:
+            print('---------------------------------------------------')
+            print('Attachment detected as an Image.')
+            print('<img> tags will automatically be included,')
+            print('allowing the recipient to view the image')
+            print('using the ''View HTML code...'' option in Bitmessage.')
+            print('---------------------------------------------------\n')
+            isImage = True
+            time.sleep(2)
 
-            # Alert the user that the encoding process may take some time
-            print('Encoding attachment, please wait ...\n')
+        # Alert the user that the encoding process may take some time
+        print('Encoding attachment, please wait ...\n')
 
-            # Begin the actual encoding
-            with open(filePath, 'rb') as f:
-                # Reads files up to 262KB
-                data = f.read(262000)
-                data = base64.b64encode(data)
+        # Begin the actual encoding
+        with open(filePath, 'rb') as f:
+            # Reads files up to 262KB
+            data = f.read(262000)
+            data = base64.b64encode(data)
 
-            # If it is an image, include image tags in the message
-            if isImage is True:
-                theAttachment = """
+        # If it is an image, include image tags in the message
+        if isImage is True:
+            theAttachment = """
 <!-- Note: Image attachment below. Please use the right click "View HTML code ..." option to view it. -->
 <!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
 
@@ -740,9 +739,9 @@ Encoding:base64
         <img alt = "{2}" src='data:image/{3};base64, {4}' />
     </div>
 </center>""".format(fileName, invSize, fileName, filetype, data)
-            # Else it is not an image so do not include the embedded image code.
-            else:
-                theAttachment = """
+        # Else it is not an image so do not include the embedded image code.
+        else:
+            theAttachment = """
 <!-- Note: File attachment below. Please use a base64 decoder, or Daemon, to save it. -->
 <!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
 
@@ -752,14 +751,13 @@ Encoding:base64
 
 <attachment alt = "{2}" src='data:file/{3};base64, {4}' />""".format(fileName, invSize, fileName, fileName, data)
 
-            uInput = self.userInput('Would you like to add another attachment, (Y)/(n)')
+        uInput = self.userInput('Would you like to add another attachment, (Y)/(n)')
 
-            # Allows multiple attachments to be added to one message
-            if uInput in ['yes', 'y']:
-                theAttachmentS = '{0}{1}\n\n'.format(str(theAttachmentS), str(theAttachment))
-            else:
-                print('Another attachment was not added.')
-                break
+        # Allows multiple attachments to be added to one message
+        if uInput in ['yes', 'y']:
+            theAttachmentS = '{0}{1}\n\n'.format(str(theAttachmentS), str(theAttachment))
+        else:
+            print('Another attachment was not added.')
 
         theAttachmentS = theAttachmentS + theAttachment
         return theAttachmentS
