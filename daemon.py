@@ -752,14 +752,7 @@ Encoding:base64
 
 <attachment alt = "{2}" src='data:file/{3};base64, {4}' />""".format(fileName, invSize, fileName, fileName, data)
 
-            uInput = self.userInput('Would you like to add another attachment, (Y)/(n)')
-
-            # Allows multiple attachments to be added to one message
-            if uInput in ['yes', 'y']:
-                theAttachmentS = '{0}{1}\n\n'.format(str(theAttachmentS), str(theAttachment))
-            else:
-                print('Another attachment was not added.')
-                break
+            break
 
         theAttachmentS = theAttachmentS + theAttachment
         return theAttachmentS
