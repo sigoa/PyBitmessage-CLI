@@ -40,34 +40,26 @@ class my_bitmessage(object):
     # Checks input for exit or quit. Also formats for input, etc
     def userInput(self, message):
         print('{0}'.format(message))
-        try:
-            uInput = raw_input('> ').lower().strip()
-            if uInput in ['exit', 'x']:
-                self.main()
-            elif uInput in ['quit', 'q']:
-                print('Bye\n')
-                sys.exit(0)
-            else:
-                return uInput
-        except (EOFError, KeyboardInterrupt):
-            print('')
-            sys.exit()
+        uInput = raw_input('> ').lower().strip()
+        if uInput in ['exit', 'x']:
+            self.main()
+        elif uInput in ['quit', 'q']:
+            print('Bye\n')
+            sys.exit(0)
+        else:
+            return uInput
 
 
     def userInputStrip(self, message):
         print('{0}'.format(message))
-        try:
-            uInput = raw_input('> ').strip()
-            if uInput.lower() in ['exit', 'x']:
-                self.main()
-            elif uInput.lower() in ['quit', 'q']:
-                print('Bye\n')
-                sys.exit(0)
-            else:
-                return uInput
-        except (EOFError, KeyboardInterrupt):
-            print('')
-            sys.exit()
+        uInput = raw_input('> ').strip()
+        if uInput.lower() in ['exit', 'x']:
+            self.main()
+        elif uInput.lower() in ['quit', 'q']:
+            print('Bye\n')
+            sys.exit(0)
+        else:
+            return uInput
 
 
     # Prompts the user to restart Bitmessage.
@@ -1742,6 +1734,9 @@ Encoding:base64
             print("Could not connect to the API.")
             print("Please check your connection.")
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
+        except (EOFError, KeyboardInterrupt):
+            print('')
+            sys.exit()
 
 
 if __name__ == '__main__':
