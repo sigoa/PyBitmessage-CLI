@@ -9,7 +9,6 @@
 import base64
 import ConfigParser
 import datetime
-import errno
 import getopt
 import hashlib
 import imghdr
