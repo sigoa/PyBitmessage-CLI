@@ -9,16 +9,17 @@
 import base64
 import ConfigParser
 import datetime
+import errno
 import getopt
 import hashlib
 import imghdr
 import json
 import ntpath
 import os
+import socket
 import sys
 import time
 import xmlrpclib
-
 from os import path, environ
 
 APPNAME = 'PyBitmessage'
@@ -27,11 +28,10 @@ NULL = ''
 class my_bitmessage(object):
     def __init__(self):
         '''
-        False = First Start
-        True = prompt
-        None = no prompt if the program is starting up
+        True = Prompt
+        False = Don't Prompt
         '''
-        self.usrPrompt = False
+        self.usrPrompt = True
         self.api = ''
         self.keysName = 'keys.dat'
         self.keysPath = 'keys.dat'
@@ -40,15 +40,10 @@ class my_bitmessage(object):
 
     # Checks input for exit or quit. Also formats for input, etc
     def userInput(self, message):
-        # First time running
-        if message == '':
-            pass
-        else:
-            print('{0}'.format(message))
+        print('{0}'.format(message))
         try:
             uInput = raw_input('> ').lower().strip()
             if uInput in ['exit', 'x']:
-                self.usrPrompt = True
                 self.main()
             elif uInput in ['quit', 'q']:
                 print('Bye\n')
@@ -65,7 +60,6 @@ class my_bitmessage(object):
         try:
             uInput = raw_input('> ').strip()
             if uInput.lower() in ['exit', 'x']:
-                self.usrPrompt = True
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Bye\n')
@@ -166,7 +160,6 @@ class my_bitmessage(object):
                 print('------------------------------------------------------------')
             else:
                 print('Invalid Entry')
-            self.usrPrompt = True
             self.main()
 
         # API correctly setup
@@ -217,7 +210,6 @@ class my_bitmessage(object):
                 print('------------------------------------------------------------\n')
             else:
                 print('Invalid entry')
-            self.usrPrompt = True
             self.main()
 
 
@@ -262,8 +254,6 @@ class my_bitmessage(object):
                     self.main()
                 else:
                     print('Invalid Input.\n')
-
-                self.usrPrompt = True
                 self.main()
 
         # checks to make sure that everything is configured correctly.
@@ -308,7 +298,6 @@ class my_bitmessage(object):
             result = self.api.add(2,3)
         except Exception as e:
             return False
-
         if result == 5:
             return True
         else:
@@ -461,13 +450,10 @@ class my_bitmessage(object):
                         print('Changes made\n')
                         self.restartBmNotify()
                         break
-
-
         elif uInput in ['no', 'n']:
             pass
         else:
             print('Invalid input.')
-        self.usrPrompt = True
         self.main()
 
 
@@ -494,7 +480,6 @@ class my_bitmessage(object):
                 break
             else:
                 print('Not a valid address, please try again.')
-
         self.api.addSubscription(address, label)
         print('You are now subscribed to: {0}'.format(address))
 
@@ -1158,7 +1143,6 @@ Encoding:base64
                 toAdd = self.userInput('What is the To Address?')
 
                 if toAdd in ['c']:
-                    self.usrPrompt = True
                     print('')
                     self.main()
                 elif self.validAddress(toAdd) is False:
@@ -1448,40 +1432,33 @@ Encoding:base64
             print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
-            self.usrPrompt = True
             self.main()
 
         # Subsribe to an address
         elif usrInput in ['subscribe']:
             self.subscribe()
-            self.usrPrompt = True
             self.main()
 
         # Unsubscribe from an address
         elif usrInput in ['unsubscribe']:
             self.unsubscribe()
-            self.usrPrompt = True
             self.main()
 
         # Unsubscribe from an address
         elif usrInput in ['listsubscriptions']:
             self.listSubscriptions()
-            self.usrPrompt = True
             self.main()
 
         elif usrInput in ['create']:
             self.createChan()
-            userPrompt = 1
             self.main()
 
         elif usrInput in ['join']:
             self.joinChan()
-            userPrompt = 1
             self.main()
 
         elif usrInput in ['leave']:
             self.leaveChan()
-            userPrompt = 1
             self.main()
 
         elif usrInput in ['inbox']:
@@ -1570,7 +1547,6 @@ Encoding:base64
                     self.usrPrompt
                 else:
                     print('Invalid Input.')
-                self.usrPrompt = True
                 self.main()
             else:
                 print('Inbox or Outbox are the only possible answers.')
@@ -1580,7 +1556,6 @@ Encoding:base64
 
             if uInput not in ['inbox', 'outbox', 'i', 'o']:
                 print('Invalid Input.')
-                self.usrPrompt = True
                 self.main()
 
             if uInput in ['inbox', 'i']:
@@ -1623,8 +1598,6 @@ Encoding:base64
             
             subject = '{0}.txt'.format(subject)
             self.saveFile(subject, message)
-
-            self.usrPrompt = True
             self.main()
 
         # Will delete a message from the system, not reflected on the UI    
@@ -1657,14 +1630,11 @@ Encoding:base64
                             self.delMsg(0)
     
                         print('Inbox is empty.')
-                        self.usrPrompt = True
                     else:
                         self.delMsg(int(msgNum))
                         
                     print('Notice: Message numbers may have changed.\n')
                     self.main()
-                else:
-                    self.usrPrompt = True
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
                 numMessages = len(outboxMessages['sentMessages'])
@@ -1695,13 +1665,10 @@ Encoding:base64
                             self.delSentMsg(0)
 
                         print('Outbox is empty.')
-                        self.usrPrompt = True
                     else:
                         self.delSentMsg(int(msgNum))
                     print('Notice: Message numbers may have changed.\n')
                     self.main()
-                else:
-                    self.usrPrompt = True
             else:
                 print('Invalid Entry')
                 userPrompt = 1
@@ -1711,7 +1678,6 @@ Encoding:base64
             res = self.listAddressBookEntries()
             if res == 20:
                 print('Error: API function not supported.\n')
-            self.usrPrompt = True
             self.main()
 
         elif usrInput in ['addaddressbookentry']:
@@ -1722,7 +1688,6 @@ Encoding:base64
                 print('Error: Address already exists in Address Book.')
             if res == 20:
                 print('Error: API function not supported.')
-            self.usrPrompt = True
             self.main()
 
         elif usrInput in ['deleteaddressbookentry']:
@@ -1736,53 +1701,49 @@ Encoding:base64
                         print('{0} has been deleted!'.format(address))
                 else:
                     print('Invalid address')
-                self.usrPrompt = True
                 self.main()
-
 
         elif usrInput in ['markallmessagesread']:
             self.markAllMessagesRead()
-            self.usrPrompt = True
             self.main()
 
         elif usrInput in ['markallmessagesunread']:
             self.markAllMessagesUnread()
-            self.usrPrompt = True
             self.main()
 
         else:
-            print('{0} is not a command.'.format(usrInput))
-            self.usrPrompt = True
+            print('"{0}" is not a command.'.format(usrInput))
             self.main()
 
 
     def main(self):
+        if self.usrPrompt is True:
+            print('')
+            print(' --------------------------------')
+            print('| Bitmessage Daemon by Lvl4Sword |')
+            print('|    Version 0.4 for BM 0.6.2    |')
+            print(' --------------------------------')
+            # Connect to BitMessage using these api credentials
+            self.api = xmlrpclib.ServerProxy(self.apiData())
+
+            if self.apiTest() is False:
+                print("\n----------------------------------------------------------------")
+                print("    WARNING: You are not connected to the Bitmessage client.")
+                print("Either Bitmessage is not running or your settings are incorrect.")
+                print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
+                print("----------------------------------------------------------------")
+        elif self.usrPrompt is False:
+            pass
+
+        self.usrPrompt = False
+
         try:
-            if self.usrPrompt is False:
-                print('')
-                print(' --------------------------------')
-                print('| Bitmessage Daemon by Lvl4Sword |')
-                print('|    Version 0.4 for BM 0.6.2    |')
-                print(' --------------------------------')
-                # Connect to BitMessage using these api credentials
-                self.api = xmlrpclib.ServerProxy(self.apiData())
+            self.UI(self.userInput('\nType (h)elp for a list of commands.'))
+        except socket.error:
+            print("Could not connect to the API.")
+            print("Please check your connection.")
+            self.UI(self.userInput('\nType (h)elp for a list of commands.'))
 
-                if self.apiTest() is False:
-                    print("\n----------------------------------------------------------------")
-                    print("    WARNING: You are not connected to the Bitmessage client.")
-                    print("Either Bitmessage is not running or your settings are incorrect.")
-                    print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
-                    print("----------------------------------------------------------------")
-
-            elif self.usrPrompt is True:
-                pass
-
-            print('\nType (H)elp for a list of commands.')
-            self.usrPrompt = None
-            self.UI(self.userInput(''))
-
-        except EOFError:
-            self.UI('quit')
 
 if __name__ == '__main__':
     run = my_bitmessage()
