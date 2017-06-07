@@ -450,7 +450,7 @@ class my_bitmessage(object):
 
     def validAddress(self, address):
         address_information = json.loads(self.api.decodeAddress(address))
-        if 'success' in address_information.get('status'):
+        if address_information.get('status') == 'success':
             return True
         else:
             return False
@@ -465,7 +465,7 @@ class my_bitmessage(object):
     def subscribe(self):
         while True:
             address = self.userInputStrip('\nAddress you would like to subscribe to:')
-            if self.validAddress(address):
+            if self.validAddress(address) is True:
                 label = self.userInputStrip('\nEnter a label for this address:')
                 label = base64.b64encode(label)
                 break
@@ -478,7 +478,7 @@ class my_bitmessage(object):
     def unsubscribe(self):
         while True:
             address = self.userInputStrip('\nEnter the address to unsubscribe from:')
-            if self.validAddress(address):
+            if self.validAddress(address) is True:
                 uInput = self.userInput('\nAre you sure, (Y)/(n)')
                 if uInput in ['yes', 'y']:
                     self.api.deleteSubscription(address)
@@ -518,7 +518,7 @@ class my_bitmessage(object):
 
     def joinChan(self):
         address = self.userInputStrip('\nEnter Channel Address:')
-        if self.validAddress(address):
+        if self.validAddress(address) is True:
             password = self.userInputStrip('\nEnter Channel Name:')
             password = base64.b64encode(password)
             try:
@@ -536,7 +536,7 @@ class my_bitmessage(object):
     def leaveChan(self):
         while True:
             address = self.userInputStrip('\nEnter Channel Address or Label:')
-            if self.validAddress(address):
+            if self.validAddress(address) is True:
                 break
             else:
                 jsonAddresses = json.loads(self.api.listAddresses())
@@ -656,23 +656,24 @@ class my_bitmessage(object):
         while True:
             invSize = os.path.getsize(filePath)
             # Converts to kilobytes
-            invSize = (invSize / 1024)
+            invSize = (invSize / 1024.0)
             # Rounds to two decimal places
             round(invSize, 2)
 
             # If over 200KB
             if invSize > 200.0:
-                print('WARNING: The maximum message size including attachments, body, and headers is 262,144 bytes.')
+                print('WARNING: The maximum message size including attachments, body, and headers is 256KB.')
                 print("If you reach over this limit, your message won't send.")
+                print("Your current attachment is {0}".format(invSize))
                 uInput = self.userInput('Are you sure you still want to attach it, (Y)/(n)')
 
                 if uInput not in ['yes', 'y']:
                     print('Attachment discarded.\n')
                     return ''
 
-            # If larger than 262KB, discard
-            elif invSize > 262.0:
-                print('Attachment too big, maximum allowed size is 262KB\n')
+            # If larger than 256KB, discard
+            elif invSize > 256.0:
+                print('Attachment too big, maximum allowed message size is 256KB\n')
                 self.main()
 
             # Gets the length of the filepath excluding the filename
@@ -740,7 +741,7 @@ Encoding:base64
         if self.validAddress(toAddress) is False:
             while not self.validAddress(toAddress):
                 toAddress = self.userInputStrip('\nWhat is the To Address?')
-                if self.validAddress(toAddress):
+                if self.validAddress(toAddress) is True:
                     break
 
         if self.validAddress(fromAddress) is False:
@@ -760,7 +761,7 @@ Encoding:base64
                 while True:
                     fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from')
 
-                    if not self.validAddress(fromAddress):
+                    if self.validAddress(fromAddress) is False:
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
                             label = jsonAddresses['addresses'][addNum]['label']
@@ -808,6 +809,7 @@ Encoding:base64
         try:
             ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
             sendMessage = self.api.getStatus(ackData)
+            # TODO - There are more statuses that should be paid attention to
             if sendMessage == 'doingmsgpow':
                 print('Message Sent!')
             else:
@@ -838,7 +840,7 @@ Encoding:base64
                 while True:
                     fromAddress = self.userInputStrip('\nEnter an Address or Address Label to send from')
 
-                    if not self.validAddress(fromAddress):
+                    if self.validAddress(fromAddress) is False:
                         # processes all of the addresses
                         for addNum in range (0, numAddresses):
                             label = jsonAddresses['addresses'][addNum]['label']
@@ -889,6 +891,7 @@ Encoding:base64
         try:
             ackData = self.api.sendBroadcast(fromAddress, subject, message)
             sendMessage = self.api.getStatus(ackData)
+            # TODO - There are more statuses that should be paid attention to
             if sendMessage == 'broadcastqueued':
                 print('Broadcast is now in the queue')
             else:
@@ -1133,11 +1136,8 @@ Encoding:base64
             while True:
                 toAdd = self.userInput('What is the To Address?')
 
-                if toAdd in ['c']:
-                    print('')
-                    self.main()
-                elif self.validAddress(toAdd) is False:
-                    print('Invalid Address. ''c'' to cancel. Please try again.\n')
+                if self.validAddress(toAdd) is False:
+                    print('Invalid Address. Please try again.\n')
                 else:
                     break
         else:
@@ -1352,7 +1352,7 @@ Encoding:base64
                 except AttributeError:
                     print('Invalid address!')
 
-                if 'success' in address_information['status']:
+                if address_information['status'] == 'success':
                     print('Address Version: {0}'.format(address_information['addressVersion']))
                     print('Stream Number: {0}'.format(address_information['streamNumber']))
                     self.main()
@@ -1614,17 +1614,14 @@ Encoding:base64
     
                 if uInput in ['yes', 'y']:
                     if msgNum in ['all', 'a']:
-                        print('')
                         # Processes all of the messages in the inbox
                         for msgNum in range (0, numMessages):
                             print('Deleting message {0} of '.format(msgNum + 1, numMessages))
                             self.delMsg(0)
-    
                         print('Inbox is empty.')
                     else:
                         self.delMsg(int(msgNum))
-                        
-                    print('Notice: Message numbers may have changed.\n')
+                    print('Notice: Message numbers may have changed.')
                     self.main()
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
@@ -1649,16 +1646,14 @@ Encoding:base64
 
                 if uInput in ['yes', 'y']:
                     if msgNum in ['all', 'a']:
-                        print('')
                         # processes all of the messages in the outbox
                         for msgNum in range (0, numMessages):
                             print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
                             self.delSentMsg(0)
-
                         print('Outbox is empty.')
                     else:
                         self.delSentMsg(int(msgNum))
-                    print('Notice: Message numbers may have changed.\n')
+                    print('Notice: Message numbers may have changed.')
                     self.main()
             else:
                 print('Invalid Entry')
@@ -1668,7 +1663,7 @@ Encoding:base64
         elif usrInput in ['listaddressbookentries']:
             res = self.listAddressBookEntries()
             if res == 20:
-                print('Error: API function not supported.\n')
+                print('Error: API function not supported.')
             self.main()
 
         elif usrInput in ['addaddressbookentry']:
@@ -1684,7 +1679,7 @@ Encoding:base64
         elif usrInput in ['deleteaddressbookentry']:
             while True:
                 address = self.userInputStrip('\nEnter address')
-                if self.validAddress(address):
+                if self.validAddress(address) is True:
                     res = self.deleteAddressFromAddressBook(address)
                     if res == 20:
                         print('Error: API function not supported.\n')
