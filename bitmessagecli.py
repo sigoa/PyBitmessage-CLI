@@ -707,17 +707,34 @@ Encoding:base64
     # With no arguments sent, sendMsg fills in the blanks
     # subject and message must be encoded before they are passed
     def sendMsg(self, toAddress, fromAddress, subject, message):
+        jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
+        # Number of addresses
+        numAddresses = len(jsonAddresses['addresses'])
+
         if not self.validAddress(toAddress):
+            found = False
             while True:
                 toAddress = self.userInputStrip('\nWhat is the To Address?')
                 if self.validAddress(toAddress):
                     break
+                else:
+                    for addNum in range (0, numAddresses):
+                        label = jsonAddresses['addresses'][addNum]['label']
+                        address = jsonAddresses['addresses'][addNum]['address']
+                        if label.startswith('[chan] '):
+                            label = label.split('[chan] ')[1]
+                        # address entered was a label and is found
+                        elif toAddress == label:
+                            found = True
+                            toAddress = address
+                            break
+                    if not found:
+                        print('Invalid Address. Please try again.')
+                    else:
+                        # Address was found
+                        break
 
         if not self.validAddress(fromAddress):
-            jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
-            # Number of addresses
-            numAddresses = len(jsonAddresses['addresses'])
-
             # Ask what address to send from if multiple addresses
             if numAddresses > 1:
                 found = False
@@ -738,7 +755,6 @@ Encoding:base64
                                 break
                         if not found:
                             print('Invalid Address. Please try again.')
-
                     else:
                         for addNum in range (0, numAddresses):
                             address = jsonAddresses['addresses'][addNum]['address']
@@ -748,6 +764,9 @@ Encoding:base64
                                 break
                         if not found:
                             print('The address entered is not one of yours. Please try again.')
+                        else:
+                            # Address was found
+                            break
                     if found:
                         break
 
@@ -805,7 +824,6 @@ Encoding:base64
                                 break
                         if not found:
                             print('Invalid Address. Please try again.')
-
                     else:
                         for addNum in range (0, numAddresses):
                             address = jsonAddresses['addresses'][addNum]['address']
@@ -1238,8 +1256,8 @@ Encoding:base64
             if uInput in ['deterministic', 'd']:
                 deterministic = True
 
-                lbl = self.userInput('\nLabel the new address:')
-                passphrase = self.userInput('\nEnter the Passphrase.')
+                lbl = self.userInputStrip('\nLabel the new address:')
+                passphrase = self.userInputStrip('\nEnter the Passphrase.')
 
                 try:
                     numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
@@ -1270,7 +1288,7 @@ Encoding:base64
             # Creates a random address with user-defined label
             elif uInput in ['random', 'r']:
                 deterministic = False
-                lbl = self.userInput('\nEnter the label for the new address.')
+                lbl = self.userInputStrip('\nEnter the label for the new address.')
                 print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, NULL, NULL, NULL, NULL, NULL)))
             self.main()
 
@@ -1489,7 +1507,7 @@ Encoding:base64
                 numMessages = len(outboxMessages['sentMessages'])
                 
                 while True:
-                    msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the inbox.')
+                    msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the outbox.')
                     try:
                         if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
                             break
