@@ -775,7 +775,7 @@ Encoding:base64
         if sendMessage == 'doingmsgpow':
             print('Message Sent!')
         else:
-            print('Could not send Message')
+            print(sendMessage)
 
 
     # sends a broadcast
@@ -844,7 +844,7 @@ Encoding:base64
         if sendMessage == 'broadcastqueued':
             print('Broadcast is now in the queue')
         else:
-            print('Could not send Broadcast')
+            print(sendMessage)
 
 
     # Lists the messages by: Message Number, To Address Label,
@@ -1361,7 +1361,7 @@ Encoding:base64
                     self.markMessageRead(messageID)
 
                 while True:
-                    uInput = self.userInput('\nWould you like to (D)elete, (F)orward, (R)eply, or E(x)it this message?')
+                    uInput = self.userInput('\nWould you like to (D)elete, (F)orward or (R)eply?')
                     if uInput in ['reply', 'r', 'forward', 'f', 'delete', 'd', 'forward', 'f', 'reply', 'r']:
                         break
                     else:
