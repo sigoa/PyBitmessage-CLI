@@ -1213,9 +1213,10 @@ Encoding:base64
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest():
-                print('API connection test has: PASSED')
+                api_test_status = 'PASSED'
             else:
-                print('API connection test has: FAILED')
+                api_test_status = 'FAILED'
+            print('API connection test has: {0}'.format(api_test_status))
             self.main()
 
         elif usrInput in ['addinfo']:
@@ -1259,13 +1260,15 @@ Encoding:base64
                 lbl = self.userInputStrip('\nLabel the new address:')
                 passphrase = self.userInputStrip('\nEnter the Passphrase.')
 
-                try:
-                    numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
-                except ValueError:
-                    print("That's not a whole number.")
-                if numOfAdd <= 0:
-                    print('How were you expecting that to work?')
-                    self.main()
+                while True:
+                    try:
+                        numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?'))
+                    except ValueError:
+                        print("That's not a whole number.")
+                    if numOfAdd <= 0:
+                        print('How were you expecting that to work?')
+                    else:
+                        break
                 addVNum = 3
                 streamNum = 1
                 isRipe = self.userInput('\nShorten the address, (Y)/(n)')
