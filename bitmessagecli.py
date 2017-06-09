@@ -174,10 +174,6 @@ class my_bitmessage(object):
                 apiPort = self.userInput('API Port (8444)')
                 apiEnabled = self.userInput('API Enabled? (True) / (False)')
                 daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
-
-                if daemon not in ['true', 'false']:
-                    print('Invalid Entry for Daemon')
-
                 '''
                 sets the bitmessage port to stop the warning about the api
                 not properly being setup.
@@ -194,7 +190,7 @@ class my_bitmessage(object):
                 config.set('bitmessagesettings', 'daemon', daemon)
                 with open(self.keysPath, 'wb') as configfile:
                     config.write(configfile)
-                print('Finished configuring the keys.dat file with API information.\n')
+                print('Finished configuring the keys.dat file with API information')
                 self.restartBmNotify()
 
             else:
@@ -241,7 +237,7 @@ class my_bitmessage(object):
                     self.configInit()
                     self.keysPath = self.keysName
                 else:
-                    print('keys.dat was not created.\n')
+                    print('keys.dat was not created')
                 self.main()
 
         # checks to make sure that everything is configured correctly.
@@ -304,7 +300,7 @@ class my_bitmessage(object):
             port = config.get('bitmessagesettings', 'port')
         except Exception as e:
             print(e)
-            print('File not found.\n')
+            print('File not found')
             self.main()
 
         startonlogon = self.safeConfigGetBoolean('bitmessagesettings', 'startonlogon')
@@ -426,7 +422,7 @@ class my_bitmessage(object):
                     uInput = self.userInput('Enter the new sockspassword')
                     config.set('bitmessagesettings', 'sockspassword', str(uInput))
                 else:
-                    print('Invalid input. Please try again.\n')
+                    print('Invalid input. Please try again')
                     invalidInput = True
 
                 # don't prompt if they made a mistake. 
@@ -436,11 +432,9 @@ class my_bitmessage(object):
                     if uInput not in ['yes', 'y']:
                         with open(self.keysPath, 'wb') as configfile:
                             config.write(configfile)
-                        print('Changes made\n')
+                        print('Changes made')
                         self.restartBmNotify()
                         break
-        else:
-            pass
         self.main()
 
 
@@ -489,29 +483,21 @@ class my_bitmessage(object):
 
 
     def listSubscriptions(self):
-        try:
-            total_subscriptions = json.loads(self.api.listSubscriptions())
+        total_subscriptions = json.loads(self.api.listSubscriptions())
+        print('-------------------------------------')
+        for each in total_subscriptions['subscriptions']:
+            print('Label: {0}'.format(base64.b64decode(each['label'])))
+            print('Address: {0}'.format(each['address']))
+            print('Enabled: {0}'.format(each['enabled']))
             print('-------------------------------------')
-            for each in total_subscriptions['subscriptions']:
-                print('Label: {0}'.format(base64.b64decode(each['label'])))
-                print('Address: {0}'.format(each['address']))
-                print('Enabled: {0}'.format(each['enabled']))
-                print('-------------------------------------')
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        self.main()
 
 
     def createChan(self):
         password = self.userInputStrip('\nEnter channel name:')
         password = base64.b64encode(password)
-        try:
-            print('Channel password: ' + self.api.createChan(password))
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        print('Channel password: ' + self.api.createChan(password))
+        self.main()
 
 
     def joinChan(self):
@@ -524,15 +510,13 @@ class my_bitmessage(object):
             if password:
                 break
         password = base64.b64encode(password)
-        try:
-            joiningChannel = self.api.joinChan(password, address)
-            if joiningChannel == 'success':
-                print('Successfully joined {0}'.format(address))
-            elif joiningChannel.endswith('list index out of range'):
-                print("You're already in that channel")
-        except Exception as e:
-            print('Connection Error\n')
-            self.main()
+
+        joiningChannel = self.api.joinChan(password, address)
+        if joiningChannel == 'success':
+            print('Successfully joined {0}'.format(address))
+        elif joiningChannel.endswith('list index out of range'):
+            print("You're already in that channel")
+        self.main()
 
 
     def leaveChan(self):
@@ -554,27 +538,19 @@ class my_bitmessage(object):
                         break
             if found:
                 break
-        try:
-            leavingChannel = self.api.leaveChan(address)
-            if leavingChannel == 'success':
-                print('Successfully left {0}'.format(address))
-            else:
-                print(leavingChannel)
-        except Exception as e:
-            print('Connection Error\n')
-            self.main()
+        leavingChannel = self.api.leaveChan(address)
+        if leavingChannel == 'success':
+            print('Successfully left {0}'.format(address))
+        else:
+            print(leavingChannel)
+        self.main()
 
 
     # Lists all of the addresses and their info
     def listAdd(self):
-        try:
-            jsonAddresses = json.loads(self.api.listAddresses())
-            # Number of addresses
-            numAddresses = len(jsonAddresses['addresses'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        jsonAddresses = json.loads(self.api.listAddresses())
+        # Number of addresses
+        numAddresses = len(jsonAddresses['addresses'])
 
         print('-------------------------------------')
         for each in jsonAddresses['addresses']:
@@ -583,27 +559,23 @@ class my_bitmessage(object):
             print('Stream: {0}'.format(each['stream']))
             print('Enabled: {0}'.format(each['enabled']))
             print('-------------------------------------')
-
+        self.main()
 
     # Generate address
     def genAdd(self, lbl, deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe):
         # Generates a new address with the user defined label. non-deterministic
-        try:
-            if not deterministic:
-                addressLabel = base64.b64encode(lbl)
-                generatedAddress = self.api.createRandomAddress(addressLabel)
-                return generatedAddress
-            # Generates a new deterministic address with the user inputs
-            elif deterministic:
-                passphrase = base64.b64encode(passphrase)
-                generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
-                return generatedAddress
-            else:
-                return 'Entry Error'
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        if not deterministic:
+            addressLabel = base64.b64encode(lbl)
+            generatedAddress = self.api.createRandomAddress(addressLabel)
+            return generatedAddress
+        # Generates a new deterministic address with the user inputs
+        elif deterministic:
+            passphrase = base64.b64encode(passphrase)
+            generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
+            return generatedAddress
+        else:
+            return 'Entry Error'
+        self.main()
 
 
     # Allows attachments and messages/broadcats to be saved
@@ -649,8 +621,7 @@ class my_bitmessage(object):
                 with open(filePath):
                     break
             except IOError:
-                print('{0} was not found on your filesystem or can not be opened.\n'.format(filePath))
-                pass
+                print('{0} was not found on your filesystem or can not be opened.'.format(filePath))
 
         while True:
             invSize = os.path.getsize(filePath)
@@ -667,12 +638,12 @@ class my_bitmessage(object):
                 uInput = self.userInput('\nAre you sure you still want to attach it, (Y)/(n)')
 
                 if uInput not in ['yes', 'y']:
-                    print('Attachment discarded.\n')
+                    print('Attachment discarded.')
                     return ''
 
             # If larger than 256KB, discard
             elif invSize > 256.0:
-                print('Attachment too big, maximum allowed message size is 256KB\n')
+                print('Attachment too big, maximum allowed message size is 256KB')
                 self.main()
 
             # Gets the length of the filepath excluding the filename
@@ -688,7 +659,7 @@ class my_bitmessage(object):
                 print('<img> tags will automatically be included,')
                 print('allowing the recipient to view the image')
                 print('using the ''View HTML code...'' option in Bitmessage.')
-                print('---------------------------------------------------\n')
+                print('---------------------------------------------------')
                 isImage = True
                 time.sleep(2)
 
@@ -744,14 +715,9 @@ Encoding:base64
                     break
 
         if not self.validAddress(fromAddress):
-            try:
-                jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
-                # Number of addresses
-                numAddresses = len(jsonAddresses['addresses'])
-            except Exception as e:
-                print(e)
-                print('Connection Error\n')
-                self.main()
+            jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
+            # Number of addresses
+            numAddresses = len(jsonAddresses['addresses'])
 
             # Ask what address to send from if multiple addresses
             if numAddresses > 1:
@@ -772,7 +738,7 @@ Encoding:base64
                                 fromAddress = address
                                 break
                         if not found:
-                            print('Invalid Address. Please try again.\n')
+                            print('Invalid Address. Please try again.')
 
                     else:
                         for addNum in range (0, numAddresses):
@@ -782,7 +748,7 @@ Encoding:base64
                                 found = True
                                 break
                         if not found:
-                            print('The address entered is not one of yours. Please try again.\n')
+                            print('The address entered is not one of yours. Please try again.')
                     if found:
                         break
 
@@ -804,31 +770,21 @@ Encoding:base64
             message = '{0}\n\n{1}'.format(message, self.attachment())
         message = base64.b64encode(message)
 
-        try:
-            ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-            sendMessage = self.api.getStatus(ackData)
-            # TODO - There are more statuses that should be paid attention to
-            if sendMessage == 'doingmsgpow':
-                print('Message Sent!')
-            else:
-                print('Could not send Message')
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
+        sendMessage = self.api.getStatus(ackData)
+        # TODO - There are more statuses that should be paid attention to
+        if sendMessage == 'doingmsgpow':
+            print('Message Sent!')
+        else:
+            print('Could not send Message')
 
 
     # sends a broadcast
     def sendBrd(self, fromAddress, subject, message):
         if fromAddress == '':
-            try:
-                jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
-                # Number of addresses
-                numAddresses = len(jsonAddresses['addresses'])
-            except Exception as e:
-                print(e)
-                print('Connection Error\n')
-                self.main()
+            jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
+            # Number of addresses
+            numAddresses = len(jsonAddresses['addresses'])
 
             # Ask what address to send from if multiple addresses
             if numAddresses > 1:
@@ -849,7 +805,7 @@ Encoding:base64
                                 fromAddress = address
                                 break
                         if not found:
-                            print('Invalid Address. Please try again.\n')
+                            print('Invalid Address. Please try again.')
 
                     else:
                         for addNum in range (0, numAddresses):
@@ -859,7 +815,7 @@ Encoding:base64
                                 found = True
                                 break
                         if not found:
-                            print('The address entered is not one of yours. Please try again.\n')
+                            print('The address entered is not one of yours. Please try again.')
                         else:
                             # Address was found
                             break
@@ -883,30 +839,20 @@ Encoding:base64
             message = message + '\n\n' + self.attachment()
         message = base64.b64encode(message)
 
-        try:
-            ackData = self.api.sendBroadcast(fromAddress, subject, message)
-            sendMessage = self.api.getStatus(ackData)
-            # TODO - There are more statuses that should be paid attention to
-            if sendMessage == 'broadcastqueued':
-                print('Broadcast is now in the queue')
-            else:
-                print('Could not send Broadcast')
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        ackData = self.api.sendBroadcast(fromAddress, subject, message)
+        sendMessage = self.api.getStatus(ackData)
+        # TODO - There are more statuses that should be paid attention to
+        if sendMessage == 'broadcastqueued':
+            print('Broadcast is now in the queue')
+        else:
+            print('Could not send Broadcast')
 
 
     # Lists the messages by: Message Number, To Address Label,
     # From Address Label, Subject, Received Time
     def inbox(self, unreadOnly):
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-            numMessages = len(inboxMessages['inboxMessages'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        numMessages = len(inboxMessages['inboxMessages'])
 
         messagesPrinted = 0
         messagesUnread = 0
@@ -940,12 +886,7 @@ Encoding:base64
 
 
     def outbox(self):
-        try:
-            outboxMessages = json.loads(self.api.getAllSentMessages())
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        outboxMessages = json.loads(self.api.getAllSentMessages())
         numMessages = len(outboxMessages)
         # processes all of the messages in the outbox
         msgNum = 1
@@ -972,16 +913,11 @@ Encoding:base64
 
     # Opens a sent message for reading
     def readSentMsg(self, msgNum):
-        try:
-            outboxMessages = json.loads(self.api.getAllSentMessages())
-            numMessages = len(outboxMessages['sentMessages'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        outboxMessages = json.loads(self.api.getAllSentMessages())
+        numMessages = len(outboxMessages['sentMessages'])
     
         if msgNum >= numMessages:
-            print('Invalid Message Number.\n')
+            print('Invalid Message Number')
             self.main()
 
         ####
@@ -1033,13 +969,8 @@ Encoding:base64
 
     # Opens a message for reading
     def readMsg(self, msgNum):
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-            numMessages = len(inboxMessages['inboxMessages'])
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        numMessages = len(inboxMessages['inboxMessages'])
 
         if msgNum >= numMessages:
             print('Invalid Message Number.')
@@ -1099,12 +1030,7 @@ Encoding:base64
     def replyMsg(msgNum,forwardORreply):
         # makes it lowercase
         forwardORreply = forwardORreply.lower()
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
 
         # Address it was sent To, now the From address
         fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
@@ -1125,7 +1051,7 @@ Encoding:base64
             while True:
                 toAdd = self.userInput('What is the To Address?')
                 if not self.validAddress(toAdd):
-                    print('Invalid Address. Please try again.\n')
+                    print('Invalid Address. Please try again.')
                 else:
                     break
         else:
@@ -1150,42 +1076,26 @@ Encoding:base64
 
     def delMsg(self, msgNum):
         # Deletes a specified message from the inbox
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-            # gets the message ID via the message index number
-            msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
-            msgAck = self.api.trashMessage(msgId)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        # gets the message ID via the message index number
+        msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
+        msgAck = self.api.trashMessage(msgId)
         return msgAck
 
 
     # Deletes a specified message from the outbox
     def delSentMsg(self, msgNum):
-        
-        try:
-            outboxMessages = json.loads(self.api.getAllSentMessages())
-            # gets the message ID via the message index number
-            msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
-            msgAck = self.api.trashSentMessage(msgId)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        outboxMessages = json.loads(self.api.getAllSentMessages())
+        # gets the message ID via the message index number
+        msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
+        msgAck = self.api.trashSentMessage(msgId)
         return msgAck
 
 
     def listAddressBookEntries(self):
-        try:
-            response = self.api.listAddressBookEntries()
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        response = self.api.listAddressBookEntries()
+        if 'API Error' in response:
+            return self.getAPIErrorCode(response)
         addressBook = json.loads(response)
         if addressBook['addresses']:
             print('-------------------------------------')
@@ -1198,25 +1108,15 @@ Encoding:base64
 
 
     def addAddressToAddressBook(self, address, label):
-        try:
-            response = self.api.addAddressBookEntry(address, base64.b64encode(label))
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        response = self.api.addAddressBookEntry(address, base64.b64encode(label))
+        if 'API Error' in response:
+            return self.getAPIErrorCode(response)
 
 
     def deleteAddressFromAddressBook(self, address):
-        try:
-            response = self.api.deleteAddressBookEntry(address)
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        response = self.api.deleteAddressBookEntry(address)
+        if 'API Error' in response:
+            return self.getAPIErrorCode(response)
 
 
     def getAPIErrorCode(self, response):
@@ -1227,46 +1127,26 @@ Encoding:base64
 
 
     def markMessageRead(self, messageID):
-        try:
-            response = self.api.getInboxMessageByID(messageID, True)
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        response = self.api.getInboxMessageByID(messageID, True)
+        if 'API Error' in response:
+            return self.getAPIErrorCode(response)
 
 
     def markMessageUnread(self, messageID):
-        try:
-            response = self.api.getInboxMessageByID(messageID, False)
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        response = self.api.getInboxMessageByID(messageID, False)
+        if 'API Error' in response:
+            return self.getAPIErrorCode(response)
 
 
     def markAllMessagesRead(self):
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
         for message in inboxMessages:
             if not message['read']:
                 markMessageRead(message['msgid'])
 
 
     def markAllMessagesUnread(self):
-        try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        except Exception as e:
-            print(e)
-            print('Connection Error\n')
-            self.main()
+        inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
         for message in inboxMessages:
             if message['read']:
                 markMessageUnread(message['msgid'])
@@ -1536,7 +1416,7 @@ Encoding:base64
                     try:
                         msgNum = int(self.userInput('What is the number of the message you wish to save?'))
                         if msgNum >= numMessages:
-                            print('Invalid Message Number.\n')
+                            print('Invalid Message Number.')
                         else:
                             break
                     except ValueError:
@@ -1554,7 +1434,7 @@ Encoding:base64
                     try:
                         msgNum = int(self.userInput('What is the number of the message you wish to save?'))
                         if msgNum >= numMessages:
-                            print('Invalid Message Number.\n')
+                            print('Invalid Message Number.')
                         else:
                             break
                     except ValueError:
@@ -1668,7 +1548,7 @@ Encoding:base64
                 if self.validAddress(address):
                     res = self.deleteAddressFromAddressBook(address)
                     if res == 20:
-                        print('Error: API function not supported.\n')
+                        print('Error: API function not supported.')
                     else:
                         print('{0} has been deleted!'.format(address))
                 else:
