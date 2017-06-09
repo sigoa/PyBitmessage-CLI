@@ -192,7 +192,6 @@ class my_bitmessage(object):
                     config.write(configfile)
                 print('Finished configuring the keys.dat file with API information')
                 self.restartBmNotify()
-
             else:
                 print('------------------------------------------------------------')
                 print('Please refer to the Bitmessage Wiki on how to setup the API.')
@@ -1588,7 +1587,6 @@ Encoding:base64
             print("Either Bitmessage is not running or your settings are incorrect.")
             print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
             print("----------------------------------------------------------------")
-
 
         try:
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
