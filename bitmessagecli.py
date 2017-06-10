@@ -134,68 +134,67 @@ class my_bitmessage(object):
             print('The API is not enabled.')
             while True:
                 uInput = self.userInput('Would you like to enable it now? Y/n: ')
-                if uInput:
-                    break
+                # Sets apienabled to true in keys.dat
+                if uInput in ['y', 'yes']:
+                    print('?')
+                    config.set('bitmessagesettings','apienabled','true')
+                    with open(self.keysPath, 'wb') as configfile:
+                        config.write(configfile)
+                    print('\nAPI now Enabled')
+                    self.restartBmNotify()
+                    return True
+                else:
+                    print('\n------------------------------------------------------------')
+                    print('        Daemon will not work when the API is disabled.')
+                    print('Please refer to the Bitmessage Wiki on how to setup the API.')
+                    print('------------------------------------------------------------')
+                self.main()
 
-            # Sets apienabled to true in keys.dat
-            if uInput in ['y', 'yes']:
-                config.set('bitmessagesettings','apienabled','true')
-                with open(self.keysPath, 'wb') as configfile:
-                    config.write(configfile)
-                print('API now Enabled')
-                self.restartBmNotify()
-                return True
-            else:
-                print('\n------------------------------------------------------------')
-                print('        Daemon will not work when the API is disabled.')
-                print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                print('------------------------------------------------------------')
-            self.main()
-
-        # API correctly setup
         elif apiEnabled:
-            # Everything is as it should be
-            return True
- 
-        # API information was not present.
-        else:
-            print('{0} is not properly configured!'.format(str(self.keysPath)))
-            while True:
-                uInput = self.userInput('Would you like to do this now, (Y)/(n)')
-                if uInput:
-                    break
-            # User said yes so initalize the api by
-            # writing these values to the keys.dat file
-            if uInput in ['yes', 'y']:
-                apiUsr = self.userInput('API Username')
-                apiPwd = self.userInput('API Password')
-                apiInterface = self.userInput('API Interface (127.0.0.1)')
-                apiPort = self.userInput('API Port (8444)')
-                apiEnabled = self.userInput('API Enabled? (True) / (False)')
-                daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
-                '''
-                sets the bitmessage port to stop the warning about the api
-                not properly being setup.
-                This is in the event that the keys.dat is in a different
-                directory or is created locally to connect to a machine
-                remotely.
-                '''
-                config.set('bitmessagesettings', 'port', '8444')
-                config.set('bitmessagesettings', 'apienabled', 'true')
-                config.set('bitmessagesettings', 'apiport', apiPort)
-                config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
-                config.set('bitmessagesettings', 'apiusername', apiUsr)
-                config.set('bitmessagesettings', 'apipassword', apiPwd)
-                config.set('bitmessagesettings', 'daemon', daemon)
-                with open(self.keysPath, 'wb') as configfile:
-                    config.write(configfile)
-                print('Finished configuring the keys.dat file with API information')
-                self.restartBmNotify()
-            else:
-                print('------------------------------------------------------------')
-                print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                print('------------------------------------------------------------\n')
-            self.main()
+            try:
+                config.get('bitmessagesettings', 'apiport')
+                config.get('bitmessagesettings', 'apiinterface')
+                config.get('bitmessagesettings', 'apiusername')
+                config.get('bitmessagesettings', 'apipassword')
+                return True
+            except Exception as e:
+                print('{0} is not properly configured!'.format(str(self.keysPath)))
+                while True:
+                    uInput = self.userInput('Would you like to do this now, (Y)/(n)')
+                    if uInput:
+                        break
+                # User said yes so initalize the api by
+                # writing these values to the keys.dat file
+                if uInput in ['yes', 'y']:
+                    apiUsr = self.userInput('API Username')
+                    apiPwd = self.userInput('API Password')
+                    apiInterface = self.userInput('API Interface (127.0.0.1)')
+                    apiPort = self.userInput('API Port (8444)')
+                    apiEnabled = self.userInput('API Enabled? (True) / (False)')
+                    daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
+                    '''
+                    sets the bitmessage port to stop the warning about the api
+                    not properly being setup.
+                    This is in the event that the keys.dat is in a different
+                    directory or is created locally to connect to a machine
+                    remotely.
+                    '''
+                    config.set('bitmessagesettings', 'port', '8444')
+                    config.set('bitmessagesettings', 'apienabled', 'true')
+                    config.set('bitmessagesettings', 'apiport', apiPort)
+                    config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
+                    config.set('bitmessagesettings', 'apiusername', apiUsr)
+                    config.set('bitmessagesettings', 'apipassword', apiPwd)
+                    config.set('bitmessagesettings', 'daemon', daemon)
+                    with open(self.keysPath, 'wb') as configfile:
+                        config.write(configfile)
+                    print('Finished configuring the keys.dat file with API information')
+                    self.restartBmNotify()
+                else:
+                    print('------------------------------------------------------------')
+                    print('Please refer to the Bitmessage Wiki on how to setup the API.')
+                    print('------------------------------------------------------------\n')
+                self.main()
 
 
     def apiData(self):
@@ -246,9 +245,8 @@ class my_bitmessage(object):
             config.get('bitmessagesettings', 'apiusername')
             config.get('bitmessagesettings', 'apipassword')
         except Exception as e:
-            print(e)
             # Initalize the keys.dat file with API information
-            self.apiInit('')
+            self.apiInit(False)
 
         '''
         keys.dat file was found or appropriately configured,
