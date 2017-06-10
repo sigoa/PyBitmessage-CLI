@@ -34,7 +34,6 @@ class my_bitmessage(object):
         self.api = ''
         self.keysName = 'keys.dat'
         self.keysPath = 'keys.dat'
-        self.knownAddresses = {}
 
 
     # Checks input for exit or quit. Also formats for input, etc
