@@ -1267,7 +1267,7 @@ Encoding:base64
                         print("That's not a whole number.")
                     if numOfAdd <= 0:
                         print('How were you expecting that to work?')
-                    elf numOfAdd >= 1000:
+                    elif numOfAdd >= 1000:
                         print('Limit of 999 addresses generated at once.')
                     else:
                         break
