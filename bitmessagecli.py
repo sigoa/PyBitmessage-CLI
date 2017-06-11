@@ -33,7 +33,7 @@ class my_bitmessage(object):
         self.usrPrompt = True
         self.api = ''
         self.keysName = 'keys.dat'
-        self.keysPath = 'keys.dat'
+        self.keysPath = self.lookupAppdataFolder()
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -106,24 +106,60 @@ class my_bitmessage(object):
     def configInit(self):
         config = ConfigParser.SafeConfigParser()
         config.add_section('bitmessagesettings')
-
-        '''
-        Sets the bitmessage port to stop the warning about
-        the api not properly being setup.
-        This is in the event that the keys.dat is in a different directory
-        or is created locally to connect to a machine remotely.
-        '''
         config.set('bitmessagesettings', 'port', '8444')
+        config.set('bitmessagesettings', 'apienabled', 'True')
+        config.set('bitmessagesettings', 'settingsversion', '10')
+        config.set('bitmessagesettings', 'port', '8444')
+        config.set('bitmessagesettings', 'timeformat', '%%c')
+        config.set('bitmessagesettings', 'blackwhitelist', 'black')
+        config.set('bitmessagesettings', 'startonlogon', 'False')
+        config.set('bitmessagesettings', 'minimizetotray', 'False')
+        config.set('bitmessagesettings', 'showtraynotifications', 'True')
+        config.set('bitmessagesettings', 'startintray', 'False')
+        config.set('bitmessagesettings', 'socksproxytype', 'none')
+        config.set('bitmessagesettings', 'sockshostname', 'localhost')
+        config.set('bitmessagesettings', 'socksport', '9050')
+        config.set('bitmessagesettings', 'socksauthentication', 'False')
+        config.set('bitmessagesettings', 'sockslisten', 'False')
+        config.set('bitmessagesettings', 'socksusername', '')
+        config.set('bitmessagesettings', 'sockspassword', '')
+        config.set('bitmessagesettings', 'keysencrypted', 'False')
+        config.set('bitmessagesettings', 'messagesencrypted', 'False')
+        config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
+        config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', '1000')
+        config.set('bitmessagesettings', 'minimizeonclose', 'False')
+        config.set('bitmessagesettings', 'maxacceptablenoncetrialsperbyte', '20000000000')
+        config.set('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes', '20000000000')
+        config.set('bitmessagesettings', 'userlocale', 'system')
+        config.set('bitmessagesettings', 'useidenticons', 'False')
+        config.set('bitmessagesettings', 'identiconsuffix', '')
+        config.set('bitmessagesettings', 'replybelow', 'False')
+        config.set('bitmessagesettings', 'maxdownloadrate', '0')
+        config.set('bitmessagesettings', 'maxuploadrate', '0')
+        config.set('bitmessagesettings', 'maxoutboundconnections', '8')
+        config.set('bitmessagesettings', 'ttl', '367200')
+        config.set('bitmessagesettings', 'stopresendingafterxdays', '')
+        config.set('bitmessagesettings', 'stopresendingafterxmonths', '')
+        config.set('bitmessagesettings', 'namecoinrpctype', 'namecoind')
+        config.set('bitmessagesettings', 'namecoinrpchost', 'localhost')
+        config.set('bitmessagesettings', 'namecoinrpcuser', '')
+        config.set('bitmessagesettings', 'namecoinrpcpassword', '')
+        config.set('bitmessagesettings', 'namecoinrpcport', '8336')
+        config.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
+        config.set('bitmessagesettings', 'onionhostname', '8444')
+        config.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
+        config.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
+        config.set('bitmessagesettings', 'trayonclose', 'False')
+        config.set('bitmessagesettings', 'willinglysendtomobile', 'False')
+        config.set('bitmessagesettings', 'opencl', 'False')
 
-        # Sets apienabled to true in keys.dat
-        config.set('bitmessagesettings','apienabled','true')
-
-        with open(self.keysName, 'wb') as configfile:
+        self.keysPath = self.keysPath + self.keysName
+        with open(self.keysPath, 'wb') as configfile:
             config.write(configfile)
 
-        print('{0} Initalized in the same directory as daemon.py'.format(str(self.keysName)))
-        print('You will now need to configure the {0} file.'.format(str(self.keysName)))
-
+        print('keys.dat initialized in {0}'.format(str(self.keysPath)))
+        apiEnabled = config.getboolean('bitmessagesettings', 'apienabled')
+        self.apiInit(apiEnabled)
 
     def apiInit(self, apiEnabled):
         config = ConfigParser.SafeConfigParser()
@@ -136,7 +172,6 @@ class my_bitmessage(object):
                 uInput = self.userInput('Would you like to enable it now? Y/n: ')
                 # Sets apienabled to true in keys.dat
                 if uInput in ['y', 'yes']:
-                    print('?')
                     config.set('bitmessagesettings','apienabled','true')
                     with open(self.keysPath, 'wb') as configfile:
                         config.write(configfile)
@@ -150,7 +185,7 @@ class my_bitmessage(object):
                     print('------------------------------------------------------------')
                 self.main()
 
-        elif apiEnabled:
+        else:
             try:
                 config.get('bitmessagesettings', 'apiport')
                 config.get('bitmessagesettings', 'apiinterface')
@@ -158,7 +193,7 @@ class my_bitmessage(object):
                 config.get('bitmessagesettings', 'apipassword')
                 return True
             except Exception as e:
-                print('{0} is not properly configured!'.format(str(self.keysPath)))
+                print('keys.dat is not properly configured!')
                 while True:
                     uInput = self.userInput('Would you like to do this now, (Y)/(n)')
                     if uInput:
@@ -206,12 +241,9 @@ class my_bitmessage(object):
 
         try:
             config.get('bitmessagesettings','port')
-            appDataFolder = ''
         except Exception as e:
             # Could not load the keys.dat file in the program directory.
             # Perhaps it is in the appdata directory.
-            appDataFolder = self.lookupAppdataFolder()
-            self.keysPath = appDataFolder + self.keysPath
             config = ConfigParser.SafeConfigParser()
             config.read(self.keysPath)
 
@@ -225,16 +257,7 @@ class my_bitmessage(object):
                 print('Make sure that daemon is in the same directory as Bitmessage. ')
                 print('-------------------------------------------------------------------')
 
-                while True:
-                    uInput = self.userInput('Would you like to create keys.dat in the local directory, (Y)/(n)?')
-                    if uInput:
-                        break
-
-                if uInput in ['yes', 'y']:
-                    self.configInit()
-                    self.keysPath = self.keysName
-                else:
-                    print('keys.dat was not created')
+                self.configInit()
                 self.main()
 
         # checks to make sure that everything is configured correctly.
@@ -257,7 +280,7 @@ class my_bitmessage(object):
 
         # read again since changes have been made
         config.read(self.keysPath)
-        apiPort = int(config.get('bitmessagesettings', 'apiport'))
+        apiPort = config.getint('bitmessagesettings', 'apiport')
         apiInterface = config.get('bitmessagesettings', 'apiinterface')
         apiUsername = config.get('bitmessagesettings', 'apiusername')
         apiPassword = config.get('bitmessagesettings', 'apipassword')
