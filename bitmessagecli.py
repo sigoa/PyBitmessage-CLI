@@ -15,14 +15,19 @@ import imghdr
 import json
 import ntpath
 import os
+import random
 import socket
 import sys
 import time
 import xmlrpclib
 from os import path, environ
+from string import digits, ascii_letters
 
 APPNAME = 'PyBitmessage'
 NULL = ''
+CHARACTERS = digits + ascii_letters
+SECURE_RANDOM = random.SystemRandom()
+
 
 class my_bitmessage(object):
     def __init__(self):
@@ -32,8 +37,7 @@ class my_bitmessage(object):
         '''
         self.usrPrompt = True
         self.api = ''
-        self.keysName = 'keys.dat'
-        self.keysPath = self.lookupAppdataFolder()
+        self.keysPath = self.lookupAppdataFolder() + 'keys.dat'
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -68,16 +72,6 @@ class my_bitmessage(object):
         print('-------------------------------------------------------------------')
 
 
-    def safeConfigGetBoolean(self, section, field):
-        config = ConfigParser.SafeConfigParser()
-        config.read(self.keysPath)
-        try:
-            return config.getboolean(section,field)
-        except Exception as e:
-            print(e)
-            return False
-
-
     '''
     Begin keys.dat interactions
     gets the appropriate folders for the .dat files depending on the OS.
@@ -104,12 +98,18 @@ class my_bitmessage(object):
 
 
     def configInit(self):
-        config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.RawConfigParser()
         config.add_section('bitmessagesettings')
         config.set('bitmessagesettings', 'port', '8444')
         config.set('bitmessagesettings', 'apienabled', 'True')
         config.set('bitmessagesettings', 'settingsversion', '10')
-        config.set('bitmessagesettings', 'port', '8444')
+        config.set('bitmessagesettings', 'apiport', '8444')
+        config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
+        config.set('bitmessagesettings', 'apiusername',
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
+        config.set('bitmessagesettings', 'apipassword',
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
+        config.set('bitmessagesettings', 'daemon', 'True')
         config.set('bitmessagesettings', 'timeformat', '%%c')
         config.set('bitmessagesettings', 'blackwhitelist', 'black')
         config.set('bitmessagesettings', 'startonlogon', 'False')
@@ -153,38 +153,22 @@ class my_bitmessage(object):
         config.set('bitmessagesettings', 'willinglysendtomobile', 'False')
         config.set('bitmessagesettings', 'opencl', 'False')
 
-        self.keysPath = self.keysPath + self.keysName
         with open(self.keysPath, 'wb') as configfile:
             config.write(configfile)
-
-        print('keys.dat initialized in {0}'.format(str(self.keysPath)))
         apiEnabled = config.getboolean('bitmessagesettings', 'apienabled')
         self.apiInit(apiEnabled)
 
+
     def apiInit(self, apiEnabled):
-        config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.RawConfigParser()
         config.read(self.keysPath)
 
         # API information there but the api is disabled
         if not apiEnabled:
-            print('The API is not enabled.')
             while True:
-                uInput = self.userInput('Would you like to enable it now? Y/n: ')
-                # Sets apienabled to true in keys.dat
-                if uInput in ['y', 'yes']:
-                    config.set('bitmessagesettings','apienabled','true')
-                    with open(self.keysPath, 'wb') as configfile:
-                        config.write(configfile)
-                    print('\nAPI now Enabled')
-                    self.restartBmNotify()
-                    return True
-                else:
-                    print('\n------------------------------------------------------------')
-                    print('        Daemon will not work when the API is disabled.')
-                    print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                    print('------------------------------------------------------------')
-                self.main()
-
+                self.configInit()
+                self.restartBmNotify()
+                return True
         else:
             try:
                 config.get('bitmessagesettings', 'apiport')
@@ -193,47 +177,13 @@ class my_bitmessage(object):
                 config.get('bitmessagesettings', 'apipassword')
                 return True
             except Exception as e:
-                print('keys.dat is not properly configured!')
-                while True:
-                    uInput = self.userInput('Would you like to do this now, (Y)/(n)')
-                    if uInput:
-                        break
-                # User said yes so initalize the api by
-                # writing these values to the keys.dat file
-                if uInput in ['yes', 'y']:
-                    apiUsr = self.userInput('API Username')
-                    apiPwd = self.userInput('API Password')
-                    apiInterface = self.userInput('API Interface (127.0.0.1)')
-                    apiPort = self.userInput('API Port (8444)')
-                    apiEnabled = self.userInput('API Enabled? (True) / (False)')
-                    daemon = self.userInput('Daemon mode Enabled? (True) / (False)')
-                    '''
-                    sets the bitmessage port to stop the warning about the api
-                    not properly being setup.
-                    This is in the event that the keys.dat is in a different
-                    directory or is created locally to connect to a machine
-                    remotely.
-                    '''
-                    config.set('bitmessagesettings', 'port', '8444')
-                    config.set('bitmessagesettings', 'apienabled', 'true')
-                    config.set('bitmessagesettings', 'apiport', apiPort)
-                    config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
-                    config.set('bitmessagesettings', 'apiusername', apiUsr)
-                    config.set('bitmessagesettings', 'apipassword', apiPwd)
-                    config.set('bitmessagesettings', 'daemon', daemon)
-                    with open(self.keysPath, 'wb') as configfile:
-                        config.write(configfile)
-                    print('Finished configuring the keys.dat file with API information')
-                    self.restartBmNotify()
-                else:
-                    print('------------------------------------------------------------')
-                    print('Please refer to the Bitmessage Wiki on how to setup the API.')
-                    print('------------------------------------------------------------\n')
+                self.configInit()
+                self.restartBmNotify()
                 self.main()
 
 
     def apiData(self):
-        config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.RawConfigParser()
 
         # First try to load the config file (the keys.dat file)
         # from the program directory    
@@ -244,12 +194,13 @@ class my_bitmessage(object):
         except Exception as e:
             # Could not load the keys.dat file in the program directory.
             # Perhaps it is in the appdata directory.
-            config = ConfigParser.SafeConfigParser()
+            config = ConfigParser.RawConfigParser()
             config.read(self.keysPath)
 
             try:
                 config.get('bitmessagesettings','port')
             except Exception as e:
+                print(e)
                 # keys.dat was not there either, something is wrong.
                 print('\n------------------------------------------------------------------')
                 print('There was a problem trying to access the Bitmessage keys.dat file')
@@ -276,7 +227,7 @@ class my_bitmessage(object):
         allow information retrieval
         if False it will prompt the user, if True it will return True
         '''
-        apiEnabled = self.apiInit(self.safeConfigGetBoolean('bitmessagesettings', 'apienabled'))
+        apiEnabled = self.apiInit(config.getboolean('bitmessagesettings', 'apienabled'))
 
         # read again since changes have been made
         config.read(self.keysPath)
@@ -309,7 +260,7 @@ class my_bitmessage(object):
 
     # Allows the viewing and modification of keys.dat settings.
     def bmSettings(self):
-        config = ConfigParser.SafeConfigParser()
+        config = ConfigParser.RawConfigParser()
         # https://docs.python.org/2/library/configparser.html#ConfigParser.RawConfigParser.read
         # TODO
         # Read the keys.dat
@@ -322,18 +273,17 @@ class my_bitmessage(object):
             print('File not found')
             self.main()
 
-        startonlogon = self.safeConfigGetBoolean('bitmessagesettings', 'startonlogon')
-        minimizetotray = self.safeConfigGetBoolean('bitmessagesettings', 'minimizetotray')
-        showtraynotifications = self.safeConfigGetBoolean('bitmessagesettings', 'showtraynotifications')
-        startintray = self.safeConfigGetBoolean('bitmessagesettings', 'startintray')
+        startonlogon = config.getboolean('bitmessagesettings', 'startonlogon')
+        minimizetotray = config.getboolean('bitmessagesettings', 'minimizetotray')
+        showtraynotifications = config.getboolean('bitmessagesettings', 'showtraynotifications')
+        startintray = config.getboolean('bitmessagesettings', 'startintray')
         defaultnoncetrialsperbyte = config.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
         defaultpayloadlengthextrabytes = config.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
-        daemon = self.safeConfigGetBoolean('bitmessagesettings', 'daemon')
-
+        daemon = config.getboolean('bitmessagesettings', 'daemon')
         socksproxytype = config.get('bitmessagesettings', 'socksproxytype')
         sockshostname = config.get('bitmessagesettings', 'sockshostname')
         socksport = config.get('bitmessagesettings', 'socksport')
-        socksauthentication = self.safeConfigGetBoolean('bitmessagesettings', 'socksauthentication')
+        socksauthentication = config.getboolean('bitmessagesettings', 'socksauthentication')
         socksusername = config.get('bitmessagesettings', 'socksusername')
         sockspassword = config.get('bitmessagesettings', 'sockspassword')
 
@@ -1630,6 +1580,8 @@ Encoding:base64
             print("Either Bitmessage is not running or your settings are incorrect.")
             print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
             print("----------------------------------------------------------------")
+
+        print(self.api)
 
         try:
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
