@@ -505,7 +505,6 @@ class my_bitmessage(object):
         # Number of addresses
         jsonAddresses = jsonListAddresses['addresses']
         numAddresses = len(jsonAddresses)
-        print(numAddresses)
 
         if not jsonAddresses:
             print('You have no addresses!')
