@@ -203,8 +203,6 @@ class my_bitmessage(object):
             # Could not load the keys.dat file in the program directory
             print('-----------------------------------------------------------------')
             print('There was a problem trying to access the Bitmessage keys.dat file')
-            print('              or keys.dat is not set up correctly')
-            print('  Make sure that the CLI is in the same directory as Bitmessage')
             print('-----------------------------------------------------------------')
             self.configInit()
             self.main()
@@ -293,10 +291,10 @@ class my_bitmessage(object):
         print('socksport = {0}'.format(socksport))
         print('socksauthentication = {0}'.format(str(socksauthentication)))
         print('socksusername = {0}'.format(socksusername))
-        print('sockspassword = {0}\n'.format(sockspassword))
+        print('sockspassword = {0}'.format(sockspassword))
 
         while True:
-            uInput = self.userInput('Would you like to modify any of these settings, (Y)/(n)')
+            uInput = self.userInput('\nWould you like to modify any of these settings, (Y)/(n)')
             if uInput:
                 break
 
@@ -307,23 +305,23 @@ class my_bitmessage(object):
                 uInput = self.userInput('\nWhat setting would you like to modify?')
 
                 if uInput == 'port':
-                    print('Current port number: {0}\n'.format(port))
-                    uInput = self.userInput('Enter the new port number.')
+                    print('Current port number: {0}'.format(port))
+                    uInput = self.userInput('\nEnter the new port number.')
                     config.set('bitmessagesettings', 'port', str(uInput))
 
                 elif uInput == 'startonlogon':
-                    print('Current status: {0}\n'.format(str(startonlogon)))
-                    uInput = self.userInput('Enter the new status.')
+                    print('Current status: {0}'.format(str(startonlogon)))
+                    uInput = self.userInput('\nEnter the new status.')
                     config.set('bitmessagesettings', 'startonlogon', str(uInput))
 
                 elif uInput == 'minimizetotray':
-                    print('Current status: {0}\n'.format(str(minimizetotray)))
-                    uInput = self.userInput('Enter the new status.')
+                    print('Current status: {0}'.format(str(minimizetotray)))
+                    uInput = self.userInput('\nEnter the new status.')
                     config.set('bitmessagesettings', 'minimizetotray', str(uInput))
 
                 elif uInput == 'showtraynotifications':
-                    print('Current status: {0}\n'.format(str(showtraynotifications)))
-                    uInput = self.userInput('Enter the new status.')
+                    print('Current status: {0}'.format(str(showtraynotifications)))
+                    uInput = self.userInput('\nEnter the new status.')
                     config.set('bitmessagesettings', 'showtraynotifications', str(uInput))
 
                 elif uInput == 'startintray':
@@ -332,49 +330,49 @@ class my_bitmessage(object):
                     config.set('bitmessagesettings', 'startintray', str(uInput))
 
                 elif uInput == 'defaultnoncetrialsperbyte':
-                    print('Current default nonce trials per byte: {0}\n'.format(defaultnoncetrialsperbyte))
-                    uInput = self.userInput('Enter the new defaultnoncetrialsperbyte.')
+                    print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
+                    uInput = self.userInput('\nEnter the new defaultnoncetrialsperbyte.')
                     config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', str(uInput))
 
                 elif uInput == 'defaultpayloadlengthextrabytes':
-                    print('Current default payload length extra bytes: {0}\n'.format(defaultpayloadlengthextrabytes))
-                    uInput = self.userInput('Enter the new defaultpayloadlengthextrabytes.')
+                    print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
+                    uInput = self.userInput('\nEnter the new defaultpayloadlengthextrabytes.')
                     config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', str(uInput))
 
                 elif uInput == 'daemon':
-                    print('Current status: {0}\n'.format(str(daemon)))
-                    uInput = self.userInput('Enter the new status.')
+                    print('Current status: {0}'.format(str(daemon)))
+                    uInput = self.userInput('\nEnter the new status.')
                     config.set('bitmessagesettings', 'daemon', str(uInput))
 
                 elif uInput == 'socksproxytype':
                     print('Current socks proxy type: {0}'.format(socksproxytype))
-                    print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'\n")
-                    uInput = self.userInput('Enter the new socksproxytype')
+                    print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'")
+                    uInput = self.userInput('\nEnter the new socksproxytype')
                     config.set('bitmessagesettings', 'socksproxytype', str(uInput))
 
                 elif uInput == 'sockshostname':
-                    print('Current socks host name: {0}\n'.format(sockshostname))
-                    uInput = self.userInput('Enter the new sockshostname')
+                    print('Current socks host name: {0}'.format(sockshostname))
+                    uInput = self.userInput('\nEnter the new sockshostname')
                     config.set('bitmessagesettings', 'sockshostname', str(uInput))
 
                 elif uInput == 'socksport':
-                    print('Current socks port number: {0}\n'.format(socksport))
-                    uInput = self.userInput('Enter the new socksport')
+                    print('Current socks port number: {0}'.format(socksport))
+                    uInput = self.userInput('\nEnter the new socksport')
                     config.set('bitmessagesettings', 'socksport', str(uInput))
 
                 elif uInput == 'socksauthentication':
-                    print('Current status: {0}\n'.format(str(socksauthentication)))
-                    uInput = self.userInput('Enter the new status')
+                    print('Current status: {0}'.format(str(socksauthentication)))
+                    uInput = self.userInput('\nEnter the new status')
                     config.set('bitmessagesettings', 'socksauthentication', str(uInput))
 
                 elif uInput == 'socksusername':
-                    print('Current socks username: {0}\n'.format(socksusername))
-                    uInput = self.userInput('Enter the new socksusername')
+                    print('Current socks username: {0}'.format(socksusername))
+                    uInput = self.userInput('\nEnter the new socksusername')
                     config.set('bitmessagesettings', 'socksusername', str(uInput))
 
                 elif uInput == 'sockspassword':
-                    print('Current socks password: {0}\n'.format(sockspassword))
-                    uInput = self.userInput('Enter the new sockspassword')
+                    print('Current socks password: {0}'.format(sockspassword))
+                    uInput = self.userInput('\nEnter the new sockspassword')
                     config.set('bitmessagesettings', 'sockspassword', str(uInput))
                 else:
                     print('Invalid input. Please try again')
@@ -563,7 +561,7 @@ class my_bitmessage(object):
         with open(filePath, 'wb+') as f:
             f.write(base64.b64decode(fileData))
 
-        print('Successfully saved {0}\n'.format(filePath))
+        print('Successfully saved {0}'.format(filePath))
 
 
     # Allows users to attach a file to their message or broadcast
@@ -806,12 +804,12 @@ Encoding:base64
                 fromAddress = jsonAddresses['addresses'][0]['address']
 
         if subject == '':
-                subject = self.userInput('Enter your Subject.')
+                subject = self.userInput('\nEnter your Subject.')
                 subject = base64.b64encode(subject)
         if message == '':
-                message = self.userInput('Enter your Message.')
+                message = self.userInput('\nEnter your Message.')
 
-        uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
+        uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)')
         if uInput in ['yes', 'y']:
             message = message + '\n\n' + self.attachment()
         message = base64.b64encode(message)
@@ -855,7 +853,7 @@ Encoding:base64
 
             # TODO - why use the %?
             if messagesPrinted % 20 == 0 and messagesPrinted != 0:
-                uInput = self.userInput('(Press Enter to continue or type (Exit) to return to the main menu.)')
+                uInput = self.userInput('\nPress Enter to continue or type (Exit) to return to the main menu.')
 
         print('-----------------------------------')
         print('There are %d unread messages of %d messages in the inbox.' % (messagesUnread, numMessages))
@@ -923,7 +921,7 @@ Encoding:base64
                     fnPos = attPos
                     fileName = 'Attachment'
 
-                uInput = self.userInput('Attachment Detected. Would you like to save the attachment, (Y)/(n)')
+                uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)')
                 if uInput in ['yes', 'y']:
                     attachment = message[attPos+9:attEndPos]
                     self.saveFile(fileName,attachment)
@@ -978,7 +976,7 @@ Encoding:base64
                     fnPos = attPos
                     fileName = 'Attachment'
 
-                uInput = self.userInput('Attachment Detected. Would you like to save the attachment, (Y)/(n)')
+                uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)')
                 if uInput in ['yes', 'y']:
                     attachment = message[attPos+9:attEndPos]
                     self.saveFile(fileName,attachment)
@@ -1026,7 +1024,7 @@ Encoding:base64
             subject = 'Fwd: {0}'.format(subject)
 
             while True:
-                toAdd = self.userInput('What is the To Address?')
+                toAdd = self.userInput('\nWhat is the To Address?')
                 if not self.validAddress(toAdd):
                     print('Invalid Address. Please try again.')
                 else:
@@ -1037,9 +1035,9 @@ Encoding:base64
 
         subject = base64.b64encode(subject)
 
-        newMessage = self.userInput('Enter your Message.')
+        newMessage = self.userInput('\nEnter your Message.')
 
-        uInput = self.userInput('Would you like to add an attachment, (Y)/(n)')
+        uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)')
         if uInput in ['yes', 'y']:
             newMessage = newMessage + '\n\n' + self.attachment()
 
@@ -1345,7 +1343,7 @@ Encoding:base64
 
                 while True:
                     uInput = self.userInput('\nWould you like to (D)elete, (F)orward or (R)eply?')
-                    if uInput in ['reply', 'r', 'forward', 'f', 'delete', 'd', 'forward', 'f', 'reply', 'r']:
+                    if uInput in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
                         break
                     else:
                         print('Invalid input')
@@ -1371,11 +1369,14 @@ Encoding:base64
             elif uInput in ['outbox', 'o']:
                 self.readSentMsg(msgNum)
                 # Gives the user the option to delete the message
-                uInput = self.userInput('\nWould you like to (D)elete, or (Exit) this message?')
+                while True:
+                    uInput = self.userInput('\nWould you like to (D)elete, or (Exit) this message?')
+                    if uInput in ['delete', 'd']:
+                        break
 
                 if uInput in ['delete', 'd']:
                     # Prevent accidental deletion
-                    uInput = self.userInput('Are you sure, (Y)/(n)') 
+                    uInput = self.userInput('\nAre you sure, (Y)/(n)') 
 
                     if uInput in ['yes', 'y']:
                         self.delSentMsg(msgNum)
@@ -1384,7 +1385,7 @@ Encoding:base64
 
         elif usrInput in ['save']:
             while True:
-                uInput = self.userInput('Would you like to save a message from the (I)nbox or (O)utbox?')
+                uInput = self.userInput('\nWould you like to save a message from the (I)nbox or (O)utbox?')
                 if uInput in ['inbox', 'outbox', 'i', 'o']:
                     break
                 else:
@@ -1396,7 +1397,7 @@ Encoding:base64
 
                 while True:
                     try:
-                        msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                        msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?'))
                         if msgNum >= numMessages:
                             print('Invalid Message Number.')
                         else:
@@ -1414,7 +1415,7 @@ Encoding:base64
 
                 while True:
                     try:
-                        msgNum = int(self.userInput('What is the number of the message you wish to save?'))
+                        msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?'))
                         if msgNum >= numMessages:
                             print('Invalid Message Number.')
                         else:
@@ -1432,14 +1433,14 @@ Encoding:base64
 
         # Will delete a message from the system, not reflected on the UI    
         elif usrInput in ['delete']:
-            uInput = self.userInput('Would you like to delete a message from the (I)nbox or (O)utbox?')
+            uInput = self.userInput('\nWould you like to delete a message from the (I)nbox or (O)utbox?')
 
             if uInput in ['inbox', 'i']:
                 inboxMessages = json.loads(self.api.getAllInboxMessages())
                 numMessages = len(inboxMessages['inboxMessages'])
 
                 while True:
-                    msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the inbox.')
+                    msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the inbox.')
                     try:
                         if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
                             break
@@ -1453,7 +1454,7 @@ Encoding:base64
                         print('Invalid input')
 
                 # Prevent accidental deletion
-                uInput = self.userInput('Are you sure, (Y)/(n)')
+                uInput = self.userInput('\nAre you sure, (Y)/(n)')
 
                 if uInput in ['yes', 'y']:
                     if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
@@ -1472,7 +1473,7 @@ Encoding:base64
                 numMessages = len(outboxMessages['sentMessages'])
                 
                 while True:
-                    msgNum = self.userInput('Enter the number of the message you wish to delete or (A)ll to empty the outbox.')
+                    msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the outbox.')
                     try:
                         if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
                             break
@@ -1486,7 +1487,7 @@ Encoding:base64
                         print('Invalid input')
                             
                 # Prevent accidental deletion
-                uInput = self.userInput('Are you sure, (Y)/(n)')
+                uInput = self.userInput('\nAre you sure, (Y)/(n)')
 
                 if uInput in ['yes', 'y']:
                     if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
