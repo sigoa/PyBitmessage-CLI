@@ -505,8 +505,9 @@ class my_bitmessage(object):
         # Number of addresses
         jsonAddresses = jsonListAddresses['addresses']
         numAddresses = len(jsonAddresses)
+        print(numAddresses)
 
-        if not jsonAddresses['addresses']:
+        if not jsonAddresses:
             print('You have no addresses!')
         else:
             print('-------------------------------------')
@@ -533,6 +534,38 @@ class my_bitmessage(object):
         else:
             return 'Entry Error'
         self.main()
+
+
+    def deleteAddress(self):
+        jsonListAddresses = json.loads(self.api.listAddresses())
+        # Number of addresses
+        jsonAddresses = jsonListAddresses['addresses']
+        numAddresses = len(jsonAddresses)
+
+        if not jsonAddresses:
+            print('You have no addresses!')
+        else:
+            while True:
+                address = self.userInputStrip('\nEnter Address or Label you wish to delete:')
+                if self.validAddress(address):
+                    break
+                else:
+                    jsonAddresses = json.loads(self.api.listAddresses())
+                    # Number of addresses
+                    numAddresses = len(jsonAddresses['addresses'])
+                    # processes all of the addresses and lists them out
+                    for addNum in range (0, numAddresses):
+                        label = str(jsonAddresses['addresses'][addNum]['label'])
+                        jsonAddress = str(jsonAddresses['addresses'][addNum]['address'])
+                        if '{0}'.format(address) == label:
+                            address = jsonAddress
+                            found = True
+                            break
+                if found:
+                    self.api.deleteAddress(address)
+                    print('{0} has been deleted!'.format(address))
+                    break
+        self.main()        
 
 
     # Allows attachments and messages/broadcats to be saved
@@ -1145,6 +1178,7 @@ Encoding:base64
             print('| listAddresses           | Lists all of the users addresses          |')
             print('| generateAddress         | Generates a new address                   |')
             print('| getAddress              | Get deterministic address from passphrase |')
+            print('| deleteAddress           | Deletes a generated address               |')
             print('|-------------------------|-------------------------------------------|')
             print('| listAddressBookEntries  | Lists entries from the Address Book       |')
             print('| addAddressBookEntry     | Add address to the Address Book           |')
@@ -1261,6 +1295,10 @@ Encoding:base64
             print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
+            self.main()
+
+        elif usrInput in ['deleteaddress']:
+            self.deleteAddress()
             self.main()
 
         # Subsribe to an address
