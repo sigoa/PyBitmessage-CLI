@@ -47,7 +47,7 @@ class my_bitmessage(object):
         if uInput in ['exit', 'x']:
             self.main()
         elif uInput in ['quit', 'q']:
-            print('Bye\n')
+            print('')
             sys.exit(0)
         else:
             return uInput
@@ -59,7 +59,7 @@ class my_bitmessage(object):
         if uInput.lower() in ['exit', 'x']:
             self.main()
         elif uInput.lower() in ['quit', 'q']:
-            print('Bye\n')
+            print('')
             sys.exit(0)
         else:
             return uInput
@@ -106,9 +106,9 @@ class my_bitmessage(object):
         config.set('bitmessagesettings', 'apiport', '8444')
         config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
         config.set('bitmessagesettings', 'apiusername',
-                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
         config.set('bitmessagesettings', 'apipassword',
-                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
         config.set('bitmessagesettings', 'daemon', 'True')
         config.set('bitmessagesettings', 'timeformat', '%%c')
         config.set('bitmessagesettings', 'blackwhitelist', 'black')
@@ -153,6 +153,11 @@ class my_bitmessage(object):
         config.set('bitmessagesettings', 'willinglysendtomobile', 'False')
         config.set('bitmessagesettings', 'opencl', 'False')
 
+        if not os.path.isdir(self.keysPath):
+            os.mkdir(self.keysPath)
+
+        self.keysPath = self.keysPath + 'keys.dat'
+
         with open(self.keysPath, 'wb') as configfile:
             config.write(configfile)
         apiEnabled = config.getboolean('bitmessagesettings', 'apienabled')
@@ -165,10 +170,9 @@ class my_bitmessage(object):
 
         # API information there but the api is disabled
         if not apiEnabled:
-            while True:
-                self.configInit()
-                self.restartBmNotify()
-                return True
+            self.configInit()
+            self.restartBmNotify()
+            return True
         else:
             try:
                 config.get('bitmessagesettings', 'apiport')
@@ -186,41 +190,24 @@ class my_bitmessage(object):
         config = ConfigParser.RawConfigParser()
 
         # First try to load the config file (the keys.dat file)
-        # from the program directory    
+        # from the program directory
         config.read(self.keysPath)
 
         try:
             config.get('bitmessagesettings','port')
-        except Exception as e:
-            # Could not load the keys.dat file in the program directory.
-            # Perhaps it is in the appdata directory.
-            config = ConfigParser.RawConfigParser()
-            config.read(self.keysPath)
-
-            try:
-                config.get('bitmessagesettings','port')
-            except Exception as e:
-                print(e)
-                # keys.dat was not there either, something is wrong.
-                print('\n------------------------------------------------------------------')
-                print('There was a problem trying to access the Bitmessage keys.dat file')
-                print('             or keys.dat is not set up correctly')
-                print('Make sure that daemon is in the same directory as Bitmessage. ')
-                print('-------------------------------------------------------------------')
-
-                self.configInit()
-                self.main()
-
-        # checks to make sure that everything is configured correctly.
-        # Excluding apiEnabled, it is checked after.
-        try:
             config.get('bitmessagesettings', 'apiport')
             config.get('bitmessagesettings', 'apiinterface')
             config.get('bitmessagesettings', 'apiusername')
             config.get('bitmessagesettings', 'apipassword')
         except Exception as e:
-            # Initalize the keys.dat file with API information
-            self.apiInit(False)
+            # Could not load the keys.dat file in the program directory
+            print('-----------------------------------------------------------------')
+            print('There was a problem trying to access the Bitmessage keys.dat file')
+            print('              or keys.dat is not set up correctly')
+            print('  Make sure that the CLI is in the same directory as Bitmessage')
+            print('-----------------------------------------------------------------')
+            self.configInit()
+            self.main()
 
         '''
         keys.dat file was found or appropriately configured,
@@ -270,7 +257,6 @@ class my_bitmessage(object):
             port = config.get('bitmessagesettings', 'port')
         except Exception as e:
             print(e)
-            print('File not found')
             self.main()
 
         startonlogon = config.getboolean('bitmessagesettings', 'startonlogon')
@@ -517,17 +503,21 @@ class my_bitmessage(object):
 
     # Lists all of the addresses and their info
     def listAdd(self):
-        jsonAddresses = json.loads(self.api.listAddresses())
+        jsonListAddresses = json.loads(self.api.listAddresses())
         # Number of addresses
-        numAddresses = len(jsonAddresses['addresses'])
+        jsonAddresses = jsonListAddresses['addresses']
+        numAddresses = len(jsonAddresses)
 
-        print('-------------------------------------')
-        for each in jsonAddresses['addresses']:
-            print('Label: {0}'.format(each['label']))
-            print('Address: {0}'.format(each['address']))
-            print('Stream: {0}'.format(each['stream']))
-            print('Enabled: {0}'.format(each['enabled']))
+        if not jsonAddresses['addresses']:
+            print('You have no addresses!')
+        else:
             print('-------------------------------------')
+            for each in jsonAddresses:
+                print('Label: {0}'.format(each['label']))
+                print('Address: {0}'.format(each['address']))
+                print('Stream: {0}'.format(each['stream']))
+                print('Enabled: {0}'.format(each['enabled']))
+                print('-------------------------------------')
         self.main()
 
     # Generate address
@@ -1562,10 +1552,6 @@ Encoding:base64
 
     def main(self):
         if self.usrPrompt:
-            print('\n --------------------------------')
-            print('| Bitmessage Daemon by Lvl4Sword |')
-            print('|    Version 0.4 for BM 0.6.2    |')
-            print(' --------------------------------')
             # Connect to BitMessage using these api credentials
             self.api = xmlrpclib.ServerProxy(self.apiData())
 
@@ -1574,20 +1560,16 @@ Encoding:base64
 
         self.usrPrompt = False
 
-        if not self.apiTest():
-            print("\n----------------------------------------------------------------")
-            print("    WARNING: You are not connected to the Bitmessage client.")
-            print("Either Bitmessage is not running or your settings are incorrect.")
-            print("Use the command 'apiTest' or 'bmSettings' to resolve this issue.")
-            print("----------------------------------------------------------------")
-
-        print(self.api)
-
         try:
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
+            if not self.apiTest():
+                raise socket.error
         except socket.error:
-            print("Could not connect to the API.")
-            print("Please check your connection.")
+            print("\n----------------------------------------------------------------")
+            print("  WARNING: API connection to the Bitmessage client has failed.")
+            print("Either Bitmessage is not running or your settings are incorrect.")
+            print(" Restart Bitmessage or use 'bmSettings' to resolve this issue.")
+            print("----------------------------------------------------------------")
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except (EOFError, KeyboardInterrupt):
             print('')
