@@ -17,6 +17,7 @@ import ntpath
 import os
 import random
 import socket
+import subprocess
 import sys
 import time
 import xmlrpclib
@@ -35,9 +36,11 @@ class my_bitmessage(object):
         True = Prompt
         False = Don't Prompt
         '''
-        self.usrPrompt = True
         self.api = ''
-        self.keysPath = self.lookupAppdataFolder() + 'keys.dat'
+        self.programDir = os.path.dirname(os.path.realpath(__file__))
+        self.keysPath = self.lookupAppdataFolder()
+        self.keysName = self.keysPath + 'keys.dat'
+        self.bmActive = False
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -80,6 +83,7 @@ class my_bitmessage(object):
     def lookupAppdataFolder(self):
         if sys.platform.startswith('darwin'):
             if 'HOME' in environ:
+                self.programDir = self.programDir + '/'
                 dataFolder = path.join(os.environ['HOME'],
                                        'Library/Application support/',
                                        APPNAME) + '/'
@@ -89,9 +93,11 @@ class my_bitmessage(object):
                 print('https://github.com/RZZT/taskhive-core')
                 sys.exit()
         elif sys.platform.startswith('win'):
+            self.programDir = self.programDir + '\\'
             dataFolder = path.join(environ['APPDATA'],
                                    APPNAME) + '\\'
         else:
+            self.programDir = self.programDir + '/'
             dataFolder = path.expanduser(path.join('~',
                                         '.config/' + APPNAME + '/'))
         return dataFolder
@@ -116,13 +122,26 @@ class my_bitmessage(object):
         config.set('bitmessagesettings', 'minimizetotray', 'False')
         config.set('bitmessagesettings', 'showtraynotifications', 'True')
         config.set('bitmessagesettings', 'startintray', 'False')
-        config.set('bitmessagesettings', 'socksproxytype', 'none')
         config.set('bitmessagesettings', 'sockshostname', 'localhost')
         config.set('bitmessagesettings', 'socksport', '9050')
         config.set('bitmessagesettings', 'socksauthentication', 'False')
         config.set('bitmessagesettings', 'sockslisten', 'False')
         config.set('bitmessagesettings', 'socksusername', '')
         config.set('bitmessagesettings', 'sockspassword', '')
+
+        enableTor = self.userInput('\nEnable SOCKS5 Tor connection (Y/n)?')
+        if enableTor in ['yes', 'y']:
+            config.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
+            print('Proxy settings are:')
+            print('Type: {0}'.format(config.get('bitmessagesettings', 'socksproxytype')))
+            print('Port: {0}'.format(config.get('bitmessagesettings', 'socksport')))
+            print('Host: localhost'.format(config.get('bitmessagesettings', 'sockshostname')))
+
+            doubleCheckProxy = self.userInput('Do these need to be changed? (Y/n)')
+            if doubleCheckProxy in ['yes', 'y']:
+                print('?')
+        else:
+            config.set('bitmessagesettings', 'socksproxytype', 'none')
         config.set('bitmessagesettings', 'keysencrypted', 'False')
         config.set('bitmessagesettings', 'messagesencrypted', 'False')
         config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
@@ -156,75 +175,38 @@ class my_bitmessage(object):
         if not os.path.isdir(self.keysPath):
             os.mkdir(self.keysPath)
 
-        self.keysPath = self.keysPath + 'keys.dat'
-
-        with open(self.keysPath, 'wb') as configfile:
+        with open(self.keysName, 'wb') as configfile:
             config.write(configfile)
-        apiEnabled = config.getboolean('bitmessagesettings', 'apienabled')
-        self.apiInit(apiEnabled)
-
-
-    def apiInit(self, apiEnabled):
-        config = ConfigParser.RawConfigParser()
-        config.read(self.keysPath)
-
-        # API information there but the api is disabled
-        if not apiEnabled:
-            self.configInit()
-            self.restartBmNotify()
-            return True
-        else:
-            try:
-                config.get('bitmessagesettings', 'apiport')
-                config.get('bitmessagesettings', 'apiinterface')
-                config.get('bitmessagesettings', 'apiusername')
-                config.get('bitmessagesettings', 'apipassword')
-                return True
-            except Exception as e:
-                self.configInit()
-                self.restartBmNotify()
-                self.main()
+        self.apiData()
 
 
     def apiData(self):
         config = ConfigParser.RawConfigParser()
-
-        # First try to load the config file (the keys.dat file)
-        # from the program directory
-        config.read(self.keysPath)
+        config.read(self.keysName)
 
         try:
-            config.get('bitmessagesettings','port')
-            config.get('bitmessagesettings', 'apiport')
-            config.get('bitmessagesettings', 'apiinterface')
-            config.get('bitmessagesettings', 'apiusername')
-            config.get('bitmessagesettings', 'apipassword')
+            apiPort = config.get('bitmessagesettings', 'apiport')
+            apiInterface = config.get('bitmessagesettings', 'apiinterface')
+            apiUsername = config.get('bitmessagesettings', 'apiusername')
+            apiPassword = config.get('bitmessagesettings', 'apipassword')
+            if config.getboolean('bitmessagesettings', 'apienabled'):
+                # Build the api credentials
+                print('API data successfully imported')
+                return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
+                                                        apiPassword,
+                                                        apiInterface,
+                                                        apiPort)
+            else:
+                print('API is not enabled')
         except Exception as e:
+            print(e)
             # Could not load the keys.dat file in the program directory
             print('-----------------------------------------------------------------')
             print('There was a problem trying to access the Bitmessage keys.dat file')
             print('-----------------------------------------------------------------')
             self.configInit()
-            self.main()
 
-        '''
-        keys.dat file was found or appropriately configured,
-        allow information retrieval
-        if False it will prompt the user, if True it will return True
-        '''
-        apiEnabled = self.apiInit(config.getboolean('bitmessagesettings', 'apienabled'))
-
-        # read again since changes have been made
-        config.read(self.keysPath)
-        apiPort = config.getint('bitmessagesettings', 'apiport')
-        apiInterface = config.get('bitmessagesettings', 'apiinterface')
-        apiUsername = config.get('bitmessagesettings', 'apiusername')
-        apiPassword = config.get('bitmessagesettings', 'apipassword')
-
-        print('API data successfully imported')
-
-        # Build the api credentials
-        return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername, apiPassword, apiInterface, str(apiPort))
+        
 #####
 # End keys.dat interactions
 #####
@@ -249,12 +231,12 @@ class my_bitmessage(object):
         # https://docs.python.org/2/library/configparser.html#ConfigParser.RawConfigParser.read
         # TODO
         # Read the keys.dat
-        config.read(self.keysPath)
+        config.read(self.keysName)
 
         try:
             port = config.get('bitmessagesettings', 'port')
-        except Exception as e:
-            print(e)
+        except ConfigParser.NoSectionError:
+            print('Connection')
             self.main()
 
         startonlogon = config.getboolean('bitmessagesettings', 'startonlogon')
@@ -383,7 +365,7 @@ class my_bitmessage(object):
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)')
 
                     if uInput not in ['yes', 'y']:
-                        with open(self.keysPath, 'wb') as configfile:
+                        with open(self.keysName, 'wb') as configfile:
                             config.write(configfile)
                         print('Changes made')
                         self.restartBmNotify()
@@ -392,12 +374,14 @@ class my_bitmessage(object):
 
 
     def validAddress(self, address):
-        address_information = json.loads(self.api.decodeAddress(address))
-        if address_information.get('status') == 'success':
-            return True
-        else:
+        try:
+            address_information = json.loads(self.api.decodeAddress(address))
+            if address_information.get('status') == 'success':
+                return True
+            else:
+                return False
+        except AttributeError:
             return False
-
 
     def getAddress(self, passphrase, vNumber, sNumber):
         # passphrase must be encoded
@@ -1215,15 +1199,15 @@ Encoding:base64
                 address = self.userInputStrip('\nEnter the Bitmessage Address:')
                 try:
                     address_information = json.loads(str(self.api.decodeAddress(address)))
+                    if address_information['status'] == 'success':
+                        print('Address Version: {0}'.format(address_information['addressVersion']))
+                        print('Stream Number: {0}'.format(address_information['streamNumber']))
+                        self.main()
+                    else:
+                        print('Invalid address!')
                 except AttributeError:
                     print('Invalid address!')
 
-                if address_information['status'] == 'success':
-                    print('Address Version: {0}'.format(address_information['addressVersion']))
-                    print('Stream Number: {0}'.format(address_information['streamNumber']))
-                    self.main()
-                else:
-                    print('Invalid address!')
 
         # tests the API Connection.
         elif usrInput in ['bmsettings']:
@@ -1589,24 +1573,26 @@ Encoding:base64
 
 
     def main(self):
-        if self.usrPrompt:
-            # Connect to BitMessage using these api credentials
-            self.api = xmlrpclib.ServerProxy(self.apiData())
-
-        elif not self.usrPrompt:
-            pass
-
-        self.usrPrompt = False
-
         try:
-            self.UI(self.userInput('\nType (h)elp for a list of commands.'))
+            if not self.apiTest():
+                self.api = xmlrpclib.ServerProxy(self.apiData())
+            if not self.bmActive:
+                try:
+                    callBitmessage = subprocess.check_call([os.path.realpath(__file__).replace('cli.py', 'main.py')])
+                except subprocess.CalledProcessError:
+                    print('Bitmessage was already running')
+                else:
+                    print('Bitmessage is now running')
+                self.bmActive = True
             if not self.apiTest():
                 raise socket.error
+            else:
+                self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except socket.error:
             print("\n----------------------------------------------------------------")
             print("  WARNING: API connection to the Bitmessage client has failed.")
-            print("Either Bitmessage is not running or your settings are incorrect.")
-            print(" Restart Bitmessage or use 'bmSettings' to resolve this issue.")
+            print("Your settings may be incorrect or Bitmessage may need restarted.")
+            print("        To resolve incorrect settings, use 'bmSettings'.")
             print("----------------------------------------------------------------")
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except (EOFError, KeyboardInterrupt):
@@ -1615,5 +1601,4 @@ Encoding:base64
 
 
 if __name__ == '__main__':
-    run = my_bitmessage()
-    run.main()
+    my_bitmessage().main()
