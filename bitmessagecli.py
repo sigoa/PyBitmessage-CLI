@@ -1583,9 +1583,10 @@ Encoding:base64
     def main(self):
         try:
             if not self.bmActive:
-                try:
-                    callBitmessage = subprocess.check_call([os.path.realpath(__file__).replace('cli.py', 'main.py')])
-                except subprocess.CalledProcessError:
+                callBitmessage = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                                  stdout=subprocess.PIPE)
+                bm_output, err = callBitmessage.communicate()
+                if "Another instance" in bm_output:
                     print('Bitmessage was already running')
                 else:
                     print('Bitmessage is now running')
