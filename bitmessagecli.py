@@ -15,6 +15,7 @@ import imghdr
 import json
 import ntpath
 import os
+import psutil
 import random
 import socket
 import subprocess
@@ -1582,9 +1583,14 @@ Encoding:base64
 
     def main(self):
         try:
+            if not self.apiImport:
+                self.api = xmlrpclib.ServerProxy(self.apiData())
+                self.apiImport = True
+
             if not self.bmActive:
                 callBitmessage = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                                  stdout=subprocess.PIPE)
+                                                  stdout=subprocess.PIPE,
+                                                  shell=False)
                 bm_output, err = callBitmessage.communicate()
                 if "Another instance" in bm_output:
                     print('Bitmessage was already running')
@@ -1592,9 +1598,8 @@ Encoding:base64
                     print('Bitmessage is now running')
                 self.bmActive = True
 
-            if not self.apiImport:
-                self.api = xmlrpclib.ServerProxy(self.apiData())
-                self.apiImport = True
+            if not self.apiTest():
+                raise socket.error
 
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except socket.error:
@@ -1603,6 +1608,12 @@ Encoding:base64
             print("Your settings may be incorrect or Bitmessage may need restarted.")
             print("        To resolve incorrect settings, use 'bmSettings'.")
             print("----------------------------------------------------------------")
+            if self.bmActive:
+                for proc in psutil.process_iter():
+                    if psutil.Process(proc.pid).name().startswith('bitmessagemain'):
+                        print('PID: {0} for bitmessagemain.py needs to be killed'.format(proc.pid))
+                        break
+
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except (EOFError, KeyboardInterrupt):
             print('')
