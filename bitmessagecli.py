@@ -41,6 +41,7 @@ class my_bitmessage(object):
         self.keysPath = self.lookupAppdataFolder()
         self.keysName = self.keysPath + 'keys.dat'
         self.bmActive = False
+        self.apiImport = False
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -189,15 +190,6 @@ class my_bitmessage(object):
             apiInterface = config.get('bitmessagesettings', 'apiinterface')
             apiUsername = config.get('bitmessagesettings', 'apiusername')
             apiPassword = config.get('bitmessagesettings', 'apipassword')
-            if config.getboolean('bitmessagesettings', 'apienabled'):
-                # Build the api credentials
-                print('API data successfully imported')
-                return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
-                                                        apiPassword,
-                                                        apiInterface,
-                                                        apiPort)
-            else:
-                print('API is not enabled')
         except Exception as e:
             print(e)
             # Could not load the keys.dat file in the program directory
@@ -206,7 +198,23 @@ class my_bitmessage(object):
             print('-----------------------------------------------------------------')
             self.configInit()
 
-        
+        config.read(self.keysName)
+        if config.getboolean('bitmessagesettings', 'apienabled'):
+            try:
+                apiUsername = config.get('bitmessagesettings', 'apiusername')
+                apiPassword = config.get('bitmessagesettings', 'apipassword')
+                apiInterface = config.get('bitmessagesettings', 'apiinterface')
+                apiPort = config.get('bitmessagesettings', 'apiport')
+                # Build the api credentials
+                print('API data successfully imported')
+                return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
+                                                        apiPassword,
+                                                        apiInterface,
+                                                        apiPort)
+            except Exception as e:
+                print(e)
+
+
 #####
 # End keys.dat interactions
 #####
@@ -1574,8 +1582,6 @@ Encoding:base64
 
     def main(self):
         try:
-            if not self.apiTest():
-                self.api = xmlrpclib.ServerProxy(self.apiData())
             if not self.bmActive:
                 try:
                     callBitmessage = subprocess.check_call([os.path.realpath(__file__).replace('cli.py', 'main.py')])
@@ -1584,10 +1590,12 @@ Encoding:base64
                 else:
                     print('Bitmessage is now running')
                 self.bmActive = True
-            if not self.apiTest():
-                raise socket.error
-            else:
-                self.UI(self.userInput('\nType (h)elp for a list of commands.'))
+
+            if not self.apiImport:
+                self.api = xmlrpclib.ServerProxy(self.apiData())
+                self.apiImport = True
+
+            self.UI(self.userInput('\nType (h)elp for a list of commands.'))
         except socket.error:
             print("\n----------------------------------------------------------------")
             print("  WARNING: API connection to the Bitmessage client has failed.")
