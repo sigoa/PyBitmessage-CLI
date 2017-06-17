@@ -15,8 +15,9 @@ import imghdr
 import json
 import ntpath
 import os
-import psutil
 import random
+import shutdown
+import signal
 import socket
 import subprocess
 import sys
@@ -38,36 +39,37 @@ class my_bitmessage(object):
         False = Don't Prompt
         '''
         self.api = ''
-        self.programDir = os.path.dirname(os.path.realpath(__file__))
+        self.programDir = os.path.dirname(__file__)
         self.keysPath = self.lookupAppdataFolder()
         self.keysName = self.keysPath + 'keys.dat'
         self.bmActive = False
         self.apiImport = False
+        self.enableBM = ''
 
 
     # Checks input for exit or quit. Also formats for input, etc
     def userInput(self, message):
-        print('{0}'.format(message))
-        uInput = raw_input('> ').lower().strip()
-        if uInput in ['exit', 'x']:
-            self.main()
-        elif uInput in ['quit', 'q']:
-            print('')
-            sys.exit(0)
-        else:
+        try:
+            print('{0}'.format(message))
+            uInput = raw_input('> ').lower().strip() 
             return uInput
+        except(EOFError, KeyboardInterrupt, SystemExit):
+            print('')
+            print('EOFError / KeyboardInterrupt / SystemExit1')
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            sys.exit(0)
 
 
     def userInputStrip(self, message):
-        print('{0}'.format(message))
-        uInput = raw_input('> ').strip()
-        if uInput.lower() in ['exit', 'x']:
-            self.main()
-        elif uInput.lower() in ['quit', 'q']:
-            print('')
-            sys.exit(0)
-        else:
+        try:
+            print('{0}'.format(message))
+            uInput = raw_input('> ').strip()
             return uInput
+        except(EOFError, KeyboardInterrupt, SystemExit):
+            print('')
+            print('EOFError / KeyboardInterrupt / SystemExit2')
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            sys.exit(0)
 
 
     # Prompts the user to restart Bitmessage.
@@ -93,7 +95,7 @@ class my_bitmessage(object):
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
                 print('https://github.com/RZZT/taskhive-core')
-                sys.exit()
+                sys.exit(0)
         elif sys.platform.startswith('win'):
             self.programDir = self.programDir + '\\'
             dataFolder = path.join(environ['APPDATA'],
@@ -1194,6 +1196,14 @@ Encoding:base64
             print('-----------------------------------------------------------------------')
             self.main()
 
+        elif usrInput in ['exit', 'x']:
+            self.main()
+
+        elif usrInput in ['quit', 'q']:
+            print('')
+            print('Quitting..')
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGKILL)
+
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest():
@@ -1581,43 +1591,60 @@ Encoding:base64
             self.main()
 
 
+    def runBM(self):
+        if sys.platform.startswith('win'):
+            return subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     stdin=subprocess.PIPE,
+                                     bufsize=0)
+        else:
+#        elif sys.platform.startswith('linux'):
+            return subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                     stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE,
+                                     stdin=subprocess.PIPE,
+                                     bufsize=0,
+                                     preexec_fn=os.setpgrp,
+                                     close_fds=True)
+
+
     def main(self):
         try:
+            if not self.bmActive:
+                self.enableBM = self.runBM()
+                my_stdout = self.enableBM.stdout.readlines()
+                if 'Another instance' in my_stdout:
+                    print('Bitmessage is already running')
+                    print('Closing down')
+                    sys.exit(0)
+                elif 'Running as' in my_stdout:
+                    print('Bitmessage was started')
+                    self.bmActive = True
+
             if not self.apiImport:
+                print('self.api starting')
                 self.api = xmlrpclib.ServerProxy(self.apiData())
                 self.apiImport = True
 
-            if not self.bmActive:
-                callBitmessage = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                                  stdout=subprocess.PIPE,
-                                                  shell=False)
-                bm_output, err = callBitmessage.communicate()
-                if "Another instance" in bm_output:
-                    print('Bitmessage was already running')
-                else:
-                    print('Bitmessage is now running')
-                self.bmActive = True
-
             if not self.apiTest():
+                print('Failed apiTest')
+                self.apiImport = False
                 raise socket.error
 
+            print(self.enableBM.pid)
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
-        except socket.error:
-            print("\n----------------------------------------------------------------")
-            print("  WARNING: API connection to the Bitmessage client has failed.")
-            print("Your settings may be incorrect or Bitmessage may need restarted.")
-            print("        To resolve incorrect settings, use 'bmSettings'.")
-            print("----------------------------------------------------------------")
-            if self.bmActive:
-                for proc in psutil.process_iter():
-                    if psutil.Process(proc.pid).name().startswith('bitmessagemain'):
-                        print('PID: {0} for bitmessagemain.py needs to be killed'.format(proc.pid))
-                        break
 
+        except socket.error:
+            print('socket.error')
+            self.apiImport = False
+            print(self.enableBM.pid)
             self.UI(self.userInput('\nType (h)elp for a list of commands.'))
-        except (EOFError, KeyboardInterrupt):
+        except(EOFError, KeyboardInterrupt, SystemExit):
             print('')
-            sys.exit()
+            print('EOFError / KeyboardInterrupt / SystemExit')
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            sys.exit(0)
 
 
 if __name__ == '__main__':
