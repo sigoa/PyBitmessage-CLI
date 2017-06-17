@@ -55,7 +55,7 @@ class my_bitmessage(object):
         except(EOFError, KeyboardInterrupt, SystemExit):
             print('')
             print('EOFError / KeyboardInterrupt / SystemExit1')
-            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGKILL)
             sys.exit(0)
 
 
@@ -67,7 +67,7 @@ class my_bitmessage(object):
         except(EOFError, KeyboardInterrupt, SystemExit):
             print('')
             print('EOFError / KeyboardInterrupt / SystemExit2')
-            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGKILL)
             sys.exit(0)
 
 
@@ -85,8 +85,8 @@ class my_bitmessage(object):
     '''
     def lookupAppdataFolder(self):
         if sys.platform.startswith('darwin'):
+            self.programDir = self.programDir + '/'
             if 'HOME' in environ:
-                self.programDir = self.programDir + '/'
                 dataFolder = path.join(os.environ['HOME'],
                                        'Library/Application support/',
                                        APPNAME) + '/'
@@ -1613,11 +1613,11 @@ Encoding:base64
             if not self.bmActive:
                 self.enableBM = self.runBM()
                 my_stdout = self.enableBM.stdout.readlines()
-                if 'Another instance' in my_stdout:
+                if 'Another instance' in my_stdout[-1]:
                     print('Bitmessage is already running')
                     print('Closing down')
                     sys.exit(0)
-                elif 'Running as' in my_stdout:
+                elif 'Running as' in my_stdout[-1]:
                     print('Bitmessage was started')
                     self.bmActive = True
 
@@ -1642,7 +1642,7 @@ Encoding:base64
         except(EOFError, KeyboardInterrupt, SystemExit):
             print('')
             print('EOFError / KeyboardInterrupt / SystemExit')
-            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGKILL)
             sys.exit(0)
 
 
