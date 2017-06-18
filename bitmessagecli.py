@@ -22,7 +22,6 @@ import subprocess
 import sys
 import time
 import xmlrpclib
-from os import path, environ
 from string import digits, ascii_letters
 
 APPNAME = 'PyBitmessage'
@@ -74,8 +73,8 @@ class my_bitmessage(object):
     def lookupAppdataFolder(self):
         if sys.platform.startswith('darwin'):
             self.programDir = self.programDir + '/'
-            if 'HOME' in environ:
-                dataFolder = path.join(os.environ['HOME'],
+            if 'HOME' in os.environ:
+                dataFolder = os.path.join(os.environ['HOME'],
                                        'Library/Application support/',
                                        APPNAME) + '/'
             else:
@@ -85,11 +84,11 @@ class my_bitmessage(object):
                 sys.exit(0)
         elif sys.platform.startswith('win'):
             self.programDir = self.programDir + '\\'
-            dataFolder = path.join(environ['APPDATA'],
+            dataFolder = os.path.join(os.environ['APPDATA'],
                                    APPNAME) + '\\'
         else:
             self.programDir = self.programDir + '/'
-            dataFolder = path.expanduser(path.join('~',
+            dataFolder = os.path.expanduser(os.path.join('~',
                                         '.config/' + APPNAME + '/'))
         return dataFolder
 
@@ -215,11 +214,12 @@ class my_bitmessage(object):
     def apiTest(self):
         try:
             result = self.api.add(2,3)
+            if result == 5:
+                return True
+            else:
+                return False
         except Exception as e:
-            return False
-        if result == 5:
-            return True
-        else:
+            print(e)
             return False
 
 
@@ -1579,53 +1579,57 @@ Encoding:base64
 
     def runBM(self):
         if sys.platform.startswith('win'):
-            return subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     stdin=subprocess.PIPE,
-                                     bufsize=0)
+            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE,
+                                              stdin=subprocess.PIPE,
+                                              bufsize=0)
         else:
-#        elif sys.platform.startswith('linux'):
-            return subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                     stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE,
-                                     stdin=subprocess.PIPE,
-                                     bufsize=0,
-                                     preexec_fn=os.setpgrp,
-                                     close_fds=True)
+            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE,
+                                              stdin=subprocess.PIPE,
+                                              bufsize=0,
+                                              preexec_fn=os.setpgrp,
+                                              close_fds=True)
+        my_stdout = self.enableBM.stdout.readlines()
+        if 'Another instance' in my_stdout[-1]:
+            print('Bitmessage is already running')
+            print('Closing down')
+            sys.exit(0)
+        elif 'Running as' in my_stdout[-1]:
+            print('Bitmessage was started')
+            self.bmActive = True
 
 
     def main(self):
         try:
             if not self.bmActive:
-                self.enableBM = self.runBM()
-                my_stdout = self.enableBM.stdout.readlines()
-                if 'Another instance' in my_stdout[-1]:
-                    print('Bitmessage is already running')
-                    print('Closing down')
-                    sys.exit(0)
-                elif 'Running as' in my_stdout[-1]:
-                    print('Bitmessage was started')
-                    self.bmActive = True
+                self.runBM()
 
             if not self.apiImport:
-                print('self.api starting')
-                self.api = xmlrpclib.ServerProxy(self.apiData())
+                print('Connecting to API')
                 self.apiImport = True
+                self.api = xmlrpclib.ServerProxy(self.apiData())
 
+            import time
+            time.sleep(1)
+            print(self.apiTest())
             if not self.apiTest():
-                print('Failed apiTest')
+                print('Failed API Test')
                 self.apiImport = False
-                raise socket.error
+            else:
+                print('Passed API Test')
+                if not self.apiImport:
+                    self.apiImport = True
 
-            print(self.enableBM.pid)
+            print('Bitmessage PID: {0}'.format(self.enableBM.pid))
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
 
         except socket.error:
-            print('socket.error')
+            print('Socket Error')
             self.apiImport = False
             print(self.enableBM.pid)
-            self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except(EOFError, KeyboardInterrupt, SystemExit):
             print('')
             print('EOFError / KeyboardInterrupt / SystemExit1')
