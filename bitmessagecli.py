@@ -117,7 +117,6 @@ class my_bitmessage(object):
             print(e)
 
 
-
     def configInit(self):
         config.add_section('bitmessagesettings')
         self.config.set('bitmessagesettings', 'port', '8444')
@@ -267,8 +266,7 @@ class my_bitmessage(object):
                 return True
             else:
                 return False
-        except Exception as e:
-            print(e)
+        except Exception:
             return False
 
 
@@ -1091,7 +1089,7 @@ Encoding:base64
                     break
         else:
             print('Invalid Selection. Reply or Forward only')
-            self.main()
+            return
 
         subject = base64.b64encode(subject)
 
@@ -1106,7 +1104,6 @@ Encoding:base64
         newMessage = base64.b64encode(newMessage)
 
         self.sendMsg(toAdd, fromAdd, subject, newMessage)
-        self.main()
 
 
     def delMsg(self, msgNum):
@@ -1227,16 +1224,13 @@ Encoding:base64
             print('| save                    | Saves message to text file                |')
             print('| delete                  | Deletes a message or all messages         |')
             print('-----------------------------------------------------------------------')
-            self.main()
 
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest():
-                api_test_status = 'PASSED'
+                print('API connection test has: PASSED')
             else:
-                api_test_status = 'FAILED'
-            print('API connection test has: {0}'.format(api_test_status))
-            self.main()
+                print('API connection test has: FAILED')
 
         elif usrInput in ['addinfo']:
             while True:
@@ -1246,7 +1240,7 @@ Encoding:base64
                     if address_information['status'] == 'success':
                         print('Address Version: {0}'.format(address_information['addressVersion']))
                         print('Stream Number: {0}'.format(address_information['streamNumber']))
-                        self.main()
+                        break
                     else:
                         print('Invalid address!')
                 except AttributeError:
@@ -1256,12 +1250,10 @@ Encoding:base64
         # tests the API Connection.
         elif usrInput in ['bmsettings']:
             self.bmSettings()
-            self.main()
 
         # Lists all of the identities in the addressbook
         elif usrInput in ['listaddresses']:
             self.listAdd()
-            self.main()
 
         # Generates a new address
         elif usrInput in ['generateaddress']:
@@ -1314,7 +1306,6 @@ Encoding:base64
                 deterministic = False
                 lbl = self.userInput('\nEnter the label for the new address.')
                 print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, NULL, NULL, NULL, NULL, NULL)))
-            self.main()
 
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
@@ -1322,53 +1313,42 @@ Encoding:base64
             print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
-            self.main()
 
         elif usrInput in ['deleteaddress']:
             self.deleteAddress()
-            self.main()
 
         # Subsribe to an address
         elif usrInput in ['subscribe']:
             self.subscribe()
-            self.main()
 
         # Unsubscribe from an address
         elif usrInput in ['unsubscribe']:
             self.unsubscribe()
-            self.main()
 
         # Unsubscribe from an address
         elif usrInput in ['listsubscriptions']:
             self.listSubscriptions()
-            self.main()
 
         elif usrInput in ['create']:
             self.createChan()
-            self.main()
 
         elif usrInput in ['join']:
             self.joinChan()
-            self.main()
 
         elif usrInput in ['leave']:
             self.leaveChan()
-            self.main()
 
         elif usrInput in ['inbox']:
             print('Loading...')
             self.inbox(False)
-            self.main()
 
         elif usrInput in ['unread']:
             print('Loading...')
             self.inbox(True)
-            self.main()
 
         elif usrInput in ['outbox']:
             print('Loading...')
             self.outbox()
-            self.main()
 
         # Sends a message or broadcast
         elif usrInput in ['send']:
@@ -1383,7 +1363,6 @@ Encoding:base64
 
             elif uInput in ['broadcast', 'b']:
                 self.sendBrd(NULL,NULL,NULL)
-            self.main()
 
         # Opens a message from the inbox for viewing.
         elif usrInput in ['read']:
@@ -1445,7 +1424,6 @@ Encoding:base64
                     if uInput in ['yes', 'y']:
                         self.delSentMsg(msgNum)
                         print('Message Deleted.')
-            self.main()
 
         elif usrInput in ['save']:
             while True:
@@ -1493,7 +1471,6 @@ Encoding:base64
             
             subject = '{0}.txt'.format(subject)
             self.saveFile(subject, message)
-            self.main()
 
         # Will delete a message from the system, not reflected on the UI    
         elif usrInput in ['delete']:
@@ -1530,7 +1507,6 @@ Encoding:base64
                     else:
                         self.delMsg(int(msgNum))
                     print('Notice: Message numbers may have changed.')
-                self.main()
 
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
@@ -1563,13 +1539,11 @@ Encoding:base64
                     else:
                         self.delSentMsg(int(msgNum))
                     print('Notice: Message numbers may have changed.')
-                self.main()
 
         elif usrInput in ['listaddressbookentries']:
             res = self.listAddressBookEntries()
             if res == 20:
                 print('Error: API function not supported.')
-            self.main()
 
         elif usrInput in ['addaddressbookentry']:
             while True:
@@ -1587,7 +1561,6 @@ Encoding:base64
                 print('Error: Address already exists in Address Book.')
             if res == 20:
                 print('Error: API function not supported.')
-            self.main()
 
         elif usrInput in ['deleteaddressbookentry']:
             while True:
@@ -1600,19 +1573,16 @@ Encoding:base64
                         print('{0} has been deleted!'.format(address))
                 else:
                     print('Invalid address')
-                self.main()
 
         elif usrInput in ['markallmessagesread']:
             self.markAllMessagesRead()
-            self.main()
 
         elif usrInput in ['markallmessagesunread']:
             self.markAllMessagesUnread()
-            self.main()
 
         else:
             print('"{0}" is not a command.'.format(usrInput))
-            self.main()
+        self.main()
 
 
     def runBM(self):
@@ -1630,7 +1600,6 @@ Encoding:base64
                                               bufsize=0,
                                               preexec_fn=os.setpgrp,
                                               close_fds=True)
-
         my_stdout = self.enableBM.stdout.readlines()
         if 'Another instance' in my_stdout[-1]:
             print('Bitmessage is already running')
@@ -1647,24 +1616,17 @@ Encoding:base64
 
             if not self.bmActive:
                 self.runBM()
-
             if not self.apiImport:
-                print('Connecting to API')
                 self.apiImport = True
                 self.api = xmlrpclib.ServerProxy(self.returnApi())
-                print(self.apiTest())
-
             if not self.apiTest():
-                print('Failed API Test')
                 self.apiImport = False
             else:
-                print('Passed API Test')
                 if not self.apiImport:
                     self.apiImport = True
 
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except socket.error:
-            print('Socket Error')
             self.apiImport = False
             print(self.enableBM.pid)
 
