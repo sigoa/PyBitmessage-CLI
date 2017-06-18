@@ -142,7 +142,7 @@ class my_bitmessage(object):
         self.config.set('bitmessagesettings', 'socksusername', '')
         self.config.set('bitmessagesettings', 'sockspassword', '')
 
-        enableTor = self.userInput('\nEnable SOCKS5 Tor connection (Y/n)?')
+        enableTor = self.userInput('\nEnable SOCKS5 Tor connection (Y/n)?').lower()
         if enableTor in ['yes', 'y']:
             self.config.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
             print('Proxy settings are:')
@@ -862,10 +862,10 @@ Encoding:base64
                 fromAddress = jsonAddresses['addresses'][0]['address']
 
         if subject == '':
-                subject = self.userInput('\nEnter your Subject.').lower()
+                subject = self.userInput('\nEnter your Subject.')
                 subject = base64.b64encode(subject)
         if message == '':
-                message = self.userInput('\nEnter your Message.').lower()
+                message = self.userInput('\nEnter your Message.')
 
         uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
         if uInput in ['yes', 'y']:
@@ -911,7 +911,7 @@ Encoding:base64
 
             # TODO - why use the %?
             if messagesPrinted % 20 == 0 and messagesPrinted != 0:
-                uInput = self.userInput('\nPress Enter to continue or type (Exit) to return to the main menu.').lower()
+                uInput = self.userInput('\nPress Enter to continue').lower()
 
         print('-----------------------------------')
         print('There are %d unread messages of %d messages in the inbox.' % (messagesUnread, numMessages))
@@ -1082,7 +1082,7 @@ Encoding:base64
             subject = 'Fwd: {0}'.format(subject)
 
             while True:
-                toAdd = self.userInput('\nWhat is the To Address?').lower()
+                toAdd = self.userInput('\nWhat is the To Address?')
                 if not self.validAddress(toAdd):
                     print('Invalid Address. Please try again.')
                 else:
@@ -1093,7 +1093,7 @@ Encoding:base64
 
         subject = base64.b64encode(subject)
 
-        newMessage = self.userInput('\nEnter your Message.').lower()
+        newMessage = self.userInput('\nEnter your Message.')
 
         uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
         if uInput in ['yes', 'y']:
@@ -1184,6 +1184,66 @@ Encoding:base64
                 markMessageUnread(message['msgid'])
 
 
+    def deleteInboxMessages(self):
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        numMessages = len(inboxMessages['inboxMessages'])
+
+        while True:
+            msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
+            try:
+                if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                    break
+                elif int(msgNum) >= numMessages:
+                    print('Invalid Message Number')
+                elif int(msgNum) <= numMessages:
+                    break
+                else:
+                    print('Invalid input')
+            except ValueError:
+                print('Invalid input')
+
+        # Prevent accidental deletion
+        uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
+
+        if uInput in ['yes', 'y']:
+            if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                # Processes all of the messages in the inbox
+                for msgNum in range (0, numMessages):
+                    print('Deleting message {0} of '.format(msgNum + 1, numMessages))
+                    self.delMsg(0)
+                print('Inbox is empty.')
+            else:
+                self.delMsg(int(msgNum))
+            print('Notice: Message numbers may have changed.')
+
+
+    def addInfo(self):
+        while True:
+            address = self.userInput('\nEnter the Bitmessage Address:')
+            try:
+                address_information = json.loads(str(self.api.decodeAddress(address)))
+                if address_information['status'] == 'success':
+                    print('Address Version: {0}'.format(address_information['addressVersion']))
+                    print('Stream Number: {0}'.format(address_information['streamNumber']))
+                    break
+                else:
+                    print('Invalid address!')
+            except AttributeError:
+                print('Invalid address!')
+
+
+    def sendSomething(self):
+        while True:
+            uInput = self.userInput('\nWould you like to send a (M)essage or (B)roadcast?').lower()
+            if uInput in ['message', 'm', 'broadcast', 'b']:
+                break
+            else:
+                print('Invald input')
+        if uInput in ['message', 'm']:
+            self.sendMsg(NULL,NULL,NULL,NULL)
+        elif uInput in ['broadcast', 'b']:
+            self.sendBrd(NULL,NULL,NULL)
+
     # Main user menu
     def UI(self, usrInput):
         if usrInput in ['help', 'h', '?']:
@@ -1233,19 +1293,7 @@ Encoding:base64
                 print('API connection test has: FAILED')
 
         elif usrInput in ['addinfo']:
-            while True:
-                address = self.userInput('\nEnter the Bitmessage Address:')
-                try:
-                    address_information = json.loads(str(self.api.decodeAddress(address)))
-                    if address_information['status'] == 'success':
-                        print('Address Version: {0}'.format(address_information['addressVersion']))
-                        print('Stream Number: {0}'.format(address_information['streamNumber']))
-                        break
-                    else:
-                        print('Invalid address!')
-                except AttributeError:
-                    print('Invalid address!')
-
+            self.addInfo()
 
         # tests the API Connection.
         elif usrInput in ['bmsettings']:
@@ -1309,7 +1357,7 @@ Encoding:base64
 
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
-            phrase = self.userInput('\nEnter the address passphrase.').lower()
+            phrase = self.userInput('\nEnter the address passphrase.')
             print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
@@ -1339,30 +1387,17 @@ Encoding:base64
             self.leaveChan()
 
         elif usrInput in ['inbox']:
-            print('Loading...')
             self.inbox(False)
 
         elif usrInput in ['unread']:
-            print('Loading...')
             self.inbox(True)
 
         elif usrInput in ['outbox']:
-            print('Loading...')
             self.outbox()
 
         # Sends a message or broadcast
         elif usrInput in ['send']:
-            while True:
-                uInput = self.userInput('\nWould you like to send a (M)essage or (B)roadcast?').lower()
-                if uInput in ['message', 'm', 'broadcast', 'b']:
-                    break
-                else:
-                    print('Invald input')
-            if uInput in ['message', 'm']:
-                self.sendMsg(NULL,NULL,NULL,NULL)
-
-            elif uInput in ['broadcast', 'b']:
-                self.sendBrd(NULL,NULL,NULL)
+            self.sendSomething()
 
         # Opens a message from the inbox for viewing.
         elif usrInput in ['read']:
@@ -1412,12 +1447,9 @@ Encoding:base64
             elif uInput in ['outbox', 'o']:
                 self.readSentMsg(msgNum)
                 # Gives the user the option to delete the message
-                while True:
-                    uInput = self.userInput('\nWould you like to (D)elete, or (Exit) this message?').lower()
-                    if uInput in ['delete', 'd']:
-                        break
+                uInput = self.userInput('\nWould you like to Delete this message, (Y)/(n)').lower()
 
-                if uInput in ['delete', 'd']:
+                if uInput in ['yes', 'y']:
                     # Prevent accidental deletion
                     uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
 
@@ -1477,36 +1509,7 @@ Encoding:base64
             uInput = self.userInput('\nWould you like to delete a message from the (I)nbox or (O)utbox?').lower()
 
             if uInput in ['inbox', 'i']:
-                inboxMessages = json.loads(self.api.getAllInboxMessages())
-                numMessages = len(inboxMessages['inboxMessages'])
-
-                while True:
-                    msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
-                    try:
-                        if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                            break
-                        elif int(msgNum) >= numMessages:
-                            print('Invalid Message Number')
-                        elif int(msgNum) <= numMessages:
-                            break
-                        else:
-                            print('Invalid input')
-                    except ValueError:
-                        print('Invalid input')
-
-                # Prevent accidental deletion
-                uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
-
-                if uInput in ['yes', 'y']:
-                    if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                        # Processes all of the messages in the inbox
-                        for msgNum in range (0, numMessages):
-                            print('Deleting message {0} of '.format(msgNum + 1, numMessages))
-                            self.delMsg(0)
-                        print('Inbox is empty.')
-                    else:
-                        self.delMsg(int(msgNum))
-                    print('Notice: Message numbers may have changed.')
+                self.deleteInboxMessages()
 
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
