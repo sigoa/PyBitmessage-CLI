@@ -1630,6 +1630,7 @@ Encoding:base64
                                               bufsize=0,
                                               preexec_fn=os.setpgrp,
                                               close_fds=True)
+
         my_stdout = self.enableBM.stdout.readlines()
         if 'Another instance' in my_stdout[-1]:
             print('Bitmessage is already running')
@@ -1651,6 +1652,7 @@ Encoding:base64
                 print('Connecting to API')
                 self.apiImport = True
                 self.api = xmlrpclib.ServerProxy(self.returnApi())
+                print(self.apiTest())
 
             if not self.apiTest():
                 print('Failed API Test')
