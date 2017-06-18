@@ -41,8 +41,8 @@ class my_bitmessage(object):
         self.keysPath = self.lookupAppdataFolder()
         self.keysName = self.keysPath + 'keys.dat'
         self.bmActive = False
-        self.apiImport = False
         self.enableBM = ''
+        self.apiImport = False
         self.config = ConfigParser.RawConfigParser()
 
 
@@ -50,11 +50,17 @@ class my_bitmessage(object):
     def userInput(self, message):
         try:
             print('{0}'.format(message))
-            uInput = raw_input('> ').strip() 
-            return uInput
-        except(EOFError, KeyboardInterrupt, SystemExit):
-            print('')
-            print('EOFError / KeyboardInterrupt / SystemExit')
+            uInput = raw_input('> ').strip()
+            if uInput in ['exit', 'x']:
+                self.main()
+            elif uInput in ['quit', 'q']:
+                print('Shutting down..')
+                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                sys.exit(0)
+            else:
+                return uInput
+        except(EOFError, KeyboardInterrupt):
+            print('Shutting down..')
             os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
             sys.exit(0)
 
@@ -1223,14 +1229,6 @@ Encoding:base64
             print('-----------------------------------------------------------------------')
             self.main()
 
-        elif usrInput in ['exit', 'x']:
-            self.main()
-
-        elif usrInput in ['quit', 'q']:
-            print('')
-            print('Quitting..')
-            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-
         # tests the API Connection.
         elif usrInput in ['apitest']:
             if self.apiTest():
@@ -1635,7 +1633,7 @@ Encoding:base64
         my_stdout = self.enableBM.stdout.readlines()
         if 'Another instance' in my_stdout[-1]:
             print('Bitmessage is already running')
-            print('Closing down')
+            print('Shutting down..')
             sys.exit(0)
         elif 'Running as' in my_stdout[-1]:
             print('Bitmessage was started')
@@ -1662,19 +1660,11 @@ Encoding:base64
                 if not self.apiImport:
                     self.apiImport = True
 
-            print('Bitmessage PID: {0}'.format(self.enableBM.pid))
-
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
-
         except socket.error:
             print('Socket Error')
             self.apiImport = False
             print(self.enableBM.pid)
-        except(EOFError, KeyboardInterrupt, SystemExit):
-            print('')
-            print('EOFError / KeyboardInterrupt / SystemExit1')
-            os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-            sys.exit(0)
 
 
 if __name__ == '__main__':
