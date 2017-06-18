@@ -25,7 +25,6 @@ import xmlrpclib
 from string import digits, ascii_letters
 
 APPNAME = 'PyBitmessage'
-NULL = ''
 CHARACTERS = digits + ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 
@@ -51,12 +50,15 @@ class my_bitmessage(object):
         try:
             print('{0}'.format(message))
             uInput = raw_input('> ').strip()
-            if uInput in ['exit', 'x']:
+            if uInput.lower() in ['exit', 'x']:
                 self.main()
-            elif uInput in ['quit', 'q']:
+            elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
                 os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
                 sys.exit(0)
+            elif uInput.lower() in ['help', 'h', '?']:
+                self.viewHelp()
+                self.main()
             else:
                 return uInput
         except(EOFError, KeyboardInterrupt):
@@ -300,20 +302,21 @@ class my_bitmessage(object):
         print('|   Current Bitmessage Settings   |')
         print('-----------------------------------')
         print('port = {0}'.format(port))
-        print('startonlogon = {0}'.format(str(startonlogon)))
-        print('minimizetotray = {0}'.format(str(minimizetotray)))
-        print('showtraynotifications = {0}'.format(str(showtraynotifications)))
-        print('startintray = {0}'.format(str(startintray)))
+        print(type(startonlogon))
+        print('startonlogon = {0}'.format(startonlogon))
+        print('minimizetotray = {0}'.format(minimizetotray))
+        print('showtraynotifications = {0}'.format(showtraynotifications))
+        print('startintray = {0}'.format(startintray))
         print('defaultnoncetrialsperbyte = {0}'.format(defaultnoncetrialsperbyte))
         print('defaultpayloadlengthextrabytes = {0}'.format(defaultpayloadlengthextrabytes))
-        print('daemon = {0}'.format(str(daemon)))
+        print('daemon = {0}'.format(daemon))
         print('-----------------------------------')
         print('|   Current Connection Settings   |')
         print('-----------------------------------')
         print('socksproxytype = {0}'.format(socksproxytype))
         print('sockshostname = {0}'.format(sockshostname))
         print('socksport = {0}'.format(socksport))
-        print('socksauthentication = {0}'.format(str(socksauthentication)))
+        print('socksauthentication = {0}'.format(socksauthentication))
         print('socksusername = {0}'.format(socksusername))
         print('sockspassword = {0}'.format(sockspassword))
 
@@ -331,73 +334,73 @@ class my_bitmessage(object):
                 if uInput == 'port':
                     print('Current port number: {0}'.format(port))
                     uInput = self.userInput('\nEnter the new port number.').lower()
-                    self.config.set('bitmessagesettings', 'port', str(uInput))
+                    self.config.set('bitmessagesettings', 'port', uInput)
 
                 elif uInput == 'startonlogon':
-                    print('Current status: {0}'.format(str(startonlogon)))
+                    print('Current status: {0}'.format(startonlogon))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'startonlogon', str(uInput))
+                    self.config.set('bitmessagesettings', 'startonlogon', uInput)
 
                 elif uInput == 'minimizetotray':
-                    print('Current status: {0}'.format(str(minimizetotray)))
+                    print('Current status: {0}'.format(minimizetotray))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'minimizetotray', str(uInput))
+                    self.config.set('bitmessagesettings', 'minimizetotray', uInput)
 
                 elif uInput == 'showtraynotifications':
-                    print('Current status: {0}'.format(str(showtraynotifications)))
+                    print('Current status: {0}'.format(showtraynotifications))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'showtraynotifications', str(uInput))
+                    self.config.set('bitmessagesettings', 'showtraynotifications', uInput)
 
                 elif uInput == 'startintray':
-                    print('Current status: {0}\n'.format(str(startintray)))
+                    print('Current status: {0}\n'.format(startintray))
                     uInput = self.userInput('Enter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'startintray', str(uInput))
+                    self.config.set('bitmessagesettings', 'startintray', uInput)
 
                 elif uInput == 'defaultnoncetrialsperbyte':
                     print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
                     uInput = self.userInput('\nEnter the new defaultnoncetrialsperbyte.').lower()
-                    self.config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', str(uInput))
+                    self.config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', uInput)
 
                 elif uInput == 'defaultpayloadlengthextrabytes':
                     print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
                     uInput = self.userInput('\nEnter the new defaultpayloadlengthextrabytes.').lower()
-                    self.config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', str(uInput))
+                    self.config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', uInput)
 
                 elif uInput == 'daemon':
-                    print('Current status: {0}'.format(str(daemon)))
+                    print('Current status: {0}'.format(daemon))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'daemon', str(uInput))
+                    self.config.set('bitmessagesettings', 'daemon', uInput)
 
                 elif uInput == 'socksproxytype':
                     print('Current socks proxy type: {0}'.format(socksproxytype))
                     print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'")
                     uInput = self.userInput('\nEnter the new socksproxytype').lower()
-                    self.config.set('bitmessagesettings', 'socksproxytype', str(uInput))
+                    self.config.set('bitmessagesettings', 'socksproxytype', uInput)
 
                 elif uInput == 'sockshostname':
                     print('Current socks host name: {0}'.format(sockshostname))
                     uInput = self.userInput('\nEnter the new sockshostname').lower()
-                    self.config.set('bitmessagesettings', 'sockshostname', str(uInput))
+                    self.config.set('bitmessagesettings', 'sockshostname', uInput)
 
                 elif uInput == 'socksport':
                     print('Current socks port number: {0}'.format(socksport))
                     uInput = self.userInput('\nEnter the new socksport').lower()
-                    self.config.set('bitmessagesettings', 'socksport', str(uInput))
+                    self.config.set('bitmessagesettings', 'socksport', uInput)
 
                 elif uInput == 'socksauthentication':
-                    print('Current status: {0}'.format(str(socksauthentication)))
+                    print('Current status: {0}'.format(socksauthentication))
                     uInput = self.userInput('\nEnter the new status').lower()
-                    self.config.set('bitmessagesettings', 'socksauthentication', str(uInput))
+                    self.config.set('bitmessagesettings', 'socksauthentication', uInput)
 
                 elif uInput == 'socksusername':
                     print('Current socks username: {0}'.format(socksusername))
                     uInput = self.userInput('\nEnter the new socksusername').lower()
-                    self.config.set('bitmessagesettings', 'socksusername', str(uInput))
+                    self.config.set('bitmessagesettings', 'socksusername', uInput)
 
                 elif uInput == 'sockspassword':
                     print('Current socks password: {0}'.format(sockspassword))
                     uInput = self.userInput('\nEnter the new sockspassword').lower()
-                    self.config.set('bitmessagesettings', 'sockspassword', str(uInput))
+                    self.config.set('bitmessagesettings', 'sockspassword', uInput)
                 else:
                     print('Invalid input. Please try again')
                     invalidInput = True
@@ -509,8 +512,8 @@ class my_bitmessage(object):
                 numAddresses = len(jsonAddresses['addresses'])
                 # processes all of the addresses and lists them out
                 for addNum in range (0, numAddresses):
-                    label = str(jsonAddresses['addresses'][addNum]['label'])
-                    jsonAddress = str(jsonAddresses['addresses'][addNum]['address'])
+                    label = jsonAddresses['addresses'][addNum]['label']
+                    jsonAddress = jsonAddresses['addresses'][addNum]['address']
                     if '[chan] {0}'.format(address) == label:
                         address = jsonAddress
                         found = True
@@ -580,8 +583,8 @@ class my_bitmessage(object):
                     numAddresses = len(jsonAddresses['addresses'])
                     # processes all of the addresses and lists them out
                     for addNum in range (0, numAddresses):
-                        label = str(jsonAddresses['addresses'][addNum]['label'])
-                        jsonAddress = str(jsonAddresses['addresses'][addNum]['address'])
+                        label = jsonAddresses['addresses'][addNum]['label']
+                        jsonAddress = jsonAddresses['addresses'][addNum]['address']
                         if '{0}'.format(address) == label:
                             address = jsonAddress
                             found = True
@@ -663,18 +666,18 @@ class my_bitmessage(object):
 
             # Gets the length of the filepath excluding the filename
             pathLen = len(str(ntpath.basename(filePath)))
+            print(pathLen)
             # reads the filename
             fileName = filePath[(len(str(filePath)) - pathLen):]
+            print(fileName)
 
             # Tests if it is an image file
             filetype = imghdr.what(filePath)
             if filetype is not None:
-                print('---------------------------------------------------')
-                print('Attachment detected as an Image.')
-                print('<img> tags will automatically be included,')
-                print('allowing the recipient to view the image')
-                print('using the ''View HTML code...'' option in Bitmessage.')
-                print('---------------------------------------------------')
+                print('------------------------------------------')
+                print('     Attachment detected as an Image.')
+                print('<img> tags will be automatically included.')
+                print('------------------------------------------')
                 isImage = True
                 time.sleep(2)
 
@@ -1240,53 +1243,55 @@ Encoding:base64
             else:
                 print('Invald input')
         if uInput in ['message', 'm']:
-            self.sendMsg(NULL,NULL,NULL,NULL)
+            self.sendMsg('','','','')
         elif uInput in ['broadcast', 'b']:
-            self.sendBrd(NULL,NULL,NULL)
+            self.sendBrd('','','')
+
+
+    def viewHelp(self):
+        print('-----------------------------------------------------------------------')
+        print('|                https://github.com/RZZT/taskhive-core                |')
+        print('|---------------------------------------------------------------------|')
+        print('|   Command               | Description                               |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| (h)elp or ?             | This help file                            |')
+        print('| apiTest                 | Tests the API                             |')
+        print('| addInfo                 | Returns address information (If valid)    |')
+        print('| bmSettings              | BitMessage settings                       |')
+        print('| e(x)it                  | Use anytime to return to main menu        |')
+        print('| (q)uit                  | Quits the program                         |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| listAddresses           | Lists all of the users addresses          |')
+        print('| generateAddress         | Generates a new address                   |')
+        print('| getAddress              | Get deterministic address from passphrase |')
+        print('| deleteAddress           | Deletes a generated address               |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| listAddressBookEntries  | Lists entries from the Address Book       |')
+        print('| addAddressBookEntry     | Add address to the Address Book           |')
+        print('| deleteAddressBookEntry  | Deletes address from the Address Book     |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| listSubscriptions       | Lists all addresses subscribed to         |')
+        print('| subscribe               | Subscribes to an address                  |')
+        print('| unsubscribe             | Unsubscribes from an address              |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| create                  | Creates a channel                         |')
+        print('| join                    | Joins a channel                           |')
+        print('| leave                   | Leaves a channel                          |')
+        print('|-------------------------|-------------------------------------------|')
+        print('| inbox                   | Lists message information for the inbox   |')
+        print('| outbox                  | Lists message information for the outbox  |')
+        print('| send                    | Send a new message or broadcast           |')
+        print('| unread                  | Lists all unread inbox messages           |')
+        print('| read                    | Reads a message from the inbox or outbox  |')
+        print('| save                    | Saves message to text file                |')
+        print('| delete                  | Deletes a message or all messages         |')
+        print('-----------------------------------------------------------------------')
+
 
     # Main user menu
     def UI(self, usrInput):
-        if usrInput in ['help', 'h', '?']:
-            print('-----------------------------------------------------------------------')
-            print('|                https://github.com/RZZT/taskhive-core                |')
-            print('|---------------------------------------------------------------------|')
-            print('|   Command               | Description                               |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| (h)elp or ?             | This help file                            |')
-            print('| apiTest                 | Tests the API                             |')
-            print('| addInfo                 | Returns address information (If valid)    |')
-            print('| bmSettings              | BitMessage settings                       |')
-            print('| e(x)it                  | Use anytime to return to main menu        |')
-            print('| (q)uit                  | Quits the program                         |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| listAddresses           | Lists all of the users addresses          |')
-            print('| generateAddress         | Generates a new address                   |')
-            print('| getAddress              | Get deterministic address from passphrase |')
-            print('| deleteAddress           | Deletes a generated address               |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| listAddressBookEntries  | Lists entries from the Address Book       |')
-            print('| addAddressBookEntry     | Add address to the Address Book           |')
-            print('| deleteAddressBookEntry  | Deletes address from the Address Book     |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| listSubscriptions       | Lists all addresses subscribed to         |')
-            print('| subscribe               | Subscribes to an address                  |')
-            print('| unsubscribe             | Unsubscribes from an address              |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| create                  | Creates a channel                         |')
-            print('| join                    | Joins a channel                           |')
-            print('| leave                   | Leaves a channel                          |')
-            print('|-------------------------|-------------------------------------------|')
-            print('| inbox                   | Lists message information for the inbox   |')
-            print('| outbox                  | Lists message information for the outbox  |')
-            print('| send                    | Send a new message or broadcast           |')
-            print('| unread                  | Lists all unread inbox messages           |')
-            print('| read                    | Reads a message from the inbox or outbox  |')
-            print('| save                    | Saves message to text file                |')
-            print('| delete                  | Deletes a message or all messages         |')
-            print('-----------------------------------------------------------------------')
-
         # tests the API Connection.
-        elif usrInput in ['apitest']:
+        if usrInput in ['apitest']:
             if self.apiTest():
                 print('API connection test has: PASSED')
             else:
@@ -1353,7 +1358,7 @@ Encoding:base64
             elif uInput in ['random', 'r']:
                 deterministic = False
                 lbl = self.userInput('\nEnter the label for the new address.')
-                print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, NULL, NULL, NULL, NULL, NULL)))
+                print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, '', '', '', '', '')))
 
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
