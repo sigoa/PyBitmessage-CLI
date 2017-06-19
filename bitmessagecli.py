@@ -22,10 +22,10 @@ import subprocess
 import sys
 import time
 import xmlrpclib
-from string import digits, ascii_letters
+import string
 
 APPNAME = 'PyBitmessage'
-CHARACTERS = digits + ascii_letters
+CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
 
@@ -57,7 +57,6 @@ class my_bitmessage(object):
                 try:
                     os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
                 except AttributeError:
-                    print('Shutting down..1')
                     sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
@@ -66,7 +65,7 @@ class my_bitmessage(object):
                 return uInput
         except(EOFError, KeyboardInterrupt):
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
-            print('Shutting down..')
+            print('Shutting down..1')
             os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
             sys.exit(0)
 
@@ -138,9 +137,9 @@ class my_bitmessage(object):
         CONFIG.set('bitmessagesettings', 'apiport', '8444')
         CONFIG.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
         CONFIG.set('bitmessagesettings', 'apiusername',
-                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
         CONFIG.set('bitmessagesettings', 'apipassword',
-                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
+                   ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
         CONFIG.set('bitmessagesettings', 'daemon', 'True')
         CONFIG.set('bitmessagesettings', 'timeformat', '%%c')
         CONFIG.set('bitmessagesettings', 'blackwhitelist', 'black')
@@ -1641,6 +1640,8 @@ class my_bitmessage(object):
         except socket.error:
             self.apiImport = False
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
+        except AttributeError:
+            sys.exit(0)
 
 
 if __name__ == '__main__':
