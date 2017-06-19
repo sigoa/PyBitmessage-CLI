@@ -54,18 +54,15 @@ class my_bitmessage(object):
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
-                try:
-                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-                except AttributeError:
-                    # We didn't get far enough to actually execute Bitmessage
-                    pass
+                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
                 sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
             else:
                 return uInput
-        except(EOFError, KeyboardInterrupt):
+        except(AttributeError, EOFError, KeyboardInterrupt):
+            # AttributeError is if we didn't get far enough to actually execute Bitmessage
             print('Shutting down..')
             os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
             sys.exit(0)
@@ -928,9 +925,9 @@ Encoding:base64
 
     def outbox(self):
         outboxMessages = json.loads(self.api.getAllSentMessages())
-        numMessages = len(outboxMessages)
+        numMessages = len(outboxMessages['sentMessages'])
         # processes all of the messages in the outbox
-        msgNum = 1
+        msgNum = 0
         for each in outboxMessages['sentMessages']:
             print('-----------------------------------')
             # Message Number
