@@ -54,14 +54,17 @@ class my_bitmessage(object):
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
-                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-                sys.exit(0)
+                try:
+                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                except AttributeError:
+                    print('Shutting down..1')
+                    sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
             else:
                 return uInput
-        except(AttributeError, EOFError, KeyboardInterrupt):
+        except(EOFError, KeyboardInterrupt):
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
             print('Shutting down..')
             os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
@@ -104,20 +107,24 @@ class my_bitmessage(object):
 
 
     def returnApi(self):
-        CONFIG.read(self.keysName)
         try:
+            CONFIG.read(self.keysName)
             apiUsername = CONFIG.get('bitmessagesettings', 'apiusername')
             apiPassword = CONFIG.get('bitmessagesettings', 'apipassword')
             apiInterface = CONFIG.get('bitmessagesettings', 'apiinterface')
-            apiPort = CONFIG.get('bitmessagesettings', 'apiport')
+            apiPort = CONFIG.getint('bitmessagesettings', 'apiport')
             # Build the api credentials
             print('API data successfully imported')
             return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
                                                     apiPassword,
                                                     apiInterface,
                                                     apiPort)
-        except Exception as e:
-            print(e)
+        except ConfigParser.MissingSectionHeaderError:
+            print("'bitmessagesettings' header is missing.")
+        except ConfigParser.NoOptionError as e:
+            print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
+        print("I'm going to ask you a series of questions..")
+        self.configInit()
 
 
     def configInit(self):
@@ -153,7 +160,7 @@ class my_bitmessage(object):
             CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
             print('Proxy settings are:')
             print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
-            print('Port: {0}'.format(CONFIG.get('bitmessagesettings', 'socksport')))
+            print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
             print('Host: localhost'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
 
             doubleCheckProxy = self.userInput('Do these need to be changed? (Y/n)').lower()
@@ -202,55 +209,55 @@ class my_bitmessage(object):
         try:
             CONFIG.getint('bitmessagesettings', 'port')
             CONFIG.getboolean('bitmessagesettings', 'apienabled')
-            CONFIG.get('bitmessagesettings', 'settingsversion')
-            CONFIG.get('bitmessagesettings', 'apiport')
+            CONFIG.getint('bitmessagesettings', 'settingsversion')
+            CONFIG.getint('bitmessagesettings', 'apiport')
             CONFIG.get('bitmessagesettings', 'apiinterface')
             CONFIG.get('bitmessagesettings', 'apiusername')
             CONFIG.get('bitmessagesettings', 'apipassword')
-            CONFIG.get('bitmessagesettings', 'daemon')
+            CONFIG.getboolean('bitmessagesettings', 'daemon')
             CONFIG.get('bitmessagesettings', 'timeformat')
             CONFIG.get('bitmessagesettings', 'blackwhitelist')
-            CONFIG.get('bitmessagesettings', 'startonlogon')
-            CONFIG.get('bitmessagesettings', 'minimizetotray')
-            CONFIG.get('bitmessagesettings', 'showtraynotifications')
-            CONFIG.get('bitmessagesettings', 'startintray')
+            CONFIG.getboolean('bitmessagesettings', 'startonlogon')
+            CONFIG.getboolean('bitmessagesettings', 'minimizetotray')
+            CONFIG.getboolean('bitmessagesettings', 'showtraynotifications')
+            CONFIG.getboolean('bitmessagesettings', 'startintray')
             CONFIG.get('bitmessagesettings', 'sockshostname')
             CONFIG.getint('bitmessagesettings', 'socksport')
-            CONFIG.get('bitmessagesettings', 'socksauthentication')
-            CONFIG.get('bitmessagesettings', 'sockslisten')
+            CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
+            CONFIG.getboolean('bitmessagesettings', 'sockslisten')
             CONFIG.get('bitmessagesettings', 'socksusername')
             CONFIG.get('bitmessagesettings', 'sockspassword')
             CONFIG.get('bitmessagesettings', 'socksproxytype')
             CONFIG.get('bitmessagesettings', 'socksproxytype')
-            CONFIG.get('bitmessagesettings', 'keysencrypted')
-            CONFIG.get('bitmessagesettings', 'messagesencrypted')
-            CONFIG.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
-            CONFIG.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
-            CONFIG.get('bitmessagesettings', 'minimizeonclose')
-            CONFIG.get('bitmessagesettings', 'maxacceptablenoncetrialsperbyte')
-            CONFIG.get('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes')
+            CONFIG.getboolean('bitmessagesettings', 'keysencrypted')
+            CONFIG.getboolean('bitmessagesettings', 'messagesencrypted')
+            CONFIG.getint('bitmessagesettings', 'defaultnoncetrialsperbyte')
+            CONFIG.getint('bitmessagesettings', 'defaultpayloadlengthextrabytes')
+            CONFIG.getboolean('bitmessagesettings', 'minimizeonclose')
+            CONFIG.getint('bitmessagesettings', 'maxacceptablenoncetrialsperbyte')
+            CONFIG.getint('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes')
             CONFIG.get('bitmessagesettings', 'userlocale')
-            CONFIG.get('bitmessagesettings', 'useidenticons')
+            CONFIG.getboolean('bitmessagesettings', 'useidenticons')
             CONFIG.get('bitmessagesettings', 'identiconsuffix')
-            CONFIG.get('bitmessagesettings', 'replybelow')
-            CONFIG.get('bitmessagesettings', 'maxdownloadrate')
-            CONFIG.get('bitmessagesettings', 'maxuploadrate')
-            CONFIG.get('bitmessagesettings', 'maxoutboundconnections')
-            CONFIG.get('bitmessagesettings', 'ttl')
+            CONFIG.getboolean('bitmessagesettings', 'replybelow')
+            CONFIG.getint('bitmessagesettings', 'maxdownloadrate')
+            CONFIG.getint('bitmessagesettings', 'maxuploadrate')
+            CONFIG.getint('bitmessagesettings', 'maxoutboundconnections')
+            CONFIG.getint('bitmessagesettings', 'ttl')
             CONFIG.get('bitmessagesettings', 'stopresendingafterxdays')
             CONFIG.get('bitmessagesettings', 'stopresendingafterxmonths')
             CONFIG.get('bitmessagesettings', 'namecoinrpctype')
             CONFIG.get('bitmessagesettings', 'namecoinrpchost')
             CONFIG.get('bitmessagesettings', 'namecoinrpcuser')
             CONFIG.get('bitmessagesettings', 'namecoinrpcpassword')
-            CONFIG.get('bitmessagesettings', 'namecoinrpcport')
-            CONFIG.get('bitmessagesettings', 'sendoutgoingconnections')
-            CONFIG.get('bitmessagesettings', 'onionhostname')
+            CONFIG.getint('bitmessagesettings', 'namecoinrpcport')
+            CONFIG.getboolean('bitmessagesettings', 'sendoutgoingconnections')
+            CONFIG.getint('bitmessagesettings', 'onionhostname')
             CONFIG.get('bitmessagesettings', 'onionbindip')
-            CONFIG.get('bitmessagesettings', 'hidetrayconnectionnotifications')
-            CONFIG.get('bitmessagesettings', 'trayonclose')
-            CONFIG.get('bitmessagesettings', 'willinglysendtomobile')
-            CONFIG.get('bitmessagesettings', 'opencl')
+            CONFIG.getboolean('bitmessagesettings', 'hidetrayconnectionnotifications')
+            CONFIG.getboolean('bitmessagesettings', 'trayonclose')
+            CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
+            CONFIG.getboolean('bitmessagesettings', 'opencl')
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             print("I'm going to ask you a series of questions..")
@@ -270,31 +277,23 @@ class my_bitmessage(object):
                 return True
             else:
                 return False
-        except Exception:
+        except socket.error:
             return False
-
 
     # Allows the viewing and modification of keys.dat settings.
     def bmSettings(self):
         # Read the keys.dat
         CONFIG.read(self.keysName)
-
-        try:
-            port = CONFIG.get('bitmessagesettings', 'port')
-        except ConfigParser.NoSectionError:
-            print('Connection')
-            self.main()
-
         startonlogon = CONFIG.getboolean('bitmessagesettings', 'startonlogon')
         minimizetotray = CONFIG.getboolean('bitmessagesettings', 'minimizetotray')
         showtraynotifications = CONFIG.getboolean('bitmessagesettings', 'showtraynotifications')
         startintray = CONFIG.getboolean('bitmessagesettings', 'startintray')
-        defaultnoncetrialsperbyte = CONFIG.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
-        defaultpayloadlengthextrabytes = CONFIG.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
+        defaultnoncetrialsperbyte = CONFIG.getint('bitmessagesettings', 'defaultnoncetrialsperbyte')
+        defaultpayloadlengthextrabytes = CONFIG.getint('bitmessagesettings', 'defaultpayloadlengthextrabytes')
         daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
         socksproxytype = CONFIG.get('bitmessagesettings', 'socksproxytype')
         sockshostname = CONFIG.get('bitmessagesettings', 'sockshostname')
-        socksport = CONFIG.get('bitmessagesettings', 'socksport')
+        socksport = CONFIG.getint('bitmessagesettings', 'socksport')
         socksauthentication = CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
         socksusername = CONFIG.get('bitmessagesettings', 'socksusername')
         sockspassword = CONFIG.get('bitmessagesettings', 'sockspassword')
@@ -619,14 +618,10 @@ class my_bitmessage(object):
                 print("That directory doesn't exist.")
             else:
                 if sys.platform.startswith('win'):
-                    if directory.endswith('\\'):
-                        pass
-                    else:
+                    if not directory.endswith('\\'):
                         directory = directory + '\\'
                 else:
-                    if directory.endswith('/'):
-                        pass
-                    else:
+                    if not directory.endswith('/'):
                         directory = directory + '/'
 
                 filePath = directory + fileName
@@ -677,65 +672,52 @@ class my_bitmessage(object):
                     return ''
 
             # If larger than 256KB, discard
-            elif invSize > 256.0:
+            if invSize > 256.0:
                 print('Attachment too big, maximum allowed message size is 256KB')
-                self.main()
-
-            # Gets the length of the filepath excluding the filename
-            pathLen = len(str(ntpath.basename(filePath)))
-            print(pathLen)
-            # reads the filename
-            fileName = filePath[(len(str(filePath)) - pathLen):]
-            print(fileName)
-
-            # Tests if it is an image file
-            filetype = imghdr.what(filePath)
-            if filetype is not None:
-                print('------------------------------------------')
-                print('     Attachment detected as an Image.')
-                print('<img> tags will be automatically included.')
-                print('------------------------------------------')
-                isImage = True
-                time.sleep(2)
-
-            # Alert the user that the encoding process may take some time
-            print('Encoding attachment, please wait ...')
-
-            # Begin the actual encoding
-            with open(filePath, 'rb') as f:
-                # Reads files up to 256KB
-                data = f.read(262144)
-                data = base64.b64encode(data)
-
-            # If it is an image, include image tags in the message
-            if isImage:
-                theAttachment = """
-<!-- Note: Image attachment below. Please use the right click "View HTML code ..." option to view it. -->
-<!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
-
-Filename:{0}
-Filesize:{1}KB
-Encoding:base64
-
-<center>
-    <div id="image">
-        <img alt = "{2}" src='data:image/{3};base64, {4}' />
-    </div>
-</center>""".format(fileName, invSize, fileName, filetype, data)
-            # Else it is not an image so do not include the embedded image code.
-            else:
-                theAttachment = """
-<!-- Note: File attachment below. Please use a base64 decoder, or Daemon, to save it. -->
-<!-- Sent using Bitmessage Daemon. https://github.com/RZZT/taskhive-core -->
-
-Filename:{0}
-Filesize:{1}KB
-Encoding:base64
-
-<attachment alt = "{2}" src='data:file/{3};base64, {4}' />""".format(fileName, invSize, fileName, fileName, data)
+                return ''
 
             break
 
+        # Gets the length of the filepath excluding the filename
+        pathLen = len(str(ntpath.basename(filePath)))
+        # reads the filename
+        fileName = filePath[(len(str(filePath)) - pathLen):]
+
+        # Tests if it is an image file
+        filetype = imghdr.what(filePath)
+        if filetype is not None:
+            print('------------------------------------------')
+            print('     Attachment detected as an Image.')
+            print('<img> tags will be automatically included.')
+            print('------------------------------------------')
+            isImage = True
+            time.sleep(3)
+        # Alert the user that the encoding process may take some time
+        print('Encoding attachment, please wait ...')
+        # Begin the actual encoding
+        with open(filePath, 'rb') as f:
+            # Reads files up to 256KB
+            data = f.read(262144)
+            data = base64.b64encode(data)
+
+        # If it is an image, include image tags in the message
+        if isImage:
+            theAttachment = '<!-- Note: Base64 encoded image attachment below. -->\n\n'
+            theAttachment += 'Filename:{0}\n'.format(fileName)
+            theAttachment += 'Filesize:{0}KB\n'.format(invSize)
+            theAttachment += 'Encoding:base64\n\n'
+            theAttachment += '<center>\n'
+            theAttachment += "<img alt = \"{0}\" src='data:image/{0};base64, {1}' />\n".format(fileName, data)
+            theAttachment += '</center>'
+        # Else it is not an image so do not include the embedded image code.
+        else:
+            theAttachment = '<!-- Note: Base64 encoded file attachment below. -->\n\n'
+            theAttachment += 'Filename:{0}\n'.format(fileName)
+            theAttachment += 'Filesize:{0}KB\n'.format(invSize)
+            theAttachment += 'Encoding:base64\n\n'
+            theAttachment += '<center>\n'
+            theAttachment += "<img alt = \"{0}\" src='data:file/{0};base64, {1}' />\n".format(fileName, data)
+            theAttachment += '</center>'
         theAttachmentS = theAttachmentS + theAttachment
         return theAttachmentS
 
@@ -1229,7 +1211,7 @@ Encoding:base64
             if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
                 # Processes all of the messages in the inbox
                 for msgNum in range (0, numMessages):
-                    print('Deleting message {0} of '.format(msgNum + 1, numMessages))
+                    print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
                     self.delMsg(0)
                 print('Inbox is empty.')
             else:
@@ -1602,7 +1584,6 @@ Encoding:base64
             self.markAllMessagesRead()
         elif usrInput in ['markallmessagesunread']:
             self.markAllMessagesUnread()
-
         else:
             print('"{0}" is not a command.'.format(usrInput))
         self.main()
@@ -1652,7 +1633,7 @@ Encoding:base64
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except socket.error:
             self.apiImport = False
-            print(self.enableBM.pid)
+            self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
 
 
 if __name__ == '__main__':
