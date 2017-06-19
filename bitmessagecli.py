@@ -262,6 +262,13 @@ class my_bitmessage(object):
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             print("I'm going to ask you a series of questions..")
             self.configInit()
+        except ConfigParser.NoSectionError:
+            print("No section 'bitmessagesettings'")
+            print("I'm going to ask you a series of questions..")
+            self.configInit()
+
+
+
 
 #####
 # End keys.dat interactions
