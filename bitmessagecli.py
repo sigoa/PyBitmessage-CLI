@@ -54,7 +54,11 @@ class my_bitmessage(object):
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
-                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                try:
+                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                except AttributeError:
+                    # We didn't get far enough to actually execute Bitmessage
+                    pass
                 sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
@@ -120,7 +124,10 @@ class my_bitmessage(object):
 
 
     def configInit(self):
-        CONFIG.add_section('bitmessagesettings')
+        try:
+            CONFIG.add_section('bitmessagesettings')
+        except ConfigParser.DuplicateSectionError:
+            pass
         CONFIG.set('bitmessagesettings', 'port', '8444')
         CONFIG.set('bitmessagesettings', 'apienabled', 'True')
         CONFIG.set('bitmessagesettings', 'settingsversion', '10')
@@ -247,12 +254,9 @@ class my_bitmessage(object):
             CONFIG.get('bitmessagesettings', 'trayonclose')
             CONFIG.get('bitmessagesettings', 'willinglysendtomobile')
             CONFIG.get('bitmessagesettings', 'opencl')
-        except Exception as e:
-            print(e)
-            # Could not load the keys.dat file in the program directory
-            print('-----------------------------------------------------------------')
-            print('There was a problem trying to access the Bitmessage keys.dat file')
-            print('-----------------------------------------------------------------')
+        except ConfigParser.NoOptionError as e:
+            print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
+            print("I'm going to ask you a series of questions..")
             self.configInit()
 
 #####
