@@ -27,6 +27,7 @@ from string import digits, ascii_letters
 APPNAME = 'PyBitmessage'
 CHARACTERS = digits + ascii_letters
 SECURE_RANDOM = random.SystemRandom()
+CONFIG = ConfigParser.RawConfigParser()
 
 
 class my_bitmessage(object):
@@ -42,7 +43,6 @@ class my_bitmessage(object):
         self.bmActive = False
         self.enableBM = ''
         self.apiImport = False
-        self.config = ConfigParser.RawConfigParser()
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -103,12 +103,12 @@ class my_bitmessage(object):
 
 
     def returnApi(self):
-        self.config.read(self.keysName)
+        CONFIG.read(self.keysName)
         try:
-            apiUsername = self.config.get('bitmessagesettings', 'apiusername')
-            apiPassword = self.config.get('bitmessagesettings', 'apipassword')
-            apiInterface = self.config.get('bitmessagesettings', 'apiinterface')
-            apiPort = self.config.get('bitmessagesettings', 'apiport')
+            apiUsername = CONFIG.get('bitmessagesettings', 'apiusername')
+            apiPassword = CONFIG.get('bitmessagesettings', 'apipassword')
+            apiInterface = CONFIG.get('bitmessagesettings', 'apiinterface')
+            apiPort = CONFIG.get('bitmessagesettings', 'apiport')
             # Build the api credentials
             print('API data successfully imported')
             return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
@@ -120,132 +120,133 @@ class my_bitmessage(object):
 
 
     def configInit(self):
-        config.add_section('bitmessagesettings')
-        self.config.set('bitmessagesettings', 'port', '8444')
-        self.config.set('bitmessagesettings', 'apienabled', 'True')
-        self.config.set('bitmessagesettings', 'settingsversion', '10')
-        self.config.set('bitmessagesettings', 'apiport', '8444')
-        self.config.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
-        self.config.set('bitmessagesettings', 'apiusername',
+        CONFIG.add_section('bitmessagesettings')
+        CONFIG.set('bitmessagesettings', 'port', '8444')
+        CONFIG.set('bitmessagesettings', 'apienabled', 'True')
+        CONFIG.set('bitmessagesettings', 'settingsversion', '10')
+        CONFIG.set('bitmessagesettings', 'apiport', '8444')
+        CONFIG.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
+        CONFIG.set('bitmessagesettings', 'apiusername',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
-        self.config.set('bitmessagesettings', 'apipassword',
+        CONFIG.set('bitmessagesettings', 'apipassword',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,32)]))
-        self.config.set('bitmessagesettings', 'daemon', 'True')
-        self.config.set('bitmessagesettings', 'timeformat', '%%c')
-        self.config.set('bitmessagesettings', 'blackwhitelist', 'black')
-        self.config.set('bitmessagesettings', 'startonlogon', 'False')
-        self.config.set('bitmessagesettings', 'minimizetotray', 'False')
-        self.config.set('bitmessagesettings', 'showtraynotifications', 'True')
-        self.config.set('bitmessagesettings', 'startintray', 'False')
-        self.config.set('bitmessagesettings', 'sockshostname', 'localhost')
-        self.config.set('bitmessagesettings', 'socksport', '9050')
-        self.config.set('bitmessagesettings', 'socksauthentication', 'False')
-        self.config.set('bitmessagesettings', 'sockslisten', 'False')
-        self.config.set('bitmessagesettings', 'socksusername', '')
-        self.config.set('bitmessagesettings', 'sockspassword', '')
+        CONFIG.set('bitmessagesettings', 'daemon', 'True')
+        CONFIG.set('bitmessagesettings', 'timeformat', '%%c')
+        CONFIG.set('bitmessagesettings', 'blackwhitelist', 'black')
+        CONFIG.set('bitmessagesettings', 'startonlogon', 'False')
+        CONFIG.set('bitmessagesettings', 'minimizetotray', 'False')
+        CONFIG.set('bitmessagesettings', 'showtraynotifications', 'True')
+        CONFIG.set('bitmessagesettings', 'startintray', 'False')
+        CONFIG.set('bitmessagesettings', 'sockshostname', 'localhost')
+        CONFIG.set('bitmessagesettings', 'socksport', '9050')
+        CONFIG.set('bitmessagesettings', 'socksauthentication', 'False')
+        CONFIG.set('bitmessagesettings', 'sockslisten', 'False')
+        CONFIG.set('bitmessagesettings', 'socksusername', '')
+        CONFIG.set('bitmessagesettings', 'sockspassword', '')
 
         enableTor = self.userInput('\nEnable SOCKS5 Tor connection (Y/n)?').lower()
         if enableTor in ['yes', 'y']:
-            self.config.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
+            CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
             print('Proxy settings are:')
-            print('Type: {0}'.format(self.config.get('bitmessagesettings', 'socksproxytype')))
-            print('Port: {0}'.format(self.config.get('bitmessagesettings', 'socksport')))
-            print('Host: localhost'.format(self.config.get('bitmessagesettings', 'sockshostname')))
+            print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+            print('Port: {0}'.format(CONFIG.get('bitmessagesettings', 'socksport')))
+            print('Host: localhost'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
 
             doubleCheckProxy = self.userInput('Do these need to be changed? (Y/n)').lower()
             if doubleCheckProxy in ['yes', 'y']:
                 print('?')
         else:
-            self.config.set('bitmessagesettings', 'socksproxytype', 'none')
-        self.config.set('bitmessagesettings', 'keysencrypted', 'False')
-        self.config.set('bitmessagesettings', 'messagesencrypted', 'False')
-        self.config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
-        self.config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', '1000')
-        self.config.set('bitmessagesettings', 'minimizeonclose', 'False')
-        self.config.set('bitmessagesettings', 'maxacceptablenoncetrialsperbyte', '20000000000')
-        self.config.set('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes', '20000000000')
-        self.config.set('bitmessagesettings', 'userlocale', 'system')
-        self.config.set('bitmessagesettings', 'useidenticons', 'False')
-        self.config.set('bitmessagesettings', 'identiconsuffix', '')
-        self.config.set('bitmessagesettings', 'replybelow', 'False')
-        self.config.set('bitmessagesettings', 'maxdownloadrate', '0')
-        self.config.set('bitmessagesettings', 'maxuploadrate', '0')
-        self.config.set('bitmessagesettings', 'maxoutboundconnections', '8')
-        self.config.set('bitmessagesettings', 'ttl', '367200')
-        self.config.set('bitmessagesettings', 'stopresendingafterxdays', '')
-        self.config.set('bitmessagesettings', 'stopresendingafterxmonths', '')
-        self.config.set('bitmessagesettings', 'namecoinrpctype', 'namecoind')
-        self.config.set('bitmessagesettings', 'namecoinrpchost', 'localhost')
-        self.config.set('bitmessagesettings', 'namecoinrpcuser', '')
-        self.config.set('bitmessagesettings', 'namecoinrpcpassword', '')
-        self.config.set('bitmessagesettings', 'namecoinrpcport', '8336')
-        self.config.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
-        self.config.set('bitmessagesettings', 'onionhostname', '8444')
-        self.config.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
-        self.config.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
-        self.config.set('bitmessagesettings', 'trayonclose', 'False')
-        self.config.set('bitmessagesettings', 'willinglysendtomobile', 'False')
-        self.config.set('bitmessagesettings', 'opencl', 'False')
+            CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
+
+        CONFIG.set('bitmessagesettings', 'keysencrypted', 'False')
+        CONFIG.set('bitmessagesettings', 'messagesencrypted', 'False')
+        CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
+        CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', '1000')
+        CONFIG.set('bitmessagesettings', 'minimizeonclose', 'False')
+        CONFIG.set('bitmessagesettings', 'maxacceptablenoncetrialsperbyte', '20000000000')
+        CONFIG.set('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes', '20000000000')
+        CONFIG.set('bitmessagesettings', 'userlocale', 'system')
+        CONFIG.set('bitmessagesettings', 'useidenticons', 'False')
+        CONFIG.set('bitmessagesettings', 'identiconsuffix', '')
+        CONFIG.set('bitmessagesettings', 'replybelow', 'False')
+        CONFIG.set('bitmessagesettings', 'maxdownloadrate', '0')
+        CONFIG.set('bitmessagesettings', 'maxuploadrate', '0')
+        CONFIG.set('bitmessagesettings', 'maxoutboundconnections', '8')
+        CONFIG.set('bitmessagesettings', 'ttl', '367200')
+        CONFIG.set('bitmessagesettings', 'stopresendingafterxdays', '')
+        CONFIG.set('bitmessagesettings', 'stopresendingafterxmonths', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpctype', 'namecoind')
+        CONFIG.set('bitmessagesettings', 'namecoinrpchost', 'localhost')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcuser', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcpassword', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcport', '8336')
+        CONFIG.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
+        CONFIG.set('bitmessagesettings', 'onionhostname', '8444')
+        CONFIG.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
+        CONFIG.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
+        CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
+        CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
+        CONFIG.set('bitmessagesettings', 'opencl', 'False')
         if not os.path.isdir(self.keysPath):
             os.mkdir(self.keysPath)
         with open(self.keysName, 'wb') as configfile:
-            config.write(configfile)
+            CONFIG.write(configfile)
 
 
     def apiData(self):
-        self.config.read(self.keysName)
+        CONFIG.read(self.keysName)
         try:
-            self.config.get('bitmessagesettings', 'port')
-            self.config.get('bitmessagesettings', 'apienabled')
-            self.config.get('bitmessagesettings', 'settingsversion')
-            self.config.get('bitmessagesettings', 'apiport')
-            self.config.get('bitmessagesettings', 'apiinterface')
-            self.config.get('bitmessagesettings', 'apiusername')
-            self.config.get('bitmessagesettings', 'apipassword')
-            self.config.get('bitmessagesettings', 'daemon')
-            self.config.get('bitmessagesettings', 'timeformat')
-            self.config.get('bitmessagesettings', 'blackwhitelist')
-            self.config.get('bitmessagesettings', 'startonlogon')
-            self.config.get('bitmessagesettings', 'minimizetotray')
-            self.config.get('bitmessagesettings', 'showtraynotifications')
-            self.config.get('bitmessagesettings', 'startintray')
-            self.config.get('bitmessagesettings', 'sockshostname')
-            self.config.get('bitmessagesettings', 'socksport')
-            self.config.get('bitmessagesettings', 'socksauthentication')
-            self.config.get('bitmessagesettings', 'sockslisten')
-            self.config.get('bitmessagesettings', 'socksusername')
-            self.config.get('bitmessagesettings', 'sockspassword')
-            self.config.get('bitmessagesettings', 'socksproxytype')
-            self.config.get('bitmessagesettings', 'socksproxytype')
-            self.config.get('bitmessagesettings', 'keysencrypted')
-            self.config.get('bitmessagesettings', 'messagesencrypted')
-            self.config.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
-            self.config.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
-            self.config.get('bitmessagesettings', 'minimizeonclose')
-            self.config.get('bitmessagesettings', 'maxacceptablenoncetrialsperbyte')
-            self.config.get('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes')
-            self.config.get('bitmessagesettings', 'userlocale')
-            self.config.get('bitmessagesettings', 'useidenticons')
-            self.config.get('bitmessagesettings', 'identiconsuffix')
-            self.config.get('bitmessagesettings', 'replybelow')
-            self.config.get('bitmessagesettings', 'maxdownloadrate')
-            self.config.get('bitmessagesettings', 'maxuploadrate')
-            self.config.get('bitmessagesettings', 'maxoutboundconnections')
-            self.config.get('bitmessagesettings', 'ttl')
-            self.config.get('bitmessagesettings', 'stopresendingafterxdays')
-            self.config.get('bitmessagesettings', 'stopresendingafterxmonths')
-            self.config.get('bitmessagesettings', 'namecoinrpctype')
-            self.config.get('bitmessagesettings', 'namecoinrpchost')
-            self.config.get('bitmessagesettings', 'namecoinrpcuser')
-            self.config.get('bitmessagesettings', 'namecoinrpcpassword')
-            self.config.get('bitmessagesettings', 'namecoinrpcport')
-            self.config.get('bitmessagesettings', 'sendoutgoingconnections')
-            self.config.get('bitmessagesettings', 'onionhostname')
-            self.config.get('bitmessagesettings', 'onionbindip')
-            self.config.get('bitmessagesettings', 'hidetrayconnectionnotifications')
-            self.config.get('bitmessagesettings', 'trayonclose')
-            self.config.get('bitmessagesettings', 'willinglysendtomobile')
-            self.config.get('bitmessagesettings', 'opencl')
+            CONFIG.getint('bitmessagesettings', 'port')
+            CONFIG.getboolean('bitmessagesettings', 'apienabled')
+            CONFIG.get('bitmessagesettings', 'settingsversion')
+            CONFIG.get('bitmessagesettings', 'apiport')
+            CONFIG.get('bitmessagesettings', 'apiinterface')
+            CONFIG.get('bitmessagesettings', 'apiusername')
+            CONFIG.get('bitmessagesettings', 'apipassword')
+            CONFIG.get('bitmessagesettings', 'daemon')
+            CONFIG.get('bitmessagesettings', 'timeformat')
+            CONFIG.get('bitmessagesettings', 'blackwhitelist')
+            CONFIG.get('bitmessagesettings', 'startonlogon')
+            CONFIG.get('bitmessagesettings', 'minimizetotray')
+            CONFIG.get('bitmessagesettings', 'showtraynotifications')
+            CONFIG.get('bitmessagesettings', 'startintray')
+            CONFIG.get('bitmessagesettings', 'sockshostname')
+            CONFIG.getint('bitmessagesettings', 'socksport')
+            CONFIG.get('bitmessagesettings', 'socksauthentication')
+            CONFIG.get('bitmessagesettings', 'sockslisten')
+            CONFIG.get('bitmessagesettings', 'socksusername')
+            CONFIG.get('bitmessagesettings', 'sockspassword')
+            CONFIG.get('bitmessagesettings', 'socksproxytype')
+            CONFIG.get('bitmessagesettings', 'socksproxytype')
+            CONFIG.get('bitmessagesettings', 'keysencrypted')
+            CONFIG.get('bitmessagesettings', 'messagesencrypted')
+            CONFIG.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
+            CONFIG.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
+            CONFIG.get('bitmessagesettings', 'minimizeonclose')
+            CONFIG.get('bitmessagesettings', 'maxacceptablenoncetrialsperbyte')
+            CONFIG.get('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes')
+            CONFIG.get('bitmessagesettings', 'userlocale')
+            CONFIG.get('bitmessagesettings', 'useidenticons')
+            CONFIG.get('bitmessagesettings', 'identiconsuffix')
+            CONFIG.get('bitmessagesettings', 'replybelow')
+            CONFIG.get('bitmessagesettings', 'maxdownloadrate')
+            CONFIG.get('bitmessagesettings', 'maxuploadrate')
+            CONFIG.get('bitmessagesettings', 'maxoutboundconnections')
+            CONFIG.get('bitmessagesettings', 'ttl')
+            CONFIG.get('bitmessagesettings', 'stopresendingafterxdays')
+            CONFIG.get('bitmessagesettings', 'stopresendingafterxmonths')
+            CONFIG.get('bitmessagesettings', 'namecoinrpctype')
+            CONFIG.get('bitmessagesettings', 'namecoinrpchost')
+            CONFIG.get('bitmessagesettings', 'namecoinrpcuser')
+            CONFIG.get('bitmessagesettings', 'namecoinrpcpassword')
+            CONFIG.get('bitmessagesettings', 'namecoinrpcport')
+            CONFIG.get('bitmessagesettings', 'sendoutgoingconnections')
+            CONFIG.get('bitmessagesettings', 'onionhostname')
+            CONFIG.get('bitmessagesettings', 'onionbindip')
+            CONFIG.get('bitmessagesettings', 'hidetrayconnectionnotifications')
+            CONFIG.get('bitmessagesettings', 'trayonclose')
+            CONFIG.get('bitmessagesettings', 'willinglysendtomobile')
+            CONFIG.get('bitmessagesettings', 'opencl')
         except Exception as e:
             print(e)
             # Could not load the keys.dat file in the program directory
@@ -275,27 +276,27 @@ class my_bitmessage(object):
     # Allows the viewing and modification of keys.dat settings.
     def bmSettings(self):
         # Read the keys.dat
-        self.config.read(self.keysName)
+        CONFIG.read(self.keysName)
 
         try:
-            port = self.config.get('bitmessagesettings', 'port')
+            port = CONFIG.get('bitmessagesettings', 'port')
         except ConfigParser.NoSectionError:
             print('Connection')
             self.main()
 
-        startonlogon = self.config.getboolean('bitmessagesettings', 'startonlogon')
-        minimizetotray = self.config.getboolean('bitmessagesettings', 'minimizetotray')
-        showtraynotifications = self.config.getboolean('bitmessagesettings', 'showtraynotifications')
-        startintray = self.config.getboolean('bitmessagesettings', 'startintray')
-        defaultnoncetrialsperbyte = self.config.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
-        defaultpayloadlengthextrabytes = self.config.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
-        daemon = self.config.getboolean('bitmessagesettings', 'daemon')
-        socksproxytype = self.config.get('bitmessagesettings', 'socksproxytype')
-        sockshostname = self.config.get('bitmessagesettings', 'sockshostname')
-        socksport = self.config.get('bitmessagesettings', 'socksport')
-        socksauthentication = self.config.getboolean('bitmessagesettings', 'socksauthentication')
-        socksusername = self.config.get('bitmessagesettings', 'socksusername')
-        sockspassword = self.config.get('bitmessagesettings', 'sockspassword')
+        startonlogon = CONFIG.getboolean('bitmessagesettings', 'startonlogon')
+        minimizetotray = CONFIG.getboolean('bitmessagesettings', 'minimizetotray')
+        showtraynotifications = CONFIG.getboolean('bitmessagesettings', 'showtraynotifications')
+        startintray = CONFIG.getboolean('bitmessagesettings', 'startintray')
+        defaultnoncetrialsperbyte = CONFIG.get('bitmessagesettings', 'defaultnoncetrialsperbyte')
+        defaultpayloadlengthextrabytes = CONFIG.get('bitmessagesettings', 'defaultpayloadlengthextrabytes')
+        daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
+        socksproxytype = CONFIG.get('bitmessagesettings', 'socksproxytype')
+        sockshostname = CONFIG.get('bitmessagesettings', 'sockshostname')
+        socksport = CONFIG.get('bitmessagesettings', 'socksport')
+        socksauthentication = CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
+        socksusername = CONFIG.get('bitmessagesettings', 'socksusername')
+        sockspassword = CONFIG.get('bitmessagesettings', 'sockspassword')
 
 
         print('-----------------------------------')
@@ -334,73 +335,73 @@ class my_bitmessage(object):
                 if uInput == 'port':
                     print('Current port number: {0}'.format(port))
                     uInput = self.userInput('\nEnter the new port number.').lower()
-                    self.config.set('bitmessagesettings', 'port', uInput)
+                    CONFIG.set('bitmessagesettings', 'port', uInput)
 
                 elif uInput == 'startonlogon':
                     print('Current status: {0}'.format(startonlogon))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'startonlogon', uInput)
+                    CONFIG.set('bitmessagesettings', 'startonlogon', uInput)
 
                 elif uInput == 'minimizetotray':
                     print('Current status: {0}'.format(minimizetotray))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'minimizetotray', uInput)
+                    CONFIG.set('bitmessagesettings', 'minimizetotray', uInput)
 
                 elif uInput == 'showtraynotifications':
                     print('Current status: {0}'.format(showtraynotifications))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'showtraynotifications', uInput)
+                    CONFIG.set('bitmessagesettings', 'showtraynotifications', uInput)
 
                 elif uInput == 'startintray':
                     print('Current status: {0}\n'.format(startintray))
                     uInput = self.userInput('Enter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'startintray', uInput)
+                    CONFIG.set('bitmessagesettings', 'startintray', uInput)
 
                 elif uInput == 'defaultnoncetrialsperbyte':
                     print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
                     uInput = self.userInput('\nEnter the new defaultnoncetrialsperbyte.').lower()
-                    self.config.set('bitmessagesettings', 'defaultnoncetrialsperbyte', uInput)
+                    CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', uInput)
 
                 elif uInput == 'defaultpayloadlengthextrabytes':
                     print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
                     uInput = self.userInput('\nEnter the new defaultpayloadlengthextrabytes.').lower()
-                    self.config.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', uInput)
+                    CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', uInput)
 
                 elif uInput == 'daemon':
                     print('Current status: {0}'.format(daemon))
                     uInput = self.userInput('\nEnter the new status.').lower()
-                    self.config.set('bitmessagesettings', 'daemon', uInput)
+                    CONFIG.set('bitmessagesettings', 'daemon', uInput)
 
                 elif uInput == 'socksproxytype':
                     print('Current socks proxy type: {0}'.format(socksproxytype))
                     print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'")
                     uInput = self.userInput('\nEnter the new socksproxytype').lower()
-                    self.config.set('bitmessagesettings', 'socksproxytype', uInput)
+                    CONFIG.set('bitmessagesettings', 'socksproxytype', uInput)
 
                 elif uInput == 'sockshostname':
                     print('Current socks host name: {0}'.format(sockshostname))
                     uInput = self.userInput('\nEnter the new sockshostname').lower()
-                    self.config.set('bitmessagesettings', 'sockshostname', uInput)
+                    CONFIG.set('bitmessagesettings', 'sockshostname', uInput)
 
                 elif uInput == 'socksport':
                     print('Current socks port number: {0}'.format(socksport))
                     uInput = self.userInput('\nEnter the new socksport').lower()
-                    self.config.set('bitmessagesettings', 'socksport', uInput)
+                    CONFIG.set('bitmessagesettings', 'socksport', uInput)
 
                 elif uInput == 'socksauthentication':
                     print('Current status: {0}'.format(socksauthentication))
                     uInput = self.userInput('\nEnter the new status').lower()
-                    self.config.set('bitmessagesettings', 'socksauthentication', uInput)
+                    CONFIG.set('bitmessagesettings', 'socksauthentication', uInput)
 
                 elif uInput == 'socksusername':
                     print('Current socks username: {0}'.format(socksusername))
                     uInput = self.userInput('\nEnter the new socksusername').lower()
-                    self.config.set('bitmessagesettings', 'socksusername', uInput)
+                    CONFIG.set('bitmessagesettings', 'socksusername', uInput)
 
                 elif uInput == 'sockspassword':
                     print('Current socks password: {0}'.format(sockspassword))
                     uInput = self.userInput('\nEnter the new sockspassword').lower()
-                    self.config.set('bitmessagesettings', 'sockspassword', uInput)
+                    CONFIG.set('bitmessagesettings', 'sockspassword', uInput)
                 else:
                     print('Invalid input. Please try again')
                     invalidInput = True
@@ -411,7 +412,7 @@ class my_bitmessage(object):
 
                     if uInput not in ['yes', 'y']:
                         with open(self.keysName, 'wb') as configfile:
-                            config.write(configfile)
+                            CONFIG.write(configfile)
                         print('Changes made')
                         self.restartBmNotify()
                         break
@@ -1363,7 +1364,6 @@ Encoding:base64
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
             phrase = self.userInput('\nEnter the address passphrase.')
-            print('Working...')
             address = self.getAddress(phrase,4,1)
             print('Address: {0}'.format(address))
 
@@ -1584,7 +1584,6 @@ Encoding:base64
 
         elif usrInput in ['markallmessagesread']:
             self.markAllMessagesRead()
-
         elif usrInput in ['markallmessagesunread']:
             self.markAllMessagesUnread()
 
@@ -1624,15 +1623,16 @@ Encoding:base64
 
             if not self.bmActive:
                 self.runBM()
+
             if not self.apiImport:
                 self.apiImport = True
                 self.api = xmlrpclib.ServerProxy(self.returnApi())
+
             if not self.apiTest():
                 self.apiImport = False
             else:
                 if not self.apiImport:
                     self.apiImport = True
-
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except socket.error:
             self.apiImport = False
