@@ -600,20 +600,7 @@ class my_bitmessage(object):
 
     # Allows attachments and messages/broadcats to be saved
     def saveFile(self, fileName, fileData):
-        print(fileName)
-        # TODO - This is sloppy and needs cleaned up
         # This section finds all invalid characters and replaces them with ~
-        fileName = fileName.strip()
-        fileName = fileName.replace('/', '~')
-        fileName = fileName.replace('\\', '~')
-        fileName = fileName.replace(':', '~')
-        fileName = fileName.replace('*', '~')
-        fileName = fileName.replace('?', '~')
-        fileName = fileName.replace("'", '~')
-        fileName = fileName.replace('<', '~')
-        fileName = fileName.replace('>', '~')
-        fileName = fileName.replace('|', '~')
-
         fileNameReplacements = {"/":"~",
                                 "\\":"~",
                                 ":":"~",
@@ -625,7 +612,6 @@ class my_bitmessage(object):
                                 "|":"~"}
         for keys, values in fileNameReplacements.iteritems():
             fileName = fileName.replace(keys, values)
-        print(fileName)
 
         while True:
             directory = self.userInput('Where would you like to save the attachment?: ')
