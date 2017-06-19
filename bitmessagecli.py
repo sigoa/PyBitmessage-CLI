@@ -396,12 +396,12 @@ class my_bitmessage(object):
 
                 elif uInput == 'socksusername':
                     print('Current socks username: {0}'.format(socksusername))
-                    uInput = self.userInput('\nEnter the new socksusername').lower()
+                    uInput = self.userInput('\nEnter the new socksusername')
                     CONFIG.set('bitmessagesettings', 'socksusername', uInput)
 
                 elif uInput == 'sockspassword':
                     print('Current socks password: {0}'.format(sockspassword))
-                    uInput = self.userInput('\nEnter the new sockspassword').lower()
+                    uInput = self.userInput('\nEnter the new sockspassword')
                     CONFIG.set('bitmessagesettings', 'sockspassword', uInput)
                 else:
                     print('Invalid input. Please try again')
@@ -600,11 +600,12 @@ class my_bitmessage(object):
 
     # Allows attachments and messages/broadcats to be saved
     def saveFile(self, fileName, fileData):
+        print(fileName)
         # TODO - This is sloppy and needs cleaned up
         # This section finds all invalid characters and replaces them with ~
         fileName = fileName.strip()
         fileName = fileName.replace('/', '~')
-        #fileName = fileName.replace('\\', '~') How do I get this to work...?
+        fileName = fileName.replace('\\', '~')
         fileName = fileName.replace(':', '~')
         fileName = fileName.replace('*', '~')
         fileName = fileName.replace('?', '~')
@@ -613,18 +614,46 @@ class my_bitmessage(object):
         fileName = fileName.replace('>', '~')
         fileName = fileName.replace('|', '~')
 
-        directory = 'attachments'
+        fileNameReplacements = {"/":"~",
+                                "\\":"~",
+                                ":":"~",
+                                "*":"~",
+                                "?":"~",
+                                "'":"~",
+                                "<":"~",
+                                ">":"~",
+                                "|":"~"}
+        for keys, values in fileNameReplacements.iteritems():
+            fileName = fileName.replace(keys, values)
+        print(fileName)
 
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        while True:
+            directory = self.userInput('Where would you like to save the attachment?: ')
+            if not os.path.exists(directory):
+                print("That directory doesn't exist.")
+            else:
+                if sys.platform.startswith('win'):
+                    if directory.endswith('\\'):
+                        pass
+                    else:
+                        directory = directory + '\\'
+                else:
+                    if directory.endswith('/'):
+                        pass
+                    else:
+                        directory = directory + '/'
 
-        filePath = directory + '/' + fileName
+                filePath = directory + fileName
 
-        # Begin saving to file
-        with open(filePath, 'wb+') as f:
-            f.write(base64.b64decode(fileData))
-
-        print('Successfully saved {0}'.format(filePath))
+                # Begin saving to file
+                try:
+                    with open(filePath, 'wb+') as f:
+                        f.write(base64.b64decode(fileData))
+                except IOError:
+                    print("Failed to save the attachment. Choose another directory")
+                else:
+                    print('Successfully saved {0}'.format(filePath))
+                    break
 
 
     # Allows users to attach a file to their message or broadcast
@@ -813,7 +842,7 @@ Encoding:base64
         sendMessage = self.api.getStatus(ackData)
         # TODO - There are more statuses that should be paid attention to
         if sendMessage == 'doingmsgpow':
-            print('Message Sent!')
+            print('Doing POW, will send soon.')
         else:
             print(sendMessage)
 
