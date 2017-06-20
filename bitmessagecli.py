@@ -54,10 +54,8 @@ class my_bitmessage(object):
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
-                try:
-                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-                except AttributeError:
-                    sys.exit(0)
+                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
@@ -65,16 +63,9 @@ class my_bitmessage(object):
                 return uInput
         except(EOFError, KeyboardInterrupt):
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
-            print('Shutting down..1')
+            print('Shutting down..')
             os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
             sys.exit(0)
-
-
-    # Prompts the user to restart Bitmessage.
-    def restartBmNotify(self):
-        print('-------------------------------------------------------------------')
-        print('WARNING: If Bitmessage is running locally, you must restart it now.')
-        print('-------------------------------------------------------------------')
 
 
     '''
@@ -420,7 +411,6 @@ class my_bitmessage(object):
                         with open(self.keysName, 'wb') as configfile:
                             CONFIG.write(configfile)
                         print('Changes made')
-                        self.restartBmNotify()
                         break
         self.main()
 
@@ -1036,7 +1026,7 @@ class my_bitmessage(object):
                     # Finds position of the filename
                     fnPos = message.index('alt = "')
                     # Finds the end position
-                    fnEndPos = message.index('" src=') 
+                    fnEndPos = message.index('" src=')
                     fileName = message[fnPos+7:fnEndPos]
                 else:
                     fnPos = attPos
@@ -1107,7 +1097,7 @@ class my_bitmessage(object):
         if uInput in ['yes', 'y']:
             newMessage = newMessage + '\n\n' + self.attachment()
 
-        newMessage = newMessage + '\n\n------------------------------------------------------\n'
+        newMessage = newMessage + '\n\n' + '-' * 55 + '\n'
         newMessage = newMessage + message
         newMessage = base64.b64encode(newMessage)
 
@@ -1513,7 +1503,7 @@ class my_bitmessage(object):
             subject = '{0}.txt'.format(subject)
             self.saveFile(subject, message)
 
-        # Will delete a message from the system, not reflected on the UI    
+        # Will delete a message from the system, not reflected on the UI
         elif usrInput in ['delete']:
             uInput = self.userInput('\nWould you like to delete a message from the (I)nbox or (O)utbox?').lower()
 
@@ -1565,7 +1555,7 @@ class my_bitmessage(object):
                     if label:
                         break
                     else:
-                        print('You need to put a label')                     
+                        print('You need to put a label')
                 else:
                     print('Invalid address')
             res = self.addAddressToAddressBook(address, label)
@@ -1596,6 +1586,23 @@ class my_bitmessage(object):
 
 
     def runBM(self):
+        try:
+            if self.bmActive == False:
+                if self.enableBM.poll() == 0:
+                    print('self.bmActive is False and Bitmessage is not running')
+                elif self.enableBM.poll() is None:
+                    print('self.bmActive is False and Bitmessage is running')
+                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            elif self.bmActive == True:
+                if self.enableBM.poll() == 0:
+                    print('self.bmActive is True and Bitmessage is not running')
+                    pass
+                elif self.enableBM.poll() is None:
+                    print('self.bmActive is True and Bitmessage is running')
+                    return
+        except AttributeError as e:
+            print('self.bmActive is False and Bitmessage is not running.')
+
         if sys.platform.startswith('win'):
             self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
                                               stdout=subprocess.PIPE,
@@ -1610,38 +1617,33 @@ class my_bitmessage(object):
                                               bufsize=0,
                                               preexec_fn=os.setpgrp,
                                               close_fds=True)
-        my_stdout = self.enableBM.stdout.readlines()
-        if 'Another instance' in my_stdout[-1]:
-            print('Bitmessage is already running')
-            print('Shutting down..')
-            sys.exit(0)
-        elif 'Running as' in my_stdout[-1]:
+        if self.enableBM.poll() is None:
             print('Bitmessage was started')
             self.bmActive = True
-
 
     def main(self):
         try:
             self.apiData()
-
-            if not self.bmActive:
-                self.runBM()
+            self.runBM()
 
             if not self.apiImport:
                 self.apiImport = True
                 self.api = xmlrpclib.ServerProxy(self.returnApi())
 
             if not self.apiTest():
-                self.apiImport = False
+                # Bitmessage is running so this may be the first run of apiTest
+                if self.bmActive == True and self.enableBM.poll() is None:
+                    self.apiImport = True
+                else:
+                    self.apiImport = False
             else:
                 if not self.apiImport:
                     self.apiImport = True
+
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except socket.error:
             self.apiImport = False
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
-        except AttributeError:
-            sys.exit(0)
 
 
 if __name__ == '__main__':
