@@ -1587,21 +1587,12 @@ class my_bitmessage(object):
 
     def runBM(self):
         try:
-            if self.bmActive == False:
-                if self.enableBM.poll() == 0:
-                    print('self.bmActive is False and Bitmessage is not running')
-                elif self.enableBM.poll() is None:
-                    print('self.bmActive is False and Bitmessage is running')
+            if self.bmActive == False and self.enableBM.poll() is None:
                     os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-            elif self.bmActive == True:
-                if self.enableBM.poll() == 0:
-                    print('self.bmActive is True and Bitmessage is not running')
-                    pass
-                elif self.enableBM.poll() is None:
-                    print('self.bmActive is True and Bitmessage is running')
+            elif self.bmActive == True and self.enableBM.poll() is None:
                     return
         except AttributeError as e:
-            print('self.bmActive is False and Bitmessage is not running.')
+            pass
 
         if sys.platform.startswith('win'):
             self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
@@ -1617,6 +1608,12 @@ class my_bitmessage(object):
                                               bufsize=0,
                                               preexec_fn=os.setpgrp,
                                               close_fds=True)
+        my_stdout = self.enableBM.stdout.readlines()
+        if 'Another instance' in my_stdout[-1]:
+            print('Bitmessage is already running')
+            print('Shutting down..')
+            sys.exit(0)
+
         if self.enableBM.poll() is None:
             print('Bitmessage was started')
             self.bmActive = True
