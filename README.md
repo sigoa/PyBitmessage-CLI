@@ -9,10 +9,9 @@ Why?
 -------------
 To clean up old code and get rid of the places eval() and 'Global' statements were being used. I also placed the code into a class. From there I sorted, cleaned up, and generally spiffied up the place. Here are some other things I've done up to this point:
 
-> - Bitmessage no longer needs to be ran in a separate window, and if it it's already running when the CLI is launched, the CLI is closed. Because we can't know if that's from a separate program or not!
-If you leave a way to get in contact with you, I'll message you and say thanks :-)
+> Bitmessage no longer needs to be ran in a separate window, and if it it's already running when the CLI is launched, the CLI is closed. Because we can't know if that's from a separate program or not!
 
-> - Many try/except are sprinkled throughout the CLI. This is to cover the ConfigParser not being able to find headers, sections, or missing options. Also covers AttributeError, socket.error, and anything else that may occur within the program. Didn't really have that before.
+> Many try/except are sprinkled throughout the CLI. This is to cover the ConfigParser not being able to find headers, sections, or missing options. Also covers AttributeError, socket.error, and anything else that may occur within the program. Didn't really have that before.
 
 Help!
 -------------
