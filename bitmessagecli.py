@@ -9,18 +9,18 @@
 import base64
 import ConfigParser
 import datetime
-import getopt
-import hashlib
 import imghdr
 import json
+
+# TODO - only used once, fix this.
 import ntpath
+
 import os
 import random
 import signal
 import socket
 import subprocess
 import sys
-import time
 import xmlrpclib
 import string
 
@@ -685,9 +685,8 @@ class my_bitmessage(object):
             print('------------------------------------------')
             print('     Attachment detected as an Image.')
             print('<img> tags will be automatically included.')
-            print('------------------------------------------')
+            print('------------------------------------------\n')
             isImage = True
-            time.sleep(3)
         # Alert the user that the encoding process may take some time
         print('Encoding attachment, please wait ...')
         # Begin the actual encoding
@@ -1592,7 +1591,7 @@ class my_bitmessage(object):
             elif self.bmActive == True and self.enableBM.poll() is None:
                     return
         except AttributeError as e:
-            pass
+            print('self.bmActive is False and Bitmessage is not running.')
 
         if sys.platform.startswith('win'):
             self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
