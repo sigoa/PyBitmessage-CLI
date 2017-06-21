@@ -906,12 +906,8 @@ class my_bitmessage(object):
                 if not message['read']:
                     messagesUnread += 1
 
-            # TODO - why use the %?
-            if messagesPrinted % 20 == 0 and messagesPrinted != 0:
-                uInput = self.userInput('\nPress Enter to continue').lower()
-
         print('-----------------------------------')
-        print('There are %d unread messages of %d messages in the inbox.' % (messagesUnread, numMessages))
+        print('There are {0:d} unread messages of {1:d} in the inbox.'.format(messagesUnread, numMessages))
         print('-----------------------------------')
 
 
