@@ -1242,6 +1242,54 @@ class my_bitmessage(object):
             self.sendBrd('','','')
 
 
+    def runBM(self):
+        try:
+            if self.bmActive == False and self.enableBM.poll() is None:
+                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+            elif self.bmActive == True and self.enableBM.poll() is None:
+                    return
+        except AttributeError as e:
+            print('self.bmActive is False and Bitmessage is not running.')
+
+        if sys.platform.startswith('win'):
+            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE,
+                                              stdin=subprocess.PIPE,
+                                              bufsize=0)
+        else:
+            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
+                                              stdout=subprocess.PIPE,
+                                              stderr=subprocess.PIPE,
+                                              stdin=subprocess.PIPE,
+                                              bufsize=0,
+                                              preexec_fn=os.setpgrp,
+                                              close_fds=True)
+        my_stdout = self.enableBM.stdout.readlines()
+        if 'Another instance' in my_stdout[-1]:
+            print('Bitmessage is already running')
+            print('Shutting down..')
+            sys.exit(0)
+
+        if self.enableBM.poll() is None:
+            print('Bitmessage was started')
+            self.bmActive = True
+
+
+    def unreadMessageInfo(self):
+        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        messagesUnread = 0
+        for each in inboxMessages['inboxMessages']:
+            if not each['read']:
+                messagesUnread += 1
+        if messagesUnread == 1:
+            print('\nYou have {0} unread message'.format(messagesUnread))
+        if messagesUnread >= 2:
+            print('\nYou have {0} unread messages'.format(messagesUnread))
+        else:
+            return
+
+
     def viewHelp(self):
         print('-----------------------------------------------------------------------')
         print('|                https://github.com/RZZT/taskhive-core                |')
@@ -1584,39 +1632,6 @@ class my_bitmessage(object):
         self.main()
 
 
-    def runBM(self):
-        try:
-            if self.bmActive == False and self.enableBM.poll() is None:
-                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
-            elif self.bmActive == True and self.enableBM.poll() is None:
-                    return
-        except AttributeError as e:
-            print('self.bmActive is False and Bitmessage is not running.')
-
-        if sys.platform.startswith('win'):
-            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE,
-                                              stdin=subprocess.PIPE,
-                                              bufsize=0)
-        else:
-            self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
-                                              stdout=subprocess.PIPE,
-                                              stderr=subprocess.PIPE,
-                                              stdin=subprocess.PIPE,
-                                              bufsize=0,
-                                              preexec_fn=os.setpgrp,
-                                              close_fds=True)
-        my_stdout = self.enableBM.stdout.readlines()
-        if 'Another instance' in my_stdout[-1]:
-            print('Bitmessage is already running')
-            print('Shutting down..')
-            sys.exit(0)
-
-        if self.enableBM.poll() is None:
-            print('Bitmessage was started')
-            self.bmActive = True
-
     def main(self):
         try:
             self.apiData()
@@ -1635,6 +1650,8 @@ class my_bitmessage(object):
             else:
                 if not self.apiImport:
                     self.apiImport = True
+
+            self.unreadMessageInfo()
 
             self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
         except socket.error:
