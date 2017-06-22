@@ -21,6 +21,8 @@ import signal
 import socket
 import subprocess
 import sys
+# Because without it we'll be warned about not being connected to the API
+import time
 import xmlrpclib
 import string
 
@@ -43,6 +45,10 @@ class my_bitmessage(object):
         self.bmActive = False
         self.enableBM = ''
         self.apiImport = False
+        # For whatever reason, the API doesn't connect right away unless we
+        # pause for 1 second or more.
+        # Not sure if it's a xmlrpclib or BM issue
+        self.first_run = True
 
 
     # Checks input for exit or quit. Also formats for input, etc
@@ -103,18 +109,27 @@ class my_bitmessage(object):
             apiPassword = CONFIG.get('bitmessagesettings', 'apipassword')
             apiInterface = CONFIG.get('bitmessagesettings', 'apiinterface')
             apiPort = CONFIG.getint('bitmessagesettings', 'apiport')
+        except ConfigParser.MissingSectionHeaderError:
+            print("'bitmessagesettings' header is missing.")
+            print("I'm going to ask you a series of questions..")
+            self.configInit()
+        except ConfigParser.NoOptionError as e:
+            print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
+            print("I'm going to ask you a series of questions..")
+            self.configInit()
+        except socket.error as e:
+            self.apiImport = False
+            print(e)
+        else:
+            if self.first_run:
+                time.sleep(1)
+                self.first_run = False
             # Build the api credentials
-            print('API data successfully imported')
+            self.apiImport = True
             return 'http://{0}:{1}@{2}:{3}/'.format(apiUsername,
                                                     apiPassword,
                                                     apiInterface,
                                                     apiPort)
-        except ConfigParser.MissingSectionHeaderError:
-            print("'bitmessagesettings' header is missing.")
-        except ConfigParser.NoOptionError as e:
-            print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
-        print("I'm going to ask you a series of questions..")
-        self.configInit()
 
 
     def configInit(self):
@@ -275,6 +290,7 @@ class my_bitmessage(object):
             else:
                 return False
         except socket.error:
+            self.apiImport = False
             return False
 
     # Allows the viewing and modification of keys.dat settings.
@@ -424,154 +440,116 @@ class my_bitmessage(object):
                 return False
         except AttributeError:
             return False
+        except socket.error:
+            self.apiImport = False
+            return False
+
 
     def getAddress(self, passphrase, vNumber, sNumber):
-        # passphrase must be encoded
-        passphrase = base64.b64encode(passphrase)
-        return self.api.getDeterministicAddress(passphrase,vNumber,sNumber)
+        try:
+            # passphrase must be encoded
+            passphrase = self.userInput('\nEnter the address passphrase.')
+            passphrase = base64.b64encode(passphrase)
+            vNumber = 4
+            sNumber = 1
+            # Passphrase, version number, stream number
+            print('Address: {0}'.format(self.api.getDeterministicAddress(passphrase, vNumber, sNumber)))
+        except socket.error:
+            self.apiImport = False
+            print('Address couldn\'t be generated due to an API connection issue')
 
 
     def subscribe(self):
-        while True:
-            address = self.userInput('\nAddress you would like to subscribe to:')
-            if self.validAddress(address):
+        try:
+            while True:
+                address = self.userInput('\nAddress you would like to subscribe to:')
+                if self.validAddress(address):
+                    break
+                else:
+                    print('Not a valid address, please try again.')
+            while True:
+                label = self.userInput('\nEnter a label for this address:')
+                label = base64.b64encode(label)
                 break
-            else:
-                print('Not a valid address, please try again.')
-        while True:
-            label = self.userInput('\nEnter a label for this address:')
-            label = base64.b64encode(label)
-            break
-        self.api.addSubscription(address, label)
-        print('You are now subscribed to: {0}'.format(address))
+                self.api.addSubscription(address, label)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t subscribe to channel due to an API connection issue')
+        else:
+            print('You are now subscribed to: {0}'.format(address))
 
 
     def unsubscribe(self):
-        while True:
-            address = self.userInput('\nEnter the address to unsubscribe from:')
-            if self.validAddress(address):
+        try:
+            while True:
+                address = self.userInput('\nEnter the address to unsubscribe from:')
+                if self.validAddress(address):
+                    break
+            while True:
+                uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
+                if uInput in ['yes', 'y']:
+                    self.api.deleteSubscription(address)
+                    print('You are now unsubscribed from: ' + address)
+                else:
+                    print("You weren't unsubscribed from anything.")
                 break
-        while True:
-            uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
-            if uInput in ['yes', 'y']:
-                self.api.deleteSubscription(address)
-                print('You are now unsubscribed from: ' + address)
-            else:
-                print("You weren't unsubscribed from anything.")
-            break
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t unsubscribe from channel due to an API connection issue')
 
 
     def listSubscriptions(self):
-        total_subscriptions = json.loads(self.api.listSubscriptions())
-        print('-------------------------------------')
-        for each in total_subscriptions['subscriptions']:
-            print('Label: {0}'.format(base64.b64decode(each['label'])))
-            print('Address: {0}'.format(each['address']))
-            print('Enabled: {0}'.format(each['enabled']))
+        try:
+            total_subscriptions = json.loads(self.api.listSubscriptions())
             print('-------------------------------------')
+            for each in total_subscriptions['subscriptions']:
+                print('Label: {0}'.format(base64.b64decode(each['label'])))
+                print('Address: {0}'.format(each['address']))
+                print('Enabled: {0}'.format(each['enabled']))
+                print('-------------------------------------')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t list subscriptions due to an API connection issue')
         self.main()
 
 
     def createChan(self):
-        password = self.userInput('\nEnter channel name:')
-        password = base64.b64encode(password)
-        print('Channel password: ' + self.api.createChan(password))
+        try:
+            password = self.userInput('\nEnter channel name:')
+            password = base64.b64encode(password)
+            print('Channel password: ' + self.api.createChan(password))
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t create channel due to an API connection issue')
         self.main()
 
 
     def joinChan(self):
-        while True:
-            address = self.userInput('\nEnter Channel Address:')
-            if self.validAddress(address):
-                break
-        while True:
-            password = self.userInput('\nEnter Channel Name:')
-            if password:
-                break
-        password = base64.b64encode(password)
-
-        joiningChannel = self.api.joinChan(password, address)
-        if joiningChannel == 'success':
-            print('Successfully joined {0}'.format(address))
-        elif joiningChannel.endswith('list index out of range'):
-            print("You're already in that channel")
+        try:
+            while True:
+                address = self.userInput('\nEnter Channel Address:')
+                if self.validAddress(address):
+                    break
+            while True:
+                password = self.userInput('\nEnter Channel Name:')
+                if password:
+                    break
+            password = base64.b64encode(password)
+            joiningChannel = self.api.joinChan(password, address)
+            if joiningChannel == 'success':
+                print('Successfully joined {0}'.format(address))
+            elif joiningChannel.endswith('list index out of range'):
+                print("You're already in that channel")
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t join channel due to an API connection issue')
         self.main()
 
 
     def leaveChan(self):
-        while True:
-            address = self.userInput('\nEnter Channel Address or Label:')
-            if self.validAddress(address):
-                break
-            else:
-                jsonAddresses = json.loads(self.api.listAddresses())
-                # Number of addresses
-                numAddresses = len(jsonAddresses['addresses'])
-                # processes all of the addresses and lists them out
-                for addNum in range (0, numAddresses):
-                    label = jsonAddresses['addresses'][addNum]['label']
-                    jsonAddress = jsonAddresses['addresses'][addNum]['address']
-                    if '[chan] {0}'.format(address) == label:
-                        address = jsonAddress
-                        found = True
-                        break
-            if found:
-                break
-        leavingChannel = self.api.leaveChan(address)
-        if leavingChannel == 'success':
-            print('Successfully left {0}'.format(address))
-        else:
-            print(leavingChannel)
-        self.main()
-
-
-    # Lists all of the addresses and their info
-    def listAdd(self):
-        jsonListAddresses = json.loads(self.api.listAddresses())
-        # Number of addresses
-        jsonAddresses = jsonListAddresses['addresses']
-        numAddresses = len(jsonAddresses)
-
-        if not jsonAddresses:
-            print('You have no addresses!')
-        else:
-            print('-------------------------------------')
-            for each in jsonAddresses:
-                print('Label: {0}'.format(each['label']))
-                print('Address: {0}'.format(each['address']))
-                print('Stream: {0}'.format(each['stream']))
-                print('Enabled: {0}'.format(each['enabled']))
-                print('-------------------------------------')
-        self.main()
-
-    # Generate address
-    def genAdd(self, lbl, deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe):
-        # Generates a new address with the user defined label. non-deterministic
-        if not deterministic:
-            addressLabel = base64.b64encode(lbl)
-            generatedAddress = self.api.createRandomAddress(addressLabel)
-            return generatedAddress
-        # Generates a new deterministic address with the user inputs
-        elif deterministic:
-            passphrase = base64.b64encode(passphrase)
-            generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
-            return generatedAddress
-        else:
-            return 'Entry Error'
-        self.main()
-
-
-    def deleteAddress(self):
-        jsonListAddresses = json.loads(self.api.listAddresses())
-        # Number of addresses
-        jsonAddresses = jsonListAddresses['addresses']
-        numAddresses = len(jsonAddresses)
-
-        if not jsonAddresses:
-            print('You have no addresses!')
-        else:
+        try:
             while True:
-                address = self.userInput('\nEnter Address or Label you wish to delete:')
+                address = self.userInput('\nEnter Channel Address or Label:')
                 if self.validAddress(address):
                     break
                 else:
@@ -582,14 +560,104 @@ class my_bitmessage(object):
                     for addNum in range (0, numAddresses):
                         label = jsonAddresses['addresses'][addNum]['label']
                         jsonAddress = jsonAddresses['addresses'][addNum]['address']
-                        if '{0}'.format(address) == label:
+                        if '[chan] {0}'.format(address) == label:
                             address = jsonAddress
                             found = True
                             break
                 if found:
-                    self.api.deleteAddress(address)
-                    print('{0} has been deleted!'.format(address))
                     break
+            leavingChannel = self.api.leaveChan(address)
+            if leavingChannel == 'success':
+                print('Successfully left {0}'.format(address))
+            else:
+                print('Couldn\'t leave channel. Expected response of \'success\', got: {0}'.format(leavingChannel))
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t leave channel due to an API connection issue')
+        self.main()
+
+
+    # Lists all of the addresses and their info
+    def listAdd(self):
+        try:
+            jsonListAddresses = json.loads(self.api.listAddresses())
+            # Number of addresses
+            jsonAddresses = jsonListAddresses['addresses']
+            numAddresses = len(jsonAddresses)
+
+            if not jsonAddresses:
+                print('You have no addresses!')
+            else:
+                print('-------------------------------------')
+                for each in jsonAddresses:
+                    print('Label: {0}'.format(each['label']))
+                    print('Address: {0}'.format(each['address']))
+                    print('Stream: {0}'.format(each['stream']))
+                    print('Enabled: {0}'.format(each['enabled']))
+                    print('-------------------------------------')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t list addresses due to an API connection issue')
+        self.main()
+
+
+    # Generate address
+    def genAdd(self, lbl, deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe):
+        try:
+            # Generates a new address with the user defined label. non-deterministic
+            if not deterministic:
+                addressLabel = base64.b64encode(lbl)
+                generatedAddress = self.api.createRandomAddress(addressLabel)
+                return generatedAddress
+            # Generates a new deterministic address with the user inputs
+            elif deterministic:
+                passphrase = base64.b64encode(passphrase)
+                generatedAddress = self.api.createDeterministicAddresses(passphrase, numOfAdd, addVNum, streamNum, ripe)
+                return generatedAddress
+            else:
+                return 'Entry Error'
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t generate address(es) due to an API connection issue')
+        self.main()
+
+
+    def deleteAddress(self):
+        try:
+            jsonListAddresses = json.loads(self.api.listAddresses())
+            # Number of addresses
+            jsonAddresses = jsonListAddresses['addresses']
+            numAddresses = len(jsonAddresses)
+
+            if not jsonAddresses:
+                print('You have no addresses!')
+            else:
+                while True:
+                    address = self.userInput('\nEnter Address or Label you wish to delete:')
+                    if self.validAddress(address):
+                        break
+                    else:
+                        jsonAddresses = json.loads(self.api.listAddresses())
+                        # Number of addresses
+                        numAddresses = len(jsonAddresses['addresses'])
+                        # processes all of the addresses and lists them out
+                        for addNum in range (0, numAddresses):
+                            label = jsonAddresses['addresses'][addNum]['label']
+                            jsonAddress = jsonAddresses['addresses'][addNum]['address']
+                            if '{0}'.format(address) == label:
+                                address = jsonAddress
+                                found = True
+                                break
+                    if found:
+                        delete_this = self.api.deleteAddress(address)
+                        if delete_this == 'success':
+                            print('{0} has been deleted!'.format(address))
+                            break
+                        else:
+                            print('Couldn\'t delete address. Expected response of \'success\', got: {0}'.format(leavingChannel))
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t delete address due to an API connection issue')
         self.main()        
 
 
@@ -711,7 +779,7 @@ class my_bitmessage(object):
             theAttachment += 'Filesize:{0}KB\n'.format(invSize)
             theAttachment += 'Encoding:base64\n\n'
             theAttachment += '<center>\n'
-            theAttachment += "<img alt = \"{0}\" src='data:file/{0};base64, {1}' />\n".format(fileName, data)
+            theAttachment += "<attachment alt = \"{0}\" src='data:file/{0};base64, {1}' />\n".format(fileName, data)
             theAttachment += '</center>'
         theAttachmentS = theAttachmentS + theAttachment
         return theAttachmentS
@@ -720,428 +788,479 @@ class my_bitmessage(object):
     # With no arguments sent, sendMsg fills in the blanks
     # subject and message must be encoded before they are passed
     def sendMsg(self, toAddress, fromAddress, subject, message):
-        jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
-        # Number of addresses
-        numAddresses = len(jsonAddresses['addresses'])
-
-        if not self.validAddress(toAddress):
-            found = False
-            while True:
-                toAddress = self.userInput('\nWhat is the To Address?')
-                if self.validAddress(toAddress):
-                    break
-                else:
-                    for addNum in range (0, numAddresses):
-                        label = jsonAddresses['addresses'][addNum]['label']
-                        address = jsonAddresses['addresses'][addNum]['address']
-                        if label.startswith('[chan] '):
-                            label = label.split('[chan] ')[1]
-                        # address entered was a label and is found
-                        elif toAddress == label:
-                            found = True
-                            toAddress = address
-                            break
-                    if not found:
-                        print('Invalid Address. Please try again.')
-                    else:
-                        # Address was found
-                        break
-
-        if not self.validAddress(fromAddress):
-            # Ask what address to send from if multiple addresses
-            if numAddresses > 1:
-                found = False
-                while True:
-                    fromAddress = self.userInput('\nEnter an Address or Address Label to send from')
-
-                    if not self.validAddress(fromAddress):
-                        # processes all of the addresses
-                        for addNum in range (0, numAddresses):
-                            label = jsonAddresses['addresses'][addNum]['label']
-                            address = jsonAddresses['addresses'][addNum]['address']
-                            if label.startswith('[chan] '):
-                                label = label.split('[chan] ')[1]
-                            # address entered was a label and is found
-                            if fromAddress == label:
-                                found = True
-                                fromAddress = address
-                                break
-                        if not found:
-                            print('Invalid Address. Please try again.')
-                    else:
-                        for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address']
-                            # address entered was found in our address book
-                            if fromAddress == address:
-                                found = True
-                                break
-                        if not found:
-                            print('The address entered is not one of yours. Please try again.')
-                        else:
-                            # Address was found
-                            break
-                    if found:
-                        break
-
-            # Only one address in address book
-            else:
-                print('Using the only address in the addressbook to send from.')
-                fromAddress = jsonAddresses['addresses'][0]['address']
-
-        if subject == '':
-            subject = self.userInput('\nEnter your subject')
-            subject = base64.b64encode(subject)
-
-        if message == '':
-            message = self.userInput('\nEnter your message.')
-
-        uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
-
-        if uInput in ['yes', 'y']:
-            message = '{0}\n\n{1}'.format(message, self.attachment())
-        message = base64.b64encode(message)
-
-        ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
-        sendMessage = self.api.getStatus(ackData)
-        # TODO - There are more statuses that should be paid attention to
-        if sendMessage == 'doingmsgpow':
-            print('Doing POW, will send soon.')
-        else:
-            print(sendMessage)
-
-
-    # sends a broadcast
-    def sendBrd(self, fromAddress, subject, message):
-        if fromAddress == '':
+        try:
             jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
             # Number of addresses
             numAddresses = len(jsonAddresses['addresses'])
 
-            # Ask what address to send from if multiple addresses
-            if numAddresses > 1:
+            if not self.validAddress(toAddress):
                 found = False
                 while True:
-                    fromAddress = self.userInput('\nEnter an Address or Address Label to send from')
-
-                    if not self.validAddress(fromAddress):
-                        # processes all of the addresses
+                    toAddress = self.userInput('\nWhat is the To Address?')
+                    if self.validAddress(toAddress):
+                        break
+                    else:
                         for addNum in range (0, numAddresses):
                             label = jsonAddresses['addresses'][addNum]['label']
                             address = jsonAddresses['addresses'][addNum]['address']
                             if label.startswith('[chan] '):
                                 label = label.split('[chan] ')[1]
                             # address entered was a label and is found
-                            if fromAddress == label:
+                            elif toAddress == label:
                                 found = True
-                                fromAddress = address
+                                toAddress = address
                                 break
                         if not found:
                             print('Invalid Address. Please try again.')
-                    else:
-                        for addNum in range (0, numAddresses):
-                            address = jsonAddresses['addresses'][addNum]['address']
-                            # address entered was found in our address book
-                            if fromAddress == address:
-                                found = True
-                                break
-                        if not found:
-                            print('The address entered is not one of yours. Please try again.')
                         else:
                             # Address was found
                             break
 
-                    if found:
-                        break
+            if not self.validAddress(fromAddress):
+                # Ask what address to send from if multiple addresses
+                if numAddresses > 1:
+                    found = False
+                    while True:
+                        fromAddress = self.userInput('\nEnter an Address or Address Label to send from')
 
-            # Only one address in address book
-            else:
-                print('Using the only address in the addressbook to send from.')
-                fromAddress = jsonAddresses['addresses'][0]['address']
+                        if not self.validAddress(fromAddress):
+                            # processes all of the addresses
+                            for addNum in range (0, numAddresses):
+                                label = jsonAddresses['addresses'][addNum]['label']
+                                address = jsonAddresses['addresses'][addNum]['address']
+                                if label.startswith('[chan] '):
+                                    label = label.split('[chan] ')[1]
+                                # address entered was a label and is found
+                                if fromAddress == label:
+                                    found = True
+                                    fromAddress = address
+                                    break
+                            if not found:
+                                print('Invalid Address. Please try again.')
+                        else:
+                            for addNum in range (0, numAddresses):
+                                address = jsonAddresses['addresses'][addNum]['address']
+                                # address entered was found in our address book
+                                if fromAddress == address:
+                                    found = True
+                                    break
+                            if not found:
+                                print('The address entered is not one of yours. Please try again.')
+                            else:
+                                # Address was found
+                                break
+                        if found:
+                            break
 
-        if subject == '':
-                subject = self.userInput('\nEnter your Subject.')
+                # Only one address in address book
+                else:
+                    print('Using the only address in the addressbook to send from.')
+                    fromAddress = jsonAddresses['addresses'][0]['address']
+
+            if subject == '':
+                subject = self.userInput('\nEnter your subject')
                 subject = base64.b64encode(subject)
-        if message == '':
-                message = self.userInput('\nEnter your Message.')
 
-        uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
-        if uInput in ['yes', 'y']:
-            message = message + '\n\n' + self.attachment()
-        message = base64.b64encode(message)
+            if message == '':
+                message = self.userInput('\nEnter your message.')
 
-        ackData = self.api.sendBroadcast(fromAddress, subject, message)
-        sendMessage = self.api.getStatus(ackData)
-        # TODO - There are more statuses that should be paid attention to
-        if sendMessage == 'broadcastqueued':
-            print('Broadcast is now in the queue')
-        else:
-            print(sendMessage)
+            uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
+
+            if uInput in ['yes', 'y']:
+                message = '{0}\n\n{1}'.format(message, self.attachment())
+            message = base64.b64encode(message)
+
+            ackData = self.api.sendMessage(toAddress, fromAddress, subject, message)
+            sendMessage = self.api.getStatus(ackData)
+            # TODO - There are more statuses that should be paid attention to
+            if sendMessage == 'doingmsgpow':
+                print('Doing POW, will send soon.')
+            else:
+                print(sendMessage)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t send message due to an API connection issue')
+
+
+    # sends a broadcast
+    def sendBrd(self, fromAddress, subject, message):
+        try:
+            if fromAddress == '':
+                jsonAddresses = json.loads(self.api.listAddresses().encode('UTF-8'))
+                # Number of addresses
+                numAddresses = len(jsonAddresses['addresses'])
+
+                # Ask what address to send from if multiple addresses
+                if numAddresses > 1:
+                    found = False
+                    while True:
+                        fromAddress = self.userInput('\nEnter an Address or Address Label to send from')
+
+                        if not self.validAddress(fromAddress):
+                            # processes all of the addresses
+                            for addNum in range (0, numAddresses):
+                                label = jsonAddresses['addresses'][addNum]['label']
+                                address = jsonAddresses['addresses'][addNum]['address']
+                                if label.startswith('[chan] '):
+                                    label = label.split('[chan] ')[1]
+                                # address entered was a label and is found
+                                if fromAddress == label:
+                                    found = True
+                                    fromAddress = address
+                                    break
+                            if not found:
+                                print('Invalid Address. Please try again.')
+                        else:
+                            for addNum in range (0, numAddresses):
+                                address = jsonAddresses['addresses'][addNum]['address']
+                                # address entered was found in our address book
+                                if fromAddress == address:
+                                    found = True
+                                    break
+                            if not found:
+                                print('The address entered is not one of yours. Please try again.')
+                            else:
+                                # Address was found
+                                break
+
+                        if found:
+                            break
+
+                # Only one address in address book
+                else:
+                    print('Using the only address in the addressbook to send from.')
+                    fromAddress = jsonAddresses['addresses'][0]['address']
+
+            if subject == '':
+                    subject = self.userInput('\nEnter your Subject.')
+                    subject = base64.b64encode(subject)
+            if message == '':
+                    message = self.userInput('\nEnter your Message.')
+
+            uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
+            if uInput in ['yes', 'y']:
+                message = message + '\n\n' + self.attachment()
+            message = base64.b64encode(message)
+
+            ackData = self.api.sendBroadcast(fromAddress, subject, message)
+            sendMessage = self.api.getStatus(ackData)
+            # TODO - There are more statuses that should be paid attention to
+            if sendMessage == 'broadcastqueued':
+                print('Broadcast is now in the queue')
+            else:
+                print('Couldn\'t send broadcast. Expected response of \'broadcastqueued\', got: {0}'.format(sendMessage))
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t send message due to an API connection issue')
 
 
     # Lists the messages by: Message Number, To Address Label,
     # From Address Label, Subject, Received Time
     def inbox(self, unreadOnly):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
-        numMessages = len(inboxMessages['inboxMessages'])
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            numMessages = len(inboxMessages['inboxMessages'])
 
-        messagesPrinted = 0
-        messagesUnread = 0
-        # processes all of the messages in the inbox
-        for msgNum in range (0, numMessages):
-            message = inboxMessages['inboxMessages'][msgNum]
-            # if we are displaying all messages or
-            # if this message is unread then display it
-            if not unreadOnly or not message['read']:
+            messagesPrinted = 0
+            messagesUnread = 0
+            # processes all of the messages in the inbox
+            for msgNum in range (0, numMessages):
+                message = inboxMessages['inboxMessages'][msgNum]
+                # if we are displaying all messages or
+                # if this message is unread then display it
+                if not unreadOnly or not message['read']:
+                    print('-----------------------------------')
+                    # Message Number
+                    print('Message Number: {0}'.format(msgNum))
+                    # Get the to address
+                    print('To: {0}'.format(message['toAddress']))
+                    # Get the from address
+                    print('From: {0}'.format(message['fromAddress']))
+                    # Get the subject
+                    print('Subject: {0}'.format(base64.b64decode(message['subject'])))
+                    print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+                    messagesPrinted += 1
+                    if not message['read']:
+                        messagesUnread += 1
+            print('-----------------------------------')
+            print('There are {0:d} unread messages of {1:d} in the inbox.'.format(messagesUnread, numMessages))
+            print('-----------------------------------')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t access inbox due to an API connection issue')
+
+
+    def outbox(self):
+        try:
+            outboxMessages = json.loads(self.api.getAllSentMessages())
+            numMessages = len(outboxMessages['sentMessages'])
+
+            # processes all of the messages in the outbox
+            msgNum = 0
+            for each in outboxMessages['sentMessages']:
                 print('-----------------------------------')
                 # Message Number
                 print('Message Number: {0}'.format(msgNum))
                 # Get the to address
-                print('To: {0}'.format(message['toAddress']))
+                print('To: {0}'.format(each['toAddress']))
                 # Get the from address
-                print('From: {0}'.format(message['fromAddress']))
+                print('From: {0}'.format(each['fromAddress']))
                 # Get the subject
-                print('Subject: {0}'.format(base64.b64decode(message['subject'])))
-                print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-                messagesPrinted += 1
-                if not message['read']:
-                    messagesUnread += 1
+                print('Subject: {0}'.format(base64.b64decode(each['subject'])))
+                # Get the subject
+                print('Status: {0}'.format(each['status']))
 
-        print('-----------------------------------')
-        print('There are {0:d} unread messages of {1:d} in the inbox.'.format(messagesUnread, numMessages))
-        print('-----------------------------------')
+                print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(each['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+                msgNum += 1
 
-
-    def outbox(self):
-        outboxMessages = json.loads(self.api.getAllSentMessages())
-        numMessages = len(outboxMessages['sentMessages'])
-        # processes all of the messages in the outbox
-        msgNum = 0
-        for each in outboxMessages['sentMessages']:
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t access outbox due to an API connection issue')
+        else:
             print('-----------------------------------')
-            # Message Number
-            print('Message Number: {0}'.format(msgNum))
-            # Get the to address
-            print('To: {0}'.format(each['toAddress']))
-            # Get the from address
-            print('From: {0}'.format(each['fromAddress']))
-            # Get the subject
-            print('Subject: {0}'.format(base64.b64decode(each['subject'])))
-            # Get the subject
-            print('Status: {0}'.format(each['status']))
-
-            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(each['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-            msgNum += 1
-
-        print('-----------------------------------')
-        print('There are {0} messages in the outbox.'.format(numMessages))
-        print('-----------------------------------')
+            print('There are {0} messages in the outbox.'.format(numMessages))
+            print('-----------------------------------')
 
 
     # Opens a sent message for reading
     def readSentMsg(self, msgNum):
-        outboxMessages = json.loads(self.api.getAllSentMessages())
-        numMessages = len(outboxMessages['sentMessages'])
-    
-        if msgNum >= numMessages:
-            print('Invalid Message Number')
-            self.main()
+        try:
+            outboxMessages = json.loads(self.api.getAllSentMessages())
+            numMessages = len(outboxMessages['sentMessages'])
 
-        ####
-        # Begin attachment detection
-        ####
-        message = base64.b64decode(outboxMessages['sentMessages'][msgNum]['message'])
+            if msgNum >= numMessages:
+                print('Invalid Message Number')
+                self.main()
 
-        # Allows multiple messages to be downloaded/saved
-        while True:
-            # Found this text in the message, there is probably an attachment
-            if ';base64,' in message:
-                # Finds the attachment position
-                attPos= message.index(';base64,')
-                # Finds the end of the attachment
-                attEndPos = message.index("' />")
+            ####
+            # Begin attachment detection
+            ####
+            message = base64.b64decode(outboxMessages['sentMessages'][msgNum]['message'])
 
-                # We can get the filename too
-                if "alt = '" in message:
-                    # Finds position of the filename
-                    fnPos = message.index('alt = "')
-                    # Finds the end position
-                    fnEndPos = message.index('" src=')
+            # Allows multiple messages to be downloaded/saved
+            while True:
+                # Found this text in the message, there is probably an attachment
+                if ';base64,' in message:
+                    # Finds the attachment position
+                    attPos= message.index(';base64,')
+                    # Finds the end of the attachment
+                    attEndPos = message.index("' />")
 
-                    fileName = message[fnPos+7:fnEndPos]
+                    # We can get the filename too
+                    if "alt = '" in message:
+                        # Finds position of the filename
+                        fnPos = message.index('alt = "')
+                        # Finds the end position
+                        fnEndPos = message.index('" src=')
+                        fileName = message[fnPos+7:fnEndPos]
+                    else:
+                        fnPos = attPos
+                        fileName = 'Attachment'
+
+                    uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)').lower()
+                    if uInput in ['yes', 'y']:
+                        attachment = message[attPos+9:attEndPos]
+                        self.saveFile(fileName,attachment)
+
+                    message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
                 else:
-                    fnPos = attPos
-                    fileName = 'Attachment'
+                    break
 
-                uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)').lower()
-                if uInput in ['yes', 'y']:
-                    attachment = message[attPos+9:attEndPos]
-                    self.saveFile(fileName,attachment)
-
-                message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
-            else:
-                break
-
-        # Get the to address
-        print('To: {0}'.format(outboxMessages['sentMessages'][msgNum]['toAddress']))
-        # Get the from address
-        print('From: {0}'.format(outboxMessages['sentMessages'][msgNum]['fromAddress']))
-        # Get the subject
-        print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
-        #Get the status
-        print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
-        print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-        print('Message: {0}'.format(message))
+            # Get the to address
+            print('To: {0}'.format(outboxMessages['sentMessages'][msgNum]['toAddress']))
+            # Get the from address
+            print('From: {0}'.format(outboxMessages['sentMessages'][msgNum]['fromAddress']))
+            # Get the subject
+            print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
+            #Get the status
+            print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
+            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+            print('Message: {0}'.format(message))
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t access outbox due to an API connection issue')
 
 
     # Opens a message for reading
     def readMsg(self, msgNum):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
-        numMessages = len(inboxMessages['inboxMessages'])
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            numMessages = len(inboxMessages['inboxMessages'])
 
-        if msgNum >= numMessages:
-            print('Invalid Message Number.')
-            self.main()
+            if msgNum >= numMessages:
+                print('Invalid Message Number.')
+                self.main()
 
-        ####
-        # Begin attachment detection
-        ####
-        message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
+            ####
+            # Begin attachment detection
+            ####
+            message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
-        # Allows multiple messages to be downloaded/saved
-        while True:
-            # Found this text in the message, there is probably an attachment
-            if ';base64,' in message:
-                # Finds the attachment position
-                attPos= message.index(';base64,')
-                # Finds the end of the attachment
-                attEndPos = message.index("' />")
+            # Allows multiple messages to be downloaded/saved
+            while True:
+                # Found this text in the message, there is probably an attachment
+                if ';base64,' in message:
+                    # Finds the attachment position
+                    attPos= message.index(';base64,')
+                    # Finds the end of the attachment
+                    attEndPos = message.index("' />")
 
-                # We can get the filename too
-                if 'alt = "' in message:
-                    # Finds position of the filename
-                    fnPos = message.index('alt = "')
-                    # Finds the end position
-                    fnEndPos = message.index('" src=')
-                    fileName = message[fnPos+7:fnEndPos]
+                    # We can get the filename too
+                    if 'alt = "' in message:
+                        # Finds position of the filename
+                        fnPos = message.index('alt = "')
+                        # Finds the end position
+                        fnEndPos = message.index('" src=')
+                        fileName = message[fnPos+7:fnEndPos]
+                    else:
+                        fnPos = attPos
+                        fileName = 'Attachment'
+
+                    uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)').lower()
+                    if uInput in ['yes', 'y']:
+                        attachment = message[attPos+9:attEndPos]
+                        self.saveFile(fileName,attachment)
+
+                    message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
+
                 else:
-                    fnPos = attPos
-                    fileName = 'Attachment'
-
-                uInput = self.userInput('\nAttachment Detected. Would you like to save the attachment, (Y)/(n)').lower()
-                if uInput in ['yes', 'y']:
-                    attachment = message[attPos+9:attEndPos]
-                    self.saveFile(fileName,attachment)
-
-                message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
-
-            else:
-                break
+                    break
 ####
 #End attachment Detection
 ####
 
-        # Get the to address
-        print('To: {0}'.format(inboxMessages['inboxMessages'][msgNum]['toAddress']))
-        # Get the from address
-        print('From: {0}'.format(inboxMessages['inboxMessages'][msgNum]['fromAddress']))
-        # Get the subject
-        print('Subject: {0}'.format(base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])))
-        print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
-        print('Message: {0}'.format(message))
-        return inboxMessages['inboxMessages'][msgNum]['msgid']
+            # Get the to address
+            print('To: {0}'.format(inboxMessages['inboxMessages'][msgNum]['toAddress']))
+            # Get the from address
+            print('From: {0}'.format(inboxMessages['inboxMessages'][msgNum]['fromAddress']))
+            # Get the subject
+            print('Subject: {0}'.format(base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])))
+            print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(inboxMessages['inboxMessages'][msgNum]['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+            print('Message: {0}'.format(message))
+            return inboxMessages['inboxMessages'][msgNum]['msgid']
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t access inbox due to an API connection issue')
+
 
 
     # Allows you to reply to the message you are currently on.
     # Saves typing in the addresses and subject.
     def replyMsg(msgNum,forwardORreply):
-        # makes it lowercase
-        forwardORreply = forwardORreply.lower()
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
+        try:
+            # makes it lowercase
+            forwardORreply = forwardORreply.lower()
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
 
-        # Address it was sent To, now the From address
-        fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
-        # Message that you are replying to
-        message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
+            # Address it was sent To, now the From address
+            fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
+            # Message that you are replying to
+            message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
 
-        subject = inboxMessages['inboxMessages'][msgNum]['subject']
-        subject = base64.b64decode(subject)
+            subject = inboxMessages['inboxMessages'][msgNum]['subject']
+            subject = base64.b64decode(subject)
 
-        if forwardORreply == 'reply':
-            # Address it was From, now the To address
-            toAdd = inboxMessages['inboxMessages'][msgNum]['fromAddress']
-            subject = 'Re: {0}'.format(subject)
+            if forwardORreply == 'reply':
+                # Address it was From, now the To address
+                toAdd = inboxMessages['inboxMessages'][msgNum]['fromAddress']
+                subject = 'Re: {0}'.format(subject)
 
-        elif forwardORreply == 'forward':
-            subject = 'Fwd: {0}'.format(subject)
+            elif forwardORreply == 'forward':
+                subject = 'Fwd: {0}'.format(subject)
 
-            while True:
-                toAdd = self.userInput('\nWhat is the To Address?')
-                if not self.validAddress(toAdd):
-                    print('Invalid Address. Please try again.')
-                else:
-                    break
-        else:
-            print('Invalid Selection. Reply or Forward only')
-            return
+                while True:
+                    toAdd = self.userInput('\nWhat is the To Address?')
+                    if not self.validAddress(toAdd):
+                        print('Invalid Address. Please try again.')
+                    else:
+                        break
+            else:
+                print('Invalid Selection. Reply or Forward only')
+                return
 
-        subject = base64.b64encode(subject)
+            subject = base64.b64encode(subject)
 
-        newMessage = self.userInput('\nEnter your Message.')
+            newMessage = self.userInput('\nEnter your Message.')
 
-        uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
-        if uInput in ['yes', 'y']:
-            newMessage = newMessage + '\n\n' + self.attachment()
+            uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
+            if uInput in ['yes', 'y']:
+                newMessage = newMessage + '\n\n' + self.attachment()
 
-        newMessage = newMessage + '\n\n' + '-' * 55 + '\n'
-        newMessage = newMessage + message
-        newMessage = base64.b64encode(newMessage)
+            newMessage = newMessage + '\n\n' + '-' * 55 + '\n'
+            newMessage = newMessage + message
+            newMessage = base64.b64encode(newMessage)
 
-        self.sendMsg(toAdd, fromAdd, subject, newMessage)
+            self.sendMsg(toAdd, fromAdd, subject, newMessage)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t send message due to an API connection issue')
 
 
     def delMsg(self, msgNum):
-        # Deletes a specified message from the inbox
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
-        # gets the message ID via the message index number
-        msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
-        msgAck = self.api.trashMessage(msgId)
-        return msgAck
+        try:
+            # Deletes a specified message from the inbox
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            # gets the message ID via the message index number
+            msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
+            msgAck = self.api.trashMessage(msgId)
+            return msgAck
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t delete message due to an API connection issue')
+            self.main()
 
 
     # Deletes a specified message from the outbox
     def delSentMsg(self, msgNum):
-        outboxMessages = json.loads(self.api.getAllSentMessages())
-        # gets the message ID via the message index number
-        msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
-        msgAck = self.api.trashSentMessage(msgId)
-        return msgAck
+        try:
+            outboxMessages = json.loads(self.api.getAllSentMessages())
+            # gets the message ID via the message index number
+            msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
+            msgAck = self.api.trashSentMessage(msgId)
+            return msgAck
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t delete message due to an API connection issue')
+            self.main()
 
 
     def listAddressBookEntries(self):
-        response = self.api.listAddressBookEntries()
-        if 'API Error' in response:
-            return self.getAPIErrorCode(response)
-        addressBook = json.loads(response)
-        if addressBook['addresses']:
-            print('-------------------------------------')
-            for each in addressBook['addresses']:
-                print('Label: {0}'.format(base64.b64decode(each['label'])))
-                print('Address: {0}'.format(each['address']))
+        try:
+            response = self.api.listAddressBookEntries()
+            if 'API Error' in response:
+                return self.getAPIErrorCode(response)
+            addressBook = json.loads(response)
+            if addressBook['addresses']:
                 print('-------------------------------------')
-        else:
-            print('No addresses found in address book.')
+                for each in addressBook['addresses']:
+                    print('Label: {0}'.format(base64.b64decode(each['label'])))
+                    print('Address: {0}'.format(each['address']))
+                    print('-------------------------------------')
+            else:
+                print('No addresses found in address book.')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t access address book due to an API connection issue')
 
 
     def addAddressToAddressBook(self, address, label):
-        response = self.api.addAddressBookEntry(address, base64.b64encode(label))
-        if 'API Error' in response:
-            return self.getAPIErrorCode(response)
+        try:
+            response = self.api.addAddressBookEntry(address, base64.b64encode(label))
+            if 'API Error' in response:
+                return self.getAPIErrorCode(response)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t add to address book due to an API connection issue')
 
 
     def deleteAddressFromAddressBook(self, address):
-        response = self.api.deleteAddressBookEntry(address)
-        if 'API Error' in response:
-            return self.getAPIErrorCode(response)
+        try:
+            response = self.api.deleteAddressBookEntry(address)
+            if 'API Error' in response:
+                return self.getAPIErrorCode(response)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t delete from address book due to an API connection issue')
 
 
     def getAPIErrorCode(self, response):
@@ -1152,68 +1271,88 @@ class my_bitmessage(object):
 
 
     def markMessageRead(self, messageID):
-        response = self.api.getInboxMessageByID(messageID, True)
-        if 'API Error' in response:
-            return self.getAPIErrorCode(response)
+        try:
+            response = self.api.getInboxMessageByID(messageID, True)
+            if 'API Error' in response:
+                return self.getAPIErrorCode(response)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t mark message as read due to an API connection issue')
 
 
     def markMessageUnread(self, messageID):
-        response = self.api.getInboxMessageByID(messageID, False)
-        if 'API Error' in response:
-            return self.getAPIErrorCode(response)
+        try:
+            response = self.api.getInboxMessageByID(messageID, False)
+            if 'API Error' in response:
+               return self.getAPIErrorCode(response)
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t mark message as unread due to an API connection issue')
 
 
     def markAllMessagesRead(self):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        for message in inboxMessages:
-            if not message['read']:
-                markMessageRead(message['msgid'])
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
+            for message in inboxMessages:
+                if not message['read']:
+                    markMessageRead(message['msgid'])
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t mark all messages read due to an API connection issue')
 
 
     def markAllMessagesUnread(self):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-        for message in inboxMessages:
-            if message['read']:
-                markMessageUnread(message['msgid'])
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
+            for message in inboxMessages:
+                if message['read']:
+                    markMessageUnread(message['msgid'])
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t mark all messages unread due to an API connection issue')
 
 
     def deleteInboxMessages(self):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
-        numMessages = len(inboxMessages['inboxMessages'])
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            numMessages = len(inboxMessages['inboxMessages'])
 
-        while True:
-            msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
-            try:
-                if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                    break
-                elif int(msgNum) >= numMessages:
-                    print('Invalid Message Number')
-                elif int(msgNum) <= numMessages:
-                    break
-                else:
+            while True:
+                msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
+                try:
+                    if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                        break
+                    elif int(msgNum) >= numMessages:
+                        print('Invalid Message Number')
+                    elif int(msgNum) <= numMessages:
+                        break
+                    else:
+                        print('Invalid input')
+                except ValueError:
                     print('Invalid input')
-            except ValueError:
-                print('Invalid input')
 
-        # Prevent accidental deletion
-        uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
+            # Prevent accidental deletion
+            uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
 
-        if uInput in ['yes', 'y']:
-            if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                # Processes all of the messages in the inbox
-                for msgNum in range (0, numMessages):
-                    print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
-                    self.delMsg(0)
-                print('Inbox is empty.')
-            else:
-                self.delMsg(int(msgNum))
-            print('Notice: Message numbers may have changed.')
+            if uInput in ['yes', 'y']:
+                if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                    # Processes all of the messages in the inbox
+                    for msgNum in range (0, numMessages):
+                        print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
+                        self.delMsg(0)
+                    print('Inbox is empty.')
+                else:
+                    self.delMsg(int(msgNum))
+                print('Notice: Message numbers may have changed.')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t delete inbox message(s) due to an API connection issue')
 
 
     def addInfo(self):
-        while True:
-            address = self.userInput('\nEnter the Bitmessage Address:')
-            try:
+        try:
+            while True:
+                address = self.userInput('\nEnter the Bitmessage Address:')
                 address_information = json.loads(str(self.api.decodeAddress(address)))
                 if address_information['status'] == 'success':
                     print('Address Version: {0}'.format(address_information['addressVersion']))
@@ -1221,8 +1360,11 @@ class my_bitmessage(object):
                     break
                 else:
                     print('Invalid address!')
-            except AttributeError:
-                print('Invalid address!')
+        except AttributeError:
+            print('Invalid address!')
+        except socket.error:
+            self.apiImport = False
+            print('Couldn\'t display address information due to an API connection issue')
 
 
     def sendSomething(self):
@@ -1245,7 +1387,7 @@ class my_bitmessage(object):
             elif self.bmActive == True and self.enableBM.poll() is None:
                     return
         except AttributeError as e:
-            print('self.bmActive is False and Bitmessage is not running.')
+            pass
 
         if sys.platform.startswith('win'):
             self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
@@ -1268,22 +1410,68 @@ class my_bitmessage(object):
             sys.exit(0)
 
         if self.enableBM.poll() is None:
-            print('Bitmessage was started')
             self.bmActive = True
 
 
     def unreadMessageInfo(self):
-        inboxMessages = json.loads(self.api.getAllInboxMessages())
-        messagesUnread = 0
-        for each in inboxMessages['inboxMessages']:
-            if not each['read']:
-                messagesUnread += 1
-        if messagesUnread == 1:
-            print('\nYou have {0} unread message'.format(messagesUnread))
-        if messagesUnread >= 2:
-            print('\nYou have {0} unread messages'.format(messagesUnread))
+        try:
+            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            messagesUnread = 0
+            for each in inboxMessages['inboxMessages']:
+                if not each['read']:
+                    messagesUnread += 1
+            if messagesUnread == 1:
+                print('\nYou have {0} unread message'.format(messagesUnread))
+            if messagesUnread >= 2:
+                print('\nYou have {0} unread messages'.format(messagesUnread))
+            else:
+                return
+        except socket.error:
+            self.apiImport = False
+            print('Can\'t retrieve unread messages due to an API connection issue')
+
+
+    def generateDeterministic(self):
+        deterministic = True
+
+        lbl = self.userInput('\nLabel the new address:')
+        passphrase = self.userInput('\nEnter the Passphrase.')
+
+        while True:
+            try:
+                numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?').lower())
+            except ValueError:
+                print("That's not a whole number.")
+            if numOfAdd <= 0:
+                print('How were you expecting that to work?')
+            elif numOfAdd >= 1000:
+                print('Limit of 999 addresses generated at once.')
+            else:
+                break
+        addVNum = 3
+        streamNum = 1
+        isRipe = self.userInput('\nShorten the address, (Y)/(n)').lower()
+        print('Generating, please wait...')
+
+        if isRipe in ['yes', 'y']:
+            ripe = True
         else:
-            return
+            ripe = False
+        genAddrs = self.genAdd(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe)
+        jsonAddresses = json.loads(genAddrs)
+
+        if numOfAdd >= 2:
+            print('Addresses generated: ')
+        elif numOfAdd == 1:
+            print('Address generated: ')
+        for each in jsonAddresses['addresses']:
+            print(each)
+
+
+    def generateRandom(self):
+        deterministic = False
+        lbl = self.userInput('\nEnter the label for the new address.')
+        print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, '', '', '', '', '')))
 
 
     def viewHelp(self):
@@ -1357,52 +1545,15 @@ class my_bitmessage(object):
 
             # Creates a deterministic address
             if uInput in ['deterministic', 'd']:
-                deterministic = True
-
-                lbl = self.userInput('\nLabel the new address:')
-                passphrase = self.userInput('\nEnter the Passphrase.')
-
-                while True:
-                    try:
-                        numOfAdd = int(self.userInput('\nHow many addresses would you like to generate?').lower())
-                    except ValueError:
-                        print("That's not a whole number.")
-                    if numOfAdd <= 0:
-                        print('How were you expecting that to work?')
-                    elif numOfAdd >= 1000:
-                        print('Limit of 999 addresses generated at once.')
-                    else:
-                        break
-                addVNum = 3
-                streamNum = 1
-                isRipe = self.userInput('\nShorten the address, (Y)/(n)').lower()
-                print('Generating, please wait...')
-
-                if isRipe in ['yes', 'y']:
-                    ripe = True
-                else:
-                    ripe = False
-                genAddrs = self.genAdd(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe)
-                jsonAddresses = json.loads(genAddrs)
-
-                if numOfAdd >= 2:
-                    print('Addresses generated: ')
-                elif numOfAdd == 1:
-                    print('Address generated: ')
-                for each in jsonAddresses['addresses']:
-                    print(each)
+                self.generateDeterministic()
 
             # Creates a random address with user-defined label
             elif uInput in ['random', 'r']:
-                deterministic = False
-                lbl = self.userInput('\nEnter the label for the new address.')
-                print('Generated Address: {0}'.format(self.genAdd(lbl, deterministic, '', '', '', '', '')))
+                self.generateRandom()
 
         # Gets the address for/from a passphrase
         elif usrInput in ['getaddress']:
-            phrase = self.userInput('\nEnter the address passphrase.')
-            address = self.getAddress(phrase,4,1)
-            print('Address: {0}'.format(address))
+            self.getAddress()
 
         elif usrInput in ['deleteaddress']:
             self.deleteAddress()
@@ -1500,95 +1651,103 @@ class my_bitmessage(object):
                         print('Message Deleted.')
 
         elif usrInput in ['save']:
-            while True:
-                uInput = self.userInput('\nWould you like to save a message from the (I)nbox or (O)utbox?').lower()
-                if uInput in ['inbox', 'outbox', 'i', 'o']:
-                    break
-                else:
-                    print('Invalid Input.')
-
-            if uInput in ['inbox', 'i']:
-                inboxMessages = json.loads(self.api.getAllInboxMessages())
-                numMessages = len(inboxMessages['inboxMessages'])
-
+            try:
                 while True:
-                    try:
-                        msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?').lower())
-                        if msgNum >= numMessages:
-                            print('Invalid Message Number.')
-                        else:
-                            break
-                    except ValueError:
-                        print("That's not a whole number.")
-
-                subject = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])
-                # Don't decode since it is done in the saveFile function
-                message = inboxMessages['inboxMessages'][msgNum]['message']
-
-            elif uInput in ['outbox', 'o']:
-                outboxMessages = json.loads(self.api.getAllSentMessages())
-                numMessages = len(outboxMessages['sentMessages'])
-
-                while True:
-                    try:
-                        msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?').lower())
-                        if msgNum >= numMessages:
-                            print('Invalid Message Number.')
-                        else:
-                            break
-                    except ValueError:
-                        print("That's not a whole number.")
-
-                subject = base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])
-                # Don't decode since it is done in the saveFile function
-                message = outboxMessages['sentMessages'][msgNum]['message']
-            
-            subject = '{0}.txt'.format(subject)
-            self.saveFile(subject, message)
-
-        # Will delete a message from the system, not reflected on the UI
-        elif usrInput in ['delete']:
-            uInput = self.userInput('\nWould you like to delete a message from the (I)nbox or (O)utbox?').lower()
-
-            if uInput in ['inbox', 'i']:
-                self.deleteInboxMessages()
-
-            elif uInput in ['outbox', 'o']:
-                outboxMessages = json.loads(self.api.getAllSentMessages())
-                numMessages = len(outboxMessages['sentMessages'])
-                
-                while True:
-                    msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the outbox.').lower()
-                    try:
-                        if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                            break
-                        elif int(msgNum) >= numMessages:
-                            print('Invalid Message Number')
-                        elif int(msgNum) <= numMessages:
-                            break
-                        else:
-                            print('Invalid input')
-                    except ValueError:
-                        print('Invalid input')
-
-                # Prevent accidental deletion
-                uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
-
-                if uInput in ['yes', 'y']:
-                    if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
-                        # processes all of the messages in the outbox
-                        for msgNum in range (0, numMessages):
-                            print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
-                            self.delSentMsg(0)
-                        print('Outbox is empty.')
+                    uInput = self.userInput('\nWould you like to save a message from the (I)nbox or (O)utbox?').lower()
+                    if uInput in ['inbox', 'outbox', 'i', 'o']:
+                        break
                     else:
-                        self.delSentMsg(int(msgNum))
-                    print('Notice: Message numbers may have changed.')
+                        print('Invalid Input.')
+
+                if uInput in ['inbox', 'i']:
+                    inboxMessages = json.loads(self.api.getAllInboxMessages())
+                    numMessages = len(inboxMessages['inboxMessages'])
+
+                    while True:
+                        try:
+                            msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?').lower())
+                            if msgNum >= numMessages:
+                                print('Invalid Message Number.')
+                            else:
+                                break
+                        except ValueError:
+                            print("That's not a whole number.")
+
+                    subject = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['subject'])
+                    # Don't decode since it is done in the saveFile function
+                    message = inboxMessages['inboxMessages'][msgNum]['message']
+
+                elif uInput in ['outbox', 'o']:
+                    outboxMessages = json.loads(self.api.getAllSentMessages())
+                    numMessages = len(outboxMessages['sentMessages'])
+
+                    while True:
+                        try:
+                            msgNum = int(self.userInput('\nWhat is the number of the message you wish to save?').lower())
+                            if msgNum >= numMessages:
+                                print('Invalid Message Number.')
+                            else:
+                                break
+                        except ValueError:
+                            print("That's not a whole number.")
+
+                    subject = base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])
+                    # Don't decode since it is done in the saveFile function
+                    message = outboxMessages['sentMessages'][msgNum]['message']
+            
+                subject = '{0}.txt'.format(subject)
+                self.saveFile(subject, message)
+            except socket.error:
+                self.apiImport = False
+                print('Couldn\'t save message(s) due to an API connection issue')
+                self.main()
+
+        # Will delete a message from the system
+        elif usrInput in ['delete']:
+            try:
+                uInput = self.userInput('\nWould you like to delete a message from the (I)nbox or (O)utbox?').lower()
+
+                if uInput in ['inbox', 'i']:
+                    self.deleteInboxMessages()
+
+                elif uInput in ['outbox', 'o']:
+                    outboxMessages = json.loads(self.api.getAllSentMessages())
+                    numMessages = len(outboxMessages['sentMessages'])
+                
+                    while True:
+                        msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the outbox.').lower()
+                        try:
+                            if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                                break
+                            elif int(msgNum) >= numMessages:
+                                print('Invalid Message Number')
+                            elif int(msgNum) <= numMessages:
+                                break
+                            else:
+                                print('Invalid input')
+                        except ValueError:
+                            print('Invalid input')
+
+                    # Prevent accidental deletion
+                    uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
+
+                    if uInput in ['yes', 'y']:
+                        if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                            # processes all of the messages in the outbox
+                            for msgNum in range (0, numMessages):
+                                print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
+                                self.delSentMsg(0)
+                            print('Outbox is empty.')
+                        else:
+                            self.delSentMsg(int(msgNum))
+                        print('Notice: Message numbers may have changed.')
+            except socket.error:
+                self.apiImport = False
+                print('Couldn\'t access outbox due to an API connection issue')
+                self.main()
 
         elif usrInput in ['listaddressbookentries']:
-            res = self.listAddressBookEntries()
-            if res == 20:
-                print('Error: API function not supported.')
+            self.listAddressBookEntries()
 
         elif usrInput in ['addaddressbookentry']:
             while True:
@@ -1604,55 +1763,48 @@ class my_bitmessage(object):
             res = self.addAddressToAddressBook(address, label)
             if res == 16:
                 print('Error: Address already exists in Address Book.')
-            if res == 20:
-                print('Error: API function not supported.')
 
         elif usrInput in ['deleteaddressbookentry']:
             while True:
                 address = self.userInput('\nEnter address')
                 if self.validAddress(address):
                     res = self.deleteAddressFromAddressBook(address)
-                    if res == 20:
-                        print('Error: API function not supported.')
-                    else:
+                    if res in 'Deleted address book entry':
                         print('{0} has been deleted!'.format(address))
                 else:
                     print('Invalid address')
 
         elif usrInput in ['markallmessagesread']:
             self.markAllMessagesRead()
+
         elif usrInput in ['markallmessagesunread']:
             self.markAllMessagesUnread()
+
         else:
             print('"{0}" is not a command.'.format(usrInput))
         self.main()
 
 
     def main(self):
-        try:
-            self.apiData()
-            self.runBM()
+        self.apiData()
+        self.runBM()
 
-            if not self.apiImport:
-                self.apiImport = True
-                self.api = xmlrpclib.ServerProxy(self.returnApi())
+        if not self.apiImport:
+            self.api = xmlrpclib.ServerProxy(self.returnApi())
 
+            # Bitmessage is running so this may be the first run of apiTest
+        if self.bmActive == True and self.enableBM.poll() is None:
+            self.apiImport = True
+        else:
             if not self.apiTest():
-                # Bitmessage is running so this may be the first run of apiTest
-                if self.bmActive == True and self.enableBM.poll() is None:
-                    self.apiImport = True
-                else:
-                    self.apiImport = False
+                self.apiImport = False
             else:
                 if not self.apiImport:
                     self.apiImport = True
 
-            self.unreadMessageInfo()
+        self.unreadMessageInfo()
 
-            self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
-        except socket.error:
-            self.apiImport = False
-            self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
+        self.UI(self.userInput('\nType (h)elp for a list of commands.').lower())
 
 
 if __name__ == '__main__':
