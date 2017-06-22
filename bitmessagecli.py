@@ -742,10 +742,8 @@ class my_bitmessage(object):
 
             break
 
-        # Gets the length of the filepath excluding the filename
-        pathLen = len(str(ntpath.basename(filePath)))
         # reads the filename
-        fileName = filePath[(len(str(filePath)) - pathLen):]
+        fileName = os.path.basename(filePath)
 
         # Tests if it is an image file
         filetype = imghdr.what(filePath)
