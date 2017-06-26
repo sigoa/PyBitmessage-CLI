@@ -93,11 +93,6 @@ class my_bitmessage(object):
             sys.exit(0)
 
 
-    '''
-    Begin keys.dat interactions
-    gets the appropriate folders for the .dat files depending on the OS.
-    Taken from bitmessagemain.py
-    '''
     def lookupAppdataFolder(self):
         if sys.platform.startswith('darwin'):
             self.programDir = self.programDir + '/'
@@ -138,7 +133,6 @@ class my_bitmessage(object):
             self.configInit()
         except socket.error as e:
             self.apiImport = False
-            print(e)
         else:
             if self.first_run:
                 time.sleep(1)
@@ -192,7 +186,6 @@ class my_bitmessage(object):
                 print('?')
         else:
             CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-
         CONFIG.set('bitmessagesettings', 'keysencrypted', 'False')
         CONFIG.set('bitmessagesettings', 'messagesencrypted', 'False')
         CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
@@ -290,9 +283,6 @@ class my_bitmessage(object):
             print("No section 'bitmessagesettings'")
             print("I'm going to ask you a series of questions..")
             self.configInit()
-#####
-# End keys.dat interactions
-#####
 
 
     # Tests the API connection to bitmessage.
@@ -327,7 +317,6 @@ class my_bitmessage(object):
         socksusername = CONFIG.get('bitmessagesettings', 'socksusername')
         sockspassword = CONFIG.get('bitmessagesettings', 'sockspassword')
 
-
         print('-----------------------------------')
         print('|   Current Bitmessage Settings   |')
         print('-----------------------------------')
@@ -354,79 +343,64 @@ class my_bitmessage(object):
             uInput = self.userInput('\nWould you like to modify any of these settings, (Y)/(n)').lower()
             if uInput:
                 break
-
         if uInput in ['yes', 'y']:
             # loops if they mistype the setting name, they can exit the loop with 'exit')
             while True:
                 invalidInput = False
                 uInput = self.userInput('\nWhat setting would you like to modify?').lower()
-
                 if uInput == 'port':
                     print('Current port number: {0}'.format(port))
                     uInput = self.userInput('\nEnter the new port number.').lower()
                     CONFIG.set('bitmessagesettings', 'port', uInput)
-
                 elif uInput == 'startonlogon':
                     print('Current status: {0}'.format(startonlogon))
                     uInput = self.userInput('\nEnter the new status.').lower()
                     CONFIG.set('bitmessagesettings', 'startonlogon', uInput)
-
                 elif uInput == 'minimizetotray':
                     print('Current status: {0}'.format(minimizetotray))
                     uInput = self.userInput('\nEnter the new status.').lower()
                     CONFIG.set('bitmessagesettings', 'minimizetotray', uInput)
-
                 elif uInput == 'showtraynotifications':
                     print('Current status: {0}'.format(showtraynotifications))
                     uInput = self.userInput('\nEnter the new status.').lower()
                     CONFIG.set('bitmessagesettings', 'showtraynotifications', uInput)
-
                 elif uInput == 'startintray':
                     print('Current status: {0}\n'.format(startintray))
                     uInput = self.userInput('Enter the new status.').lower()
                     CONFIG.set('bitmessagesettings', 'startintray', uInput)
-
                 elif uInput == 'defaultnoncetrialsperbyte':
                     print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
                     uInput = self.userInput('\nEnter the new defaultnoncetrialsperbyte.').lower()
                     CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', uInput)
-
                 elif uInput == 'defaultpayloadlengthextrabytes':
                     print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
                     uInput = self.userInput('\nEnter the new defaultpayloadlengthextrabytes.').lower()
                     CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', uInput)
-
                 elif uInput == 'daemon':
                     print('Current status: {0}'.format(daemon))
                     uInput = self.userInput('\nEnter the new status.').lower()
                     CONFIG.set('bitmessagesettings', 'daemon', uInput)
-
                 elif uInput == 'socksproxytype':
                     print('Current socks proxy type: {0}'.format(socksproxytype))
                     print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'")
                     uInput = self.userInput('\nEnter the new socksproxytype').lower()
                     CONFIG.set('bitmessagesettings', 'socksproxytype', uInput)
-
                 elif uInput == 'sockshostname':
                     print('Current socks host name: {0}'.format(sockshostname))
                     uInput = self.userInput('\nEnter the new sockshostname').lower()
                     CONFIG.set('bitmessagesettings', 'sockshostname', uInput)
-
                 elif uInput == 'socksport':
                     print('Current socks port number: {0}'.format(socksport))
                     uInput = self.userInput('\nEnter the new socksport').lower()
                     CONFIG.set('bitmessagesettings', 'socksport', uInput)
-
                 elif uInput == 'socksauthentication':
                     print('Current status: {0}'.format(socksauthentication))
                     uInput = self.userInput('\nEnter the new status').lower()
                     CONFIG.set('bitmessagesettings', 'socksauthentication', uInput)
-
                 elif uInput == 'socksusername':
                     print('Current socks username: {0}'.format(socksusername))
                     uInput = self.userInput('\nEnter the new socksusername')
                     CONFIG.set('bitmessagesettings', 'socksusername', uInput)
-
                 elif uInput == 'sockspassword':
                     print('Current socks password: {0}'.format(sockspassword))
                     uInput = self.userInput('\nEnter the new sockspassword')
@@ -434,11 +408,9 @@ class my_bitmessage(object):
                 else:
                     print('Invalid input. Please try again')
                     invalidInput = True
-
                 # don't prompt if they made a mistake. 
                 if not invalidInput:
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)').lower()
-
                     if uInput not in ['yes', 'y']:
                         with open(self.keysName, 'wb') as configfile:
                             CONFIG.write(configfile)
@@ -695,9 +667,7 @@ class my_bitmessage(object):
                 else:
                     if not directory.endswith('/'):
                         directory = directory + '/'
-
                 filePath = directory + fileName
-
                 # Begin saving to file
                 try:
                     with open(filePath, 'wb+') as f:
@@ -712,13 +682,10 @@ class my_bitmessage(object):
     # Allows users to attach a file to their message or broadcast
     def attachment(self):
         theAttachmentS = ''
-
         while True:
             isImage = False
             theAttachment = ''
-
             filePath = self.userInput('\nPlease enter the path to the attachment')
-
             try:
                 with open(filePath):
                     break
@@ -742,17 +709,14 @@ class my_bitmessage(object):
                 if uInput not in ['yes', 'y']:
                     print('Attachment discarded.')
                     return ''
-
             # If larger than 256KB, discard
             if invSize > 256.0:
                 print('Attachment too big, maximum allowed message size is 256KB')
                 return ''
-
             break
 
         # reads the filename
         fileName = os.path.basename(filePath)
-
         # Tests if it is an image file
         filetype = imghdr.what(filePath)
         if filetype is not None:
@@ -768,7 +732,6 @@ class my_bitmessage(object):
             # Reads files up to 256KB
             data = f.read(262144)
             data = base64.b64encode(data)
-
         # If it is an image, include image tags in the message
         if isImage:
             theAttachment = '<!-- Note: Base64 encoded image attachment below. -->\n\n'
@@ -928,10 +891,8 @@ class my_bitmessage(object):
                             else:
                                 # Address was found
                                 break
-
                         if found:
                             break
-
                 # Only one address in address book
                 else:
                     print('Using the only address in the addressbook to send from.')
@@ -966,7 +927,6 @@ class my_bitmessage(object):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-
             messagesPrinted = 0
             messagesUnread = 0
             # processes all of the messages in the inbox
@@ -984,7 +944,7 @@ class my_bitmessage(object):
                     print('From: {0}'.format(message['fromAddress']))
                     # Get the subject
                     print('Subject: {0}'.format(base64.b64decode(message['subject'])))
-                    print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+                    print('Received: {0}'.format(datetime.datetime.fromtimestamp(message['receivedTime']).strftime('%Y-%m-%d %H:%M:%S')))
                     messagesPrinted += 1
                     if not message['read']:
                         messagesUnread += 1
@@ -1000,7 +960,6 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-
             # processes all of the messages in the outbox
             msgNum = 0
             for each in outboxMessages['sentMessages']:
@@ -1015,10 +974,8 @@ class my_bitmessage(object):
                 print('Subject: {0}'.format(base64.b64decode(each['subject'])))
                 # Get the subject
                 print('Status: {0}'.format(each['status']))
-
-                print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(each['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+                print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(each['lastActionTime']).strftime('%Y-%m-%d %H:%M:%S')))
                 msgNum += 1
-
         except socket.error:
             self.apiImport = False
             print('Couldn\'t access outbox due to an API connection issue')
@@ -1033,7 +990,6 @@ class my_bitmessage(object):
         try:
             outboxMessages = json.loads(self.api.getAllSentMessages())
             numMessages = len(outboxMessages['sentMessages'])
-
             if msgNum >= numMessages:
                 print('Invalid Message Number')
                 self.main()
@@ -1051,7 +1007,6 @@ class my_bitmessage(object):
                     attPos= message.index(';base64,')
                     # Finds the end of the attachment
                     attEndPos = message.index("' />")
-
                     # We can get the filename too
                     if "alt = '" in message:
                         # Finds position of the filename
@@ -1080,7 +1035,7 @@ class my_bitmessage(object):
             print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
             #Get the status
             print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
-            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
+            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(outboxMessages['sentMessages'][msgNum]['lastActionTime']).strftime('%Y-%m-%d %H:%M:%S')))
             print('Message: {0}'.format(message))
         except socket.error:
             self.apiImport = False
@@ -1092,16 +1047,13 @@ class my_bitmessage(object):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             numMessages = len(inboxMessages['inboxMessages'])
-
             if msgNum >= numMessages:
                 print('Invalid Message Number.')
                 self.main()
 
-            ####
-            # Begin attachment detection
-            ####
-            message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
+# Begin attachment detection
 
+            message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
             # Allows multiple messages to be downloaded/saved
             while True:
                 # Found this text in the message, there is probably an attachment
@@ -1110,7 +1062,6 @@ class my_bitmessage(object):
                     attPos= message.index(';base64,')
                     # Finds the end of the attachment
                     attEndPos = message.index("' />")
-
                     # We can get the filename too
                     if 'alt = "' in message:
                         # Finds position of the filename
@@ -1126,14 +1077,11 @@ class my_bitmessage(object):
                     if uInput in ['yes', 'y']:
                         attachment = message[attPos+9:attEndPos]
                         self.saveFile(fileName,attachment)
-
                     message = message[:fnPos] + '~<Attachment data removed for easier viewing>~' + message[(attEndPos+4):]
-
                 else:
                     break
-####
+
 #End attachment Detection
-####
 
             # Get the to address
             print('To: {0}'.format(inboxMessages['inboxMessages'][msgNum]['toAddress']))
@@ -1154,12 +1102,10 @@ class my_bitmessage(object):
     def replyMsg(msgNum,forwardORreply):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
-
             # Address it was sent To, now the From address
             fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
             # Message that you are replying to
             message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
-
             subject = inboxMessages['inboxMessages'][msgNum]['subject']
             subject = base64.b64decode(subject)
 
@@ -1167,10 +1113,8 @@ class my_bitmessage(object):
                 # Address it was From, now the To address
                 toAdd = inboxMessages['inboxMessages'][msgNum]['fromAddress']
                 subject = 'Re: {0}'.format(subject)
-
             elif forwardORreply == 'forward':
                 subject = 'Fwd: {0}'.format(subject)
-
                 while True:
                     toAdd = self.userInput('\nWhat is the To Address?')
                     if not self.validAddress(toAdd):
@@ -1180,15 +1124,12 @@ class my_bitmessage(object):
             else:
                 print('Invalid Selection. Reply or Forward only')
                 return
-
             subject = base64.b64encode(subject)
-
             newMessage = self.userInput('\nEnter your Message.')
 
             uInput = self.userInput('\nWould you like to add an attachment, (Y)/(n)').lower()
             if uInput in ['yes', 'y']:
                 newMessage = newMessage + '\n\n' + self.attachment()
-
             newMessage = newMessage + '\n\n' + '-' * 55 + '\n'
             newMessage = newMessage + message
             newMessage = base64.b64encode(newMessage)
@@ -1331,7 +1272,6 @@ class my_bitmessage(object):
                         print('Invalid input')
                 except ValueError:
                     print('Invalid input')
-
             # Prevent accidental deletion
             uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
 
@@ -1396,7 +1336,6 @@ class my_bitmessage(object):
             messageID = self.readMsg(msgNum)
 
             uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)').lower()
-
             if uInput not in ['yes', 'y']:
                 self.markMessageRead(messageID)
 
@@ -1420,7 +1359,6 @@ class my_bitmessage(object):
             elif uInput in ['delete', 'd']:
                 # Prevent accidental deletion
                 uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
-
                 if uInput in ['yes', 'y']:
                     self.delMsg(msgNum)
                     print('Message Deleted.')
@@ -1429,7 +1367,6 @@ class my_bitmessage(object):
             self.readSentMsg(msgNum)
             # Gives the user the option to delete the message
             uInput = self.userInput('\nWould you like to Delete this message, (Y)/(n)').lower()
-
             if uInput in ['yes', 'y']:
                 # Prevent accidental deletion
                 uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
@@ -1452,7 +1389,6 @@ class my_bitmessage(object):
         if uInput in ['inbox', 'i']:
             print('Loading...')
             messageID = self.readMsg(msgNum)
-
             uInput = self.userInput('\nWould you like to keep this message unread, (Y)/(n)').lower()
 
             if uInput not in ['yes', 'y']:
@@ -1469,12 +1405,10 @@ class my_bitmessage(object):
                 print('Loading...')
                 print('')
                 self.replyMsg(msgNum,'reply')
-
             elif uInput in ['forward', 'f']:
                 print('Loading...')
                 print('')
                 self.replyMsg(msgNum,'forward')
-
             elif uInput in ['delete', 'd']:
                 # Prevent accidental deletion
                 uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
@@ -1503,11 +1437,10 @@ class my_bitmessage(object):
 
             if uInput in ['inbox', 'i']:
                 self.deleteInboxMessages()
-
             elif uInput in ['outbox', 'o']:
                 outboxMessages = json.loads(self.api.getAllSentMessages())
                 numMessages = len(outboxMessages['sentMessages'])
-                
+
                 while True:
                     msgNum = self.userInput('\nEnter the number of the message you wish to delete or (A)ll to empty the outbox.').lower()
                     try:
@@ -1521,7 +1454,6 @@ class my_bitmessage(object):
                             print('Invalid input')
                     except ValueError:
                         print('Invalid input')
-
                 # Prevent accidental deletion
                 uInput = self.userInput('\nAre you sure, (Y)/(n)').lower()
 
@@ -1575,7 +1507,6 @@ class my_bitmessage(object):
                     return
         except AttributeError as e:
             pass
-
         try:
             if sys.platform.startswith('win'):
                 self.enableBM = subprocess.Popen([self.programDir + 'bitmessagemain.py'],
@@ -1600,7 +1531,6 @@ class my_bitmessage(object):
             print('Bitmessage is already running')
             print('Shutting down..')
             sys.exit(0)
-
         if self.enableBM.poll() is None:
             self.bmActive = True
 
@@ -1625,7 +1555,6 @@ class my_bitmessage(object):
 
     def generateDeterministic(self):
         deterministic = True
-
         lbl = self.userInput('\nLabel the new address:')
         passphrase = self.userInput('\nEnter the Passphrase.')
 
@@ -1673,11 +1602,9 @@ class my_bitmessage(object):
                 break
             else:
                 print('Invalid input')
-
         # Creates a deterministic address
         if uInput in ['deterministic', 'd']:
             self.generateDeterministic()
-
         # Creates a random address with user-defined label
         elif uInput in ['random', 'r']:
             self.generateRandom()
@@ -1738,10 +1665,8 @@ class my_bitmessage(object):
     def main(self):
         self.apiData()
         self.runBM()
-
         if not self.apiImport:
             self.api = xmlrpclib.ServerProxy(self.returnApi())
-
             # Bitmessage is running so this may be the first run of apiTest
         if self.bmActive == True and self.enableBM.poll() is None:
             self.apiImport = True
