@@ -321,7 +321,6 @@ class my_bitmessage(object):
         print('|   Current Bitmessage Settings   |')
         print('-----------------------------------')
         print('port = {0}'.format(port))
-        print(type(startonlogon))
         print('startonlogon = {0}'.format(startonlogon))
         print('minimizetotray = {0}'.format(minimizetotray))
         print('showtraynotifications = {0}'.format(showtraynotifications))
@@ -944,7 +943,7 @@ class my_bitmessage(object):
                     print('From: {0}'.format(message['fromAddress']))
                     # Get the subject
                     print('Subject: {0}'.format(base64.b64decode(message['subject'])))
-                    print('Received: {0}'.format(datetime.datetime.fromtimestamp(message['receivedTime']).strftime('%Y-%m-%d %H:%M:%S')))
+                    print('Received: {0}'.format(datetime.datetime.fromtimestamp(float(message['receivedTime'])).strftime('%Y-%m-%d %H:%M:%S')))
                     messagesPrinted += 1
                     if not message['read']:
                         messagesUnread += 1
@@ -974,7 +973,7 @@ class my_bitmessage(object):
                 print('Subject: {0}'.format(base64.b64decode(each['subject'])))
                 # Get the subject
                 print('Status: {0}'.format(each['status']))
-                print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(each['lastActionTime']).strftime('%Y-%m-%d %H:%M:%S')))
+                print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(each['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
                 msgNum += 1
         except socket.error:
             self.apiImport = False
@@ -1035,7 +1034,7 @@ class my_bitmessage(object):
             print('Subject: {0}'.format(base64.b64decode(outboxMessages['sentMessages'][msgNum]['subject'])))
             #Get the status
             print('Status: {0}'.format(outboxMessages['sentMessages'][msgNum]['status']))
-            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(outboxMessages['sentMessages'][msgNum]['lastActionTime']).strftime('%Y-%m-%d %H:%M:%S')))
+            print('Last Action Time: {0}'.format(datetime.datetime.fromtimestamp(float(outboxMessages['sentMessages'][msgNum]['lastActionTime'])).strftime('%Y-%m-%d %H:%M:%S')))
             print('Message: {0}'.format(message))
         except socket.error:
             self.apiImport = False
@@ -1081,7 +1080,7 @@ class my_bitmessage(object):
                 else:
                     break
 
-#End attachment Detection
+# End attachment Detection
 
             # Get the to address
             print('To: {0}'.format(inboxMessages['inboxMessages'][msgNum]['toAddress']))
@@ -1667,7 +1666,7 @@ class my_bitmessage(object):
         self.runBM()
         if not self.apiImport:
             self.api = xmlrpclib.ServerProxy(self.returnApi())
-            # Bitmessage is running so this may be the first run of apiTest
+        # Bitmessage is running so this may be the first run of apiTest
         if self.bmActive == True and self.enableBM.poll() is None:
             self.apiImport = True
         else:
