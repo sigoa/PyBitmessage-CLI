@@ -29,15 +29,14 @@ CONFIG = ConfigParser.RawConfigParser()
 
 class my_bitmessage(object):
     def __init__(self):
-        '''
-        True = Prompt
-        False = Don't Prompt
-        '''
+        # What we'll use to actually connect to Bitmessage ( main() )
         self.api = ''
         self.programDir = os.path.dirname(__file__)
         self.keysPath = self.lookupAppdataFolder()
         self.keysName = self.keysPath + 'keys.dat'
         self.bmActive = False
+        # subprocess we can check with .pid to verify Bitmessage is running
+        # runBM()
         self.enableBM = ''
         self.apiImport = False
         # For whatever reason, the API doesn't connect right away unless we
@@ -70,7 +69,8 @@ class my_bitmessage(object):
                          'markallmessagesread': self.markAllMessagesRead}
 
 
-    # Checks input for exit or quit. Also formats for input, etc
+    # Checks input for exit or quit, strips all input,
+    # and catches keyboard exits
     def userInput(self, message):
         try:
             print('{0}'.format(message))
@@ -166,26 +166,84 @@ class my_bitmessage(object):
         CONFIG.set('bitmessagesettings', 'minimizetotray', 'False')
         CONFIG.set('bitmessagesettings', 'showtraynotifications', 'True')
         CONFIG.set('bitmessagesettings', 'startintray', 'False')
+        CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
         CONFIG.set('bitmessagesettings', 'sockshostname', 'localhost')
         CONFIG.set('bitmessagesettings', 'socksport', '9050')
         CONFIG.set('bitmessagesettings', 'socksauthentication', 'False')
         CONFIG.set('bitmessagesettings', 'sockslisten', 'False')
         CONFIG.set('bitmessagesettings', 'socksusername', '')
         CONFIG.set('bitmessagesettings', 'sockspassword', '')
+        if not os.path.isdir(self.keysPath):
+            os.mkdir(self.keysPath)
+        with open(self.keysName, 'wb') as configfile:
+            CONFIG.write(configfile)
 
-        enableTor = self.userInput('\nEnable SOCKS5 Tor connection (Y/n)?').lower()
-        if enableTor in ['yes', 'y']:
-            CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
-            print('Proxy settings are:')
-            print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
-            print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
-            print('Host: localhost'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
+        try:
+            enableProxy = self.userInput('\nEnable proxy (Y/n)?').lower()
+            if enableProxy in ['yes', 'y']:
+                print('Proxy settings are:')
+                print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+                print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
+                print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
 
-            doubleCheckProxy = self.userInput('Do these need to be changed? (Y/n)').lower()
-            if doubleCheckProxy in ['yes', 'y']:
-                print('?')
-        else:
-            CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
+                doubleCheckProxy = self.userInput('\nDo these need to be changed? (Y/n)').lower()
+                if doubleCheckProxy in ['yes', 'y']:
+                    while True:
+                        print('Proxy settings are:')
+                        print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+                        print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
+                        print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
+                        invalidInput = False
+                        uInput = self.userInput('\nWhat setting would you like to modify? (enter to exit)').lower()
+                        if uInput == 'type':
+                            uInput = self.userInput("\nPossibilities: 'none', 'SOCKS4a', 'SOCKS5'").lower()
+                            if uInput in ['none', 'socks4a', 'socks5']:
+                                if uInput == 'none':
+                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
+                                elif uInput == 'socks4a':
+                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS4a')
+                                elif uInput == 'socks5':
+                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
+                                with open(self.keysName, 'wb') as configfile:
+                                    CONFIG.write(configfile)
+                            else:
+                                print('socksproxytype was not changed')
+                                invalidInput = True
+                        elif uInput == 'port':
+                            try:
+                                uInput = int(self.userInput("\nPlease input proxy port"))
+                                if 1 <= uInput <= 65535:
+                                    CONFIG.set('bitmessagesettings', 'socksport', uInput)
+                                    with open(self.keysName, 'wb') as configfile:
+                                        CONFIG.write(configfile)
+                            except ValueError:
+                                print('How were you expecting that to work?')
+                                invalidInput = True
+                        elif uInput == 'host':
+                            uInput = int(self.userInput("\nPlease input proxy hostname"))
+                            CONFIG.set('bitmessagesettings', 'sockshostname', uInput)
+                            with open(self.keysName, 'wb') as configfile:
+                                CONFIG.write(configfile)
+                        elif uInput == '':
+                            break
+                        else:
+                            print('That\'s not an option.')
+                            invalidInput = True
+                        if not invalidInput:
+                            exitVerification = self.userInput("\nWould you like to change anything else? (Y/n)")
+                            if exitVerification in ['yes', 'y']:
+                                pass
+                            else:
+                                break
+            else:
+                CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
+        # catches "AttributeError: 'str' object has no attribute 'pid'"
+        # from os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+        # 'q'/'quit' is already printing and exiting, we just need this caught
+        # to prevent noise. Later a logger will be setup to follow these kinds
+        # of things better.
+        except AttributeError:
+            pass
         CONFIG.set('bitmessagesettings', 'keysencrypted', 'False')
         CONFIG.set('bitmessagesettings', 'messagesencrypted', 'False')
         CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
@@ -409,11 +467,11 @@ class my_bitmessage(object):
                     invalidInput = True
                 # don't prompt if they made a mistake. 
                 if not invalidInput:
+                    with open(self.keysName, 'wb') as configfile:
+                        CONFIG.write(configfile)
+                        print('Changes made')
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)').lower()
                     if uInput not in ['yes', 'y']:
-                        with open(self.keysName, 'wb') as configfile:
-                            CONFIG.write(configfile)
-                        print('Changes made')
                         break
 
 
