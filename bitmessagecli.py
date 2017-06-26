@@ -146,10 +146,14 @@ class my_bitmessage(object):
 
 
     def configInit(self):
+        if not os.path.isdir(self.keysPath):
+            os.mkdir(self.keysPath)
+
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
             pass
+
         CONFIG.set('bitmessagesettings', 'port', '8444')
         CONFIG.set('bitmessagesettings', 'apienabled', 'True')
         CONFIG.set('bitmessagesettings', 'settingsversion', '10')
@@ -173,8 +177,37 @@ class my_bitmessage(object):
         CONFIG.set('bitmessagesettings', 'sockslisten', 'False')
         CONFIG.set('bitmessagesettings', 'socksusername', '')
         CONFIG.set('bitmessagesettings', 'sockspassword', '')
-        if not os.path.isdir(self.keysPath):
-            os.mkdir(self.keysPath)
+        # https://www.reddit.com/r/bitmessage/comments/5vt3la/sha1_and_bitmessage/deev8je/
+        CONFIG.set('bitmessagesettings', 'digestalg', 'sha256')
+        CONFIG.set('bitmessagesettings', 'keysencrypted', 'False')
+        CONFIG.set('bitmessagesettings', 'messagesencrypted', 'False')
+        CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
+        CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', '1000')
+        CONFIG.set('bitmessagesettings', 'minimizeonclose', 'False')
+        CONFIG.set('bitmessagesettings', 'maxacceptablenoncetrialsperbyte', '20000000000')
+        CONFIG.set('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes', '20000000000')
+        CONFIG.set('bitmessagesettings', 'userlocale', 'system')
+        CONFIG.set('bitmessagesettings', 'useidenticons', 'False')
+        CONFIG.set('bitmessagesettings', 'identiconsuffix', '')
+        CONFIG.set('bitmessagesettings', 'replybelow', 'False')
+        CONFIG.set('bitmessagesettings', 'maxdownloadrate', '0')
+        CONFIG.set('bitmessagesettings', 'maxuploadrate', '0')
+        CONFIG.set('bitmessagesettings', 'maxoutboundconnections', '8')
+        CONFIG.set('bitmessagesettings', 'ttl', '367200')
+        CONFIG.set('bitmessagesettings', 'stopresendingafterxdays', '')
+        CONFIG.set('bitmessagesettings', 'stopresendingafterxmonths', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpctype', 'namecoind')
+        CONFIG.set('bitmessagesettings', 'namecoinrpchost', 'localhost')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcuser', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcpassword', '')
+        CONFIG.set('bitmessagesettings', 'namecoinrpcport', '8336')
+        CONFIG.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
+        CONFIG.set('bitmessagesettings', 'onionhostname', '8444')
+        CONFIG.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
+        CONFIG.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
+        CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
+        CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
+        CONFIG.set('bitmessagesettings', 'opencl', 'False')
         with open(self.keysName, 'wb') as configfile:
             CONFIG.write(configfile)
 
@@ -244,37 +277,6 @@ class my_bitmessage(object):
         # of things better.
         except AttributeError:
             pass
-        CONFIG.set('bitmessagesettings', 'keysencrypted', 'False')
-        CONFIG.set('bitmessagesettings', 'messagesencrypted', 'False')
-        CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', '1000')
-        CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', '1000')
-        CONFIG.set('bitmessagesettings', 'minimizeonclose', 'False')
-        CONFIG.set('bitmessagesettings', 'maxacceptablenoncetrialsperbyte', '20000000000')
-        CONFIG.set('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes', '20000000000')
-        CONFIG.set('bitmessagesettings', 'userlocale', 'system')
-        CONFIG.set('bitmessagesettings', 'useidenticons', 'False')
-        CONFIG.set('bitmessagesettings', 'identiconsuffix', '')
-        CONFIG.set('bitmessagesettings', 'replybelow', 'False')
-        CONFIG.set('bitmessagesettings', 'maxdownloadrate', '0')
-        CONFIG.set('bitmessagesettings', 'maxuploadrate', '0')
-        CONFIG.set('bitmessagesettings', 'maxoutboundconnections', '8')
-        CONFIG.set('bitmessagesettings', 'ttl', '367200')
-        CONFIG.set('bitmessagesettings', 'stopresendingafterxdays', '')
-        CONFIG.set('bitmessagesettings', 'stopresendingafterxmonths', '')
-        CONFIG.set('bitmessagesettings', 'namecoinrpctype', 'namecoind')
-        CONFIG.set('bitmessagesettings', 'namecoinrpchost', 'localhost')
-        CONFIG.set('bitmessagesettings', 'namecoinrpcuser', '')
-        CONFIG.set('bitmessagesettings', 'namecoinrpcpassword', '')
-        CONFIG.set('bitmessagesettings', 'namecoinrpcport', '8336')
-        CONFIG.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
-        CONFIG.set('bitmessagesettings', 'onionhostname', '8444')
-        CONFIG.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
-        CONFIG.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
-        CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
-        CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
-        CONFIG.set('bitmessagesettings', 'opencl', 'False')
-        if not os.path.isdir(self.keysPath):
-            os.mkdir(self.keysPath)
         with open(self.keysName, 'wb') as configfile:
             CONFIG.write(configfile)
 
@@ -1595,14 +1597,17 @@ class my_bitmessage(object):
     def unreadMessageInfo(self):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
+            CONFIG.read(self.keysName)
             messagesUnread = 0
             for each in inboxMessages['inboxMessages']:
                 if not each['read']:
                     messagesUnread += 1
-            if messagesUnread == 1:
-                print('\nYou have {0} unread message'.format(messagesUnread))
-            if messagesUnread >= 2:
-                print('\nYou have {0} unread messages'.format(messagesUnread))
+            # TODO - There can be unread messages in messages.dat but the
+            # user may have deleted every address, and only left the
+            # 'bitmessagesettings' settings. Weird situation, and should
+            # probably be approached differently.
+            if messagesUnread >= 1 and len(CONFIG.sections()) >= 2:
+                print('\nYou have {0} unread message(s)'.format(messagesUnread))
             else:
                 return
         except socket.error:
