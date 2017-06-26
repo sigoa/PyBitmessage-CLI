@@ -879,11 +879,18 @@ class my_bitmessage(object):
                                 break
                         if found:
                             break
-
-                # Only one address in address book
                 else:
-                    print('Using the only address in the addressbook to send from.')
-                    fromAddress = jsonAddresses['addresses'][0]['address']
+                    try:
+                        fromAddress = jsonAddresses['addresses'][0]['address']
+                    # No address in the address book
+                    except IndexError:
+                        print('You don\'t have any addresses generated!')
+                        print('Please use the \'generateaddress\' command')
+                        self.main()
+                    else:
+                        # Only one address in address book
+                        print('Using the only address in the addressbook to send from.')
+
 
             if subject == '':
                 subject = self.userInput('\nEnter your subject')
@@ -952,10 +959,17 @@ class my_bitmessage(object):
                                 break
                         if found:
                             break
-                # Only one address in address book
                 else:
-                    print('Using the only address in the addressbook to send from.')
-                    fromAddress = jsonAddresses['addresses'][0]['address']
+                    try:
+                        fromAddress = jsonAddresses['addresses'][0]['address']
+                    # No address in the address book!
+                    except IndexError:
+                        print('You don\'t have any addresses generated!')
+                        print('Please use the \'generateaddress\' command')
+                        self.main()
+                    else:
+                        # Only one address in address book
+                        print('Using the only address in the addressbook to send from.')
 
             if subject == '':
                     subject = self.userInput('\nEnter your Subject.')
