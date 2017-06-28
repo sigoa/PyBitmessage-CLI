@@ -67,6 +67,43 @@ class my_bitmessage(object):
                          'delete': self.deleteSomething,
                          'markallmessagesunread': self.markAllMessagesUnread,
                          'markallmessagesread': self.markAllMessagesRead}
+        self.bmSettingsOptions = {'daemon': 'boolean',
+                                  'timeformat': '',
+                                  'blackwhitelist': 'boolean',
+                                  'socksproxytype': ['none', 'SOCKS4a', 'SOCKS5'],
+                                  'sockshostname': '',
+                                  'socksport': '',
+                                  'socksauthentication': 'boolean',
+                                  'socksusername': '',
+                                  'sockspassword': '',
+                                  'sockslisten': 'boolean',
+                                  'digestalg': ['sha256', 'sha1'],
+                                  'keysencrypted': 'boolean',
+                                  'messagesencrypted': 'boolean',
+                                  'defaultnoncetrialsperbyte': '',
+                                  'defaultpayloadlengthextrabytes': '',
+                                  'maxacceptablenoncetrialsperbyte': '',
+                                  'maxacceptablepayloadlengthextrabytes': '',
+                                  'userlocale': '',
+                                  'replybelow': '',
+                                  'maxdownloadrate': '',
+                                  'maxuploadrate': '',
+                                  'maxoutboundconnections': '',
+                                  'ttl': '',
+                                  'stopresendingafterxdays': '',
+                                  'stopresendingafterxmonths': '',
+                                  'namecoinrpctype': '',
+                                  'namecoinrpchost': '',
+                                  'namecoinrpcuser': '',
+                                  'namecoinrpcpassword': '',
+                                  'namecoinrpcport': '',
+                                  'sendoutgoingconnections': '',
+                                  'onionhostname': '',
+                                  'onionbindip': '',
+                                  'hidetrayconnectionnotifications': '',
+                                  'trayonclose': '',
+                                  'willinglysendtomobile': '',
+                                  'opencl': 'boolean'}
 
 
     # Checks input for exit or quit, strips all input,
@@ -202,7 +239,7 @@ class my_bitmessage(object):
         CONFIG.set('bitmessagesettings', 'namecoinrpcpassword', '')
         CONFIG.set('bitmessagesettings', 'namecoinrpcport', '8336')
         CONFIG.set('bitmessagesettings', 'sendoutgoingconnections', 'True')
-        CONFIG.set('bitmessagesettings', 'onionhostname', '8444')
+        CONFIG.set('bitmessagesettings', 'onionhostname', '')
         CONFIG.set('bitmessagesettings', 'onionbindip', '127.0.0.1')
         CONFIG.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
         CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
@@ -210,7 +247,6 @@ class my_bitmessage(object):
         CONFIG.set('bitmessagesettings', 'opencl', 'False')
         with open(self.keysName, 'wb') as configfile:
             CONFIG.write(configfile)
-
         try:
             enableProxy = self.userInput('\nEnable proxy (Y/n)?').lower()
             if enableProxy in ['yes', 'y']:
@@ -222,21 +258,12 @@ class my_bitmessage(object):
                 doubleCheckProxy = self.userInput('\nDo these need to be changed? (Y/n)').lower()
                 if doubleCheckProxy in ['yes', 'y']:
                     while True:
-                        print('Proxy settings are:')
-                        print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
-                        print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
-                        print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
                         invalidInput = False
                         uInput = self.userInput('\nWhat setting would you like to modify? (enter to exit)').lower()
                         if uInput == 'type':
                             uInput = self.userInput("\nPossibilities: 'none', 'SOCKS4a', 'SOCKS5'").lower()
                             if uInput in ['none', 'socks4a', 'socks5']:
-                                if uInput == 'none':
-                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-                                elif uInput == 'socks4a':
-                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS4a')
-                                elif uInput == 'socks5':
-                                    CONFIG.set('bitmessagesettings', 'socksproxytype', 'SOCKS5')
+                                CONFIG.set('bitmessagesettings', 'socksproxytype', uInput)
                                 with open(self.keysName, 'wb') as configfile:
                                     CONFIG.write(configfile)
                             else:
@@ -263,6 +290,10 @@ class my_bitmessage(object):
                             print('That\'s not an option.')
                             invalidInput = True
                         if not invalidInput:
+                            print('Proxy settings are:')
+                            print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+                            print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
+                            print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
                             exitVerification = self.userInput("\nWould you like to change anything else? (Y/n)")
                             if exitVerification in ['yes', 'y']:
                                 pass
@@ -303,6 +334,7 @@ class my_bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
             CONFIG.getboolean('bitmessagesettings', 'sockslisten')
             CONFIG.get('bitmessagesettings', 'socksusername')
+            CONFIG.get('bitmessagesettings', 'digestalg')
             CONFIG.get('bitmessagesettings', 'sockspassword')
             CONFIG.get('bitmessagesettings', 'socksproxytype')
             CONFIG.get('bitmessagesettings', 'socksproxytype')
@@ -329,7 +361,7 @@ class my_bitmessage(object):
             CONFIG.get('bitmessagesettings', 'namecoinrpcpassword')
             CONFIG.getint('bitmessagesettings', 'namecoinrpcport')
             CONFIG.getboolean('bitmessagesettings', 'sendoutgoingconnections')
-            CONFIG.getint('bitmessagesettings', 'onionhostname')
+            CONFIG.get('bitmessagesettings', 'onionhostname')
             CONFIG.get('bitmessagesettings', 'onionbindip')
             CONFIG.getboolean('bitmessagesettings', 'hidetrayconnectionnotifications')
             CONFIG.getboolean('bitmessagesettings', 'trayonclose')
@@ -362,41 +394,7 @@ class my_bitmessage(object):
     # Allows the viewing and modification of keys.dat settings.
     def bmSettings(self):
         # Read the keys.dat
-        CONFIG.read(self.keysName)
-        startonlogon = CONFIG.getboolean('bitmessagesettings', 'startonlogon')
-        minimizetotray = CONFIG.getboolean('bitmessagesettings', 'minimizetotray')
-        showtraynotifications = CONFIG.getboolean('bitmessagesettings', 'showtraynotifications')
-        startintray = CONFIG.getboolean('bitmessagesettings', 'startintray')
-        defaultnoncetrialsperbyte = CONFIG.getint('bitmessagesettings', 'defaultnoncetrialsperbyte')
-        defaultpayloadlengthextrabytes = CONFIG.getint('bitmessagesettings', 'defaultpayloadlengthextrabytes')
-        daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
-        socksproxytype = CONFIG.get('bitmessagesettings', 'socksproxytype')
-        sockshostname = CONFIG.get('bitmessagesettings', 'sockshostname')
-        socksport = CONFIG.getint('bitmessagesettings', 'socksport')
-        socksauthentication = CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
-        socksusername = CONFIG.get('bitmessagesettings', 'socksusername')
-        sockspassword = CONFIG.get('bitmessagesettings', 'sockspassword')
-
-        print('-----------------------------------')
-        print('|   Current Bitmessage Settings   |')
-        print('-----------------------------------')
-        print('port = {0}'.format(port))
-        print('startonlogon = {0}'.format(startonlogon))
-        print('minimizetotray = {0}'.format(minimizetotray))
-        print('showtraynotifications = {0}'.format(showtraynotifications))
-        print('startintray = {0}'.format(startintray))
-        print('defaultnoncetrialsperbyte = {0}'.format(defaultnoncetrialsperbyte))
-        print('defaultpayloadlengthextrabytes = {0}'.format(defaultpayloadlengthextrabytes))
-        print('daemon = {0}'.format(daemon))
-        print('-----------------------------------')
-        print('|   Current Connection Settings   |')
-        print('-----------------------------------')
-        print('socksproxytype = {0}'.format(socksproxytype))
-        print('sockshostname = {0}'.format(sockshostname))
-        print('socksport = {0}'.format(socksport))
-        print('socksauthentication = {0}'.format(socksauthentication))
-        print('socksusername = {0}'.format(socksusername))
-        print('sockspassword = {0}'.format(sockspassword))
+        self.currentSettings()
 
         while True:
             uInput = self.userInput('\nWould you like to modify any of these settings, (Y)/(n)').lower()
@@ -407,71 +405,26 @@ class my_bitmessage(object):
             while True:
                 invalidInput = False
                 uInput = self.userInput('\nWhat setting would you like to modify?').lower()
-                if uInput == 'port':
-                    print('Current port number: {0}'.format(port))
-                    uInput = self.userInput('\nEnter the new port number.').lower()
-                    CONFIG.set('bitmessagesettings', 'port', uInput)
-                elif uInput == 'startonlogon':
-                    print('Current status: {0}'.format(startonlogon))
-                    uInput = self.userInput('\nEnter the new status.').lower()
-                    CONFIG.set('bitmessagesettings', 'startonlogon', uInput)
-                elif uInput == 'minimizetotray':
-                    print('Current status: {0}'.format(minimizetotray))
-                    uInput = self.userInput('\nEnter the new status.').lower()
-                    CONFIG.set('bitmessagesettings', 'minimizetotray', uInput)
-                elif uInput == 'showtraynotifications':
-                    print('Current status: {0}'.format(showtraynotifications))
-                    uInput = self.userInput('\nEnter the new status.').lower()
-                    CONFIG.set('bitmessagesettings', 'showtraynotifications', uInput)
-                elif uInput == 'startintray':
-                    print('Current status: {0}\n'.format(startintray))
-                    uInput = self.userInput('Enter the new status.').lower()
-                    CONFIG.set('bitmessagesettings', 'startintray', uInput)
-                elif uInput == 'defaultnoncetrialsperbyte':
-                    print('Current default nonce trials per byte: {0}'.format(defaultnoncetrialsperbyte))
-                    uInput = self.userInput('\nEnter the new defaultnoncetrialsperbyte.').lower()
-                    CONFIG.set('bitmessagesettings', 'defaultnoncetrialsperbyte', uInput)
-                elif uInput == 'defaultpayloadlengthextrabytes':
-                    print('Current default payload length extra bytes: {0}'.format(defaultpayloadlengthextrabytes))
-                    uInput = self.userInput('\nEnter the new defaultpayloadlengthextrabytes.').lower()
-                    CONFIG.set('bitmessagesettings', 'defaultpayloadlengthextrabytes', uInput)
-                elif uInput == 'daemon':
-                    print('Current status: {0}'.format(daemon))
-                    uInput = self.userInput('\nEnter the new status.').lower()
-                    CONFIG.set('bitmessagesettings', 'daemon', uInput)
-                elif uInput == 'socksproxytype':
-                    print('Current socks proxy type: {0}'.format(socksproxytype))
-                    print("Possibilities: 'none', 'SOCKS4a', 'SOCKS5'")
-                    uInput = self.userInput('\nEnter the new socksproxytype').lower()
-                    CONFIG.set('bitmessagesettings', 'socksproxytype', uInput)
-                elif uInput == 'sockshostname':
-                    print('Current socks host name: {0}'.format(sockshostname))
-                    uInput = self.userInput('\nEnter the new sockshostname').lower()
-                    CONFIG.set('bitmessagesettings', 'sockshostname', uInput)
-                elif uInput == 'socksport':
-                    print('Current socks port number: {0}'.format(socksport))
-                    uInput = self.userInput('\nEnter the new socksport').lower()
-                    CONFIG.set('bitmessagesettings', 'socksport', uInput)
-                elif uInput == 'socksauthentication':
-                    print('Current status: {0}'.format(socksauthentication))
-                    uInput = self.userInput('\nEnter the new status').lower()
-                    CONFIG.set('bitmessagesettings', 'socksauthentication', uInput)
-                elif uInput == 'socksusername':
-                    print('Current socks username: {0}'.format(socksusername))
-                    uInput = self.userInput('\nEnter the new socksusername')
-                    CONFIG.set('bitmessagesettings', 'socksusername', uInput)
-                elif uInput == 'sockspassword':
-                    print('Current socks password: {0}'.format(sockspassword))
-                    uInput = self.userInput('\nEnter the new sockspassword')
-                    CONFIG.set('bitmessagesettings', 'sockspassword', uInput)
+                if uInput in self.bmSettingsOptions.keys():
+                    uInput2 = self.userInput('\nWhat would you like to set {0} to?'.format(uInput)).lower()
+                    if uInput2 in self.bmSettingsOptions[uInput].lower():
+                        CONFIG.set('bitmessagesettings', uInput, uInput2)
+                    elif self.bmSettingsOptions[uInput] == 'boolean':
+                        if uInput in ['true', 'false']:
+                            CONFIG.set('bitmessagesettings', uInput, uInput2)
+                    elif self.bmSettingsOptions[uInput] == '':
+                        CONFIG.set('bitmessagesettings', uInput, uInput2)
+                    else:
+                        print('Invalid input. Please try again')
+                        invalidInput = True
                 else:
                     print('Invalid input. Please try again')
                     invalidInput = True
-                # don't prompt if they made a mistake. 
+                # don't prompt if they made a mistake
                 if not invalidInput:
                     with open(self.keysName, 'wb') as configfile:
-                        CONFIG.write(configfile)
                         print('Changes made')
+                        self.currentSettings()
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)').lower()
                     if uInput not in ['yes', 'y']:
                         break
@@ -1611,23 +1564,20 @@ class my_bitmessage(object):
     def unreadMessageInfo(self):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
+        except socket.error:
+            self.apiImport = False
+            print('Can\'t retrieve unread messages due to an API connection issue')
+        else:
             CONFIG.read(self.keysName)
             messagesUnread = 0
             for each in inboxMessages['inboxMessages']:
                 if not each['read']:
-                    messagesUnread += 1
-            # TODO - There can be unread messages in messages.dat but the
-            # user may have deleted every address, and only left the
-            # 'bitmessagesettings' settings. Weird situation, and should
-            # probably be approached differently.
+                    if each['toAddress'] in CONFIG.sections():
+                        messagesUnread += 1
             if messagesUnread >= 1 and len(CONFIG.sections()) >= 2:
                 print('\nYou have {0} unread message(s)'.format(messagesUnread))
             else:
                 return
-        except socket.error:
-            self.apiImport = False
-            print('Can\'t retrieve unread messages due to an API connection issue')
-
 
     def generateDeterministic(self):
         deterministic = True
@@ -1724,6 +1674,96 @@ class my_bitmessage(object):
         print('| save                    | Saves message to text file                |')
         print('| delete                  | Deletes a message or all messages         |')
         print('-----------------------------------------------------------------------')
+
+
+    def currentSettings(self):
+        CONFIG.read(self.keysName)
+        daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
+        timeformat = CONFIG.get('bitmessagesettings', 'timeformat')
+        blackwhitelist = CONFIG.get('bitmessagesettings', 'blackwhitelist')
+        socksproxytype = CONFIG.get('bitmessagesettings', 'socksproxytype')
+        sockshostname = CONFIG.get('bitmessagesettings', 'sockshostname')
+        socksport = CONFIG.getint('bitmessagesettings', 'socksport')
+        socksauthentication = CONFIG.getboolean('bitmessagesettings', 'socksauthentication')
+        socksusername = CONFIG.get('bitmessagesettings', 'socksusername')
+        sockspassword = CONFIG.get('bitmessagesettings', 'sockspassword')
+        sockslisten = CONFIG.getboolean('bitmessagesettings', 'sockslisten')
+        digestalg = CONFIG.get('bitmessagesettings', 'digestalg')
+        keysencrypted = CONFIG.getboolean('bitmessagesettings', 'keysencrypted')
+        messagesencrypted = CONFIG.getboolean('bitmessagesettings', 'messagesencrypted')
+        defaultnoncetrialsperbyte = CONFIG.getint('bitmessagesettings', 'defaultnoncetrialsperbyte')
+        defaultpayloadlengthextrabytes = CONFIG.getint('bitmessagesettings', 'defaultpayloadlengthextrabytes')
+        maxacceptablenoncetrialsperbyte = CONFIG.getint('bitmessagesettings', 'maxacceptablenoncetrialsperbyte')
+        maxacceptablepayloadlengthextrabytes = CONFIG.getint('bitmessagesettings', 'maxacceptablepayloadlengthextrabytes')
+        userlocale = CONFIG.get('bitmessagesettings', 'userlocale')
+        replybelow = CONFIG.getboolean('bitmessagesettings', 'replybelow')
+        maxdownloadrate = CONFIG.getint('bitmessagesettings', 'maxdownloadrate')
+        maxuploadrate = CONFIG.getint('bitmessagesettings', 'maxuploadrate')
+        maxoutboundconnections = CONFIG.getint('bitmessagesettings', 'maxoutboundconnections')
+        ttl = CONFIG.getint('bitmessagesettings', 'ttl')
+        stopresendingafterxdays = CONFIG.get('bitmessagesettings', 'stopresendingafterxdays')
+        stopresendingafterxmonths = CONFIG.get('bitmessagesettings', 'stopresendingafterxmonths')
+        namecoinrpctype = CONFIG.get('bitmessagesettings', 'namecoinrpctype')
+        namecoinrpchost = CONFIG.get('bitmessagesettings', 'namecoinrpchost')
+        namecoinuser = CONFIG.get('bitmessagesettings', 'namecoinrpcuser')
+        namecoinrpcpassword = CONFIG.get('bitmessagesettings', 'namecoinrpcpassword')
+        namecoinrpcport = CONFIG.getint('bitmessagesettings', 'namecoinrpcport')
+        sendoutgoingconnections = CONFIG.getboolean('bitmessagesettings', 'sendoutgoingconnections')
+        onionhostname = CONFIG.get('bitmessagesettings', 'onionhostname')
+        onionbindip = CONFIG.get('bitmessagesettings', 'onionbindip')
+        hidetrayconnectionnotifications = CONFIG.getboolean('bitmessagesettings', 'hidetrayconnectionnotifications')
+        trayonclose = CONFIG.getboolean('bitmessagesettings', 'trayonclose')
+        willinglysendtomobile = CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
+        opencl = CONFIG.getboolean('bitmessagesettings', 'opencl')
+        print('-----------------------------------')
+        print('|   Current Bitmessage Settings   |')
+        print('-----------------------------------')
+        print('blackwhitelist = {0}'.format(blackwhitelist))
+        print('daemon = {0}'.format(daemon))
+        print('defaultnoncetrialsperbyte = {0}'.format(defaultnoncetrialsperbyte))
+        print('defaultpayloadlengthextrabytes = {0}'.format(defaultpayloadlengthextrabytes))
+        print('digestalg = {0}'.format(digestalg))
+        print('hidetrayconnectionnotifications = {0}'.format(hidetrayconnectionnotifications))
+        print('keysencrypted = {0}'.format(keysencrypted))
+        print('maxacceptablenoncetrialsperbyte = {0}'.format(maxacceptablenoncetrialsperbyte))
+        print('maxacceptablepayloadlengthextrabytes = {0}'.format(maxacceptablepayloadlengthextrabytes))
+        print('messagesencrypted = {0}'.format(messagesencrypted))
+        print('opencl = {0}'.format(opencl))
+        print('replybelow = {0}'.format(replybelow))
+        print('sendoutgoingconnections = {0}'.format(sendoutgoingconnections))
+        print('stopresendingafterxdays = {0}'.format(stopresendingafterxdays))
+        print('stopresendingafterxmonths = {0}'.format(stopresendingafterxmonths))
+        print('timeformat = {0}'.format(timeformat))
+        print('trayonclose = {0}'.format(trayonclose))
+        print('ttl = {0}'.format(ttl))
+        print('userlocale = {0}'.format(userlocale))
+        print('willinglysendtomobile = {0}'.format(willinglysendtomobile))
+        print('-----------------------------------')
+        print('|   Current Connection Settings   |')
+        print('-----------------------------------')
+        print('maxdownloadrate = {0}'.format(maxdownloadrate))
+        print('maxoutboundconnections = {0}'.format(maxoutboundconnections))
+        print('maxuploadrate = {0}'.format(maxuploadrate))
+        print('----------------------------------')
+        print('|   Current Proxy/Tor Settings   |')
+        print('----------------------------------')
+        print('onionbindip = {0}'.format(onionbindip))
+        print('onionhostname = {0}'.format(onionhostname))
+        print('socksauthentication = {0}'.format(socksauthentication))
+        print('sockshostname = {0}'.format(sockshostname))
+        print('sockspassword = {0}'.format(sockspassword))
+        print('sockslisten = {0}'.format(sockslisten))
+        print('socksport = {0}'.format(socksport))
+        print('socksproxytype = {0}'.format(socksproxytype))
+        print('socksusername = {0}'.format(socksusername))
+        print('-----------------------------------')
+        print('|    Current NameCoin Settings    |')
+        print('-----------------------------------')
+        print('namecoinrpchost = {0}'.format(namecoinrpchost))
+        print('namecoinrpcpassword = {0}'.format(namecoinrpcpassword))
+        print('namecoinrpcport = {0}'.format(namecoinrpcport))
+        print('namecoinrpctype = {0}'.format(namecoinrpctype))
+        print('namecoinuser = {0}'.format(namecoinuser))
 
 
     # Main user menu
