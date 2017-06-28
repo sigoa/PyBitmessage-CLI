@@ -412,6 +412,12 @@ class my_bitmessage(object):
                     elif self.bmSettingsOptions[uInput] == 'boolean':
                         if uInput in ['true', 'false']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
+                    elif self.bmSettingsOptions[uinput] in ['none', 'SOCKS4a', 'SOCKS5']:
+                        if uInput2 in ['none', 'SOCKS4a', 'SOCKS5']:
+                            CONFIG.set('bitmessagesettings', uInput, uInput2)
+                    elif self.bmSettingsOptions[uinput] in ['sha256', 'sha1']:
+                        if uInput2 in ['sha256', 'sha1']:
+                            CONFIG.set('bitmessagesettings', uInput, uInput2)
                     elif self.bmSettingsOptions[uInput] == '':
                         CONFIG.set('bitmessagesettings', uInput, uInput2)
                     else:
