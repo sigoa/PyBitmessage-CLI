@@ -141,7 +141,7 @@ class my_bitmessage(object):
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
-                print('https://github.com/Bitmessage/PyBitmessage/issues')
+                print('https://github.com/Bitmessage/PyBitmessage/issues/')
                 sys.exit(0)
         elif sys.platform.startswith('win'):
             self.programDir = self.programDir + '\\'
@@ -403,23 +403,28 @@ class my_bitmessage(object):
         if uInput in ['yes', 'y']:
             # loops if they mistype the setting name, they can exit the loop with 'exit')
             while True:
-                invalidInput = False
+                invalidInput = True
                 uInput = self.userInput('\nWhat setting would you like to modify?').lower()
                 if uInput in self.bmSettingsOptions.keys():
                     uInput2 = self.userInput('\nWhat would you like to set {0} to?'.format(uInput)).lower()
                     if uInput2 in self.bmSettingsOptions[uInput].lower():
                         CONFIG.set('bitmessagesettings', uInput, uInput2)
+                        invalidInput = False
                     elif self.bmSettingsOptions[uInput] == 'boolean':
-                        if uInput in ['true', 'false']:
+                        if uInput2 in ['true', 'false']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
+                            invalidInput = False
                     elif self.bmSettingsOptions[uinput] in ['none', 'SOCKS4a', 'SOCKS5']:
                         if uInput2 in ['none', 'socks4a', 'socks5']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
+                            invalidInput = False
                     elif self.bmSettingsOptions[uinput] in ['sha256', 'sha1']:
                         if uInput2 in ['sha256', 'sha1']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
+                            invalidInput = False
                     elif self.bmSettingsOptions[uInput] == '':
                         CONFIG.set('bitmessagesettings', uInput, uInput2)
+                        invalidInput = False
                     else:
                         print('Invalid input. Please try again')
                         invalidInput = True
@@ -429,6 +434,7 @@ class my_bitmessage(object):
                 # don't prompt if they made a mistake
                 if not invalidInput:
                     with open(self.keysName, 'wb') as configfile:
+                        CONFIG.write(configfile)
                         print('Changes made')
                         self.currentSettings()
                     uInput = self.userInput('\nWould you like to change another setting, (Y)/(n)').lower()
@@ -1644,7 +1650,7 @@ class my_bitmessage(object):
 
     def viewHelp(self):
         print('-----------------------------------------------------------------------')
-        print('|                https://github.com/RZZT/taskhive-core                |')
+        print('|             https://github.com/Bitmessage/PyBitmessage/             |')
         print('|---------------------------------------------------------------------|')
         print('|   Command               | Description                               |')
         print('|-------------------------|-------------------------------------------|')
