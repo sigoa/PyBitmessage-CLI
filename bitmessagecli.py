@@ -35,13 +35,12 @@ class my_bitmessage(object):
         self.keysPath = self.lookupAppdataFolder()
         self.keysName = self.keysPath + 'keys.dat'
         self.bmActive = False
-        # subprocess we can check with .pid to verify Bitmessage is running
-        # runBM()
+        # This is the subprocess we can check with .pid to verify Bitmessage is running ( runBM() )
         self.enableBM = ''
         self.apiImport = False
         # For whatever reason, the API doesn't connect right away unless we
         # pause for 1 second or more.
-        # Not sure if it's a xmlrpclib or BM issue
+        # Not sure if it's a xmlrpclib or BM issue, but it's annoying.
         self.first_run = True
         self.commands = {'addinfo': self.addInfo,
                          'bmsettings': self.bmSettings,
@@ -120,6 +119,8 @@ class my_bitmessage(object):
                 sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
+                # This is used to prevent against
+                # AttributeError: 'NoneType' object has no attribute 'lower'
                 self.main()
             else:
                 return uInput
@@ -140,7 +141,7 @@ class my_bitmessage(object):
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
-                print('https://github.com/RZZT/taskhive-core')
+                print('https://github.com/Bitmessage/PyBitmessage/issues')
                 sys.exit(0)
         elif sys.platform.startswith('win'):
             self.programDir = self.programDir + '\\'
@@ -185,12 +186,10 @@ class my_bitmessage(object):
     def configInit(self):
         if not os.path.isdir(self.keysPath):
             os.mkdir(self.keysPath)
-
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
             pass
-
         CONFIG.set('bitmessagesettings', 'port', '8444')
         CONFIG.set('bitmessagesettings', 'apienabled', 'True')
         CONFIG.set('bitmessagesettings', 'settingsversion', '10')
@@ -276,6 +275,8 @@ class my_bitmessage(object):
                                     CONFIG.set('bitmessagesettings', 'socksport', uInput)
                                     with open(self.keysName, 'wb') as configfile:
                                         CONFIG.write(configfile)
+                                else:
+                                    print('That\'s an invalid port number')
                             except ValueError:
                                 print('How were you expecting that to work?')
                                 invalidInput = True
@@ -336,7 +337,6 @@ class my_bitmessage(object):
             CONFIG.get('bitmessagesettings', 'socksusername')
             CONFIG.get('bitmessagesettings', 'digestalg')
             CONFIG.get('bitmessagesettings', 'sockspassword')
-            CONFIG.get('bitmessagesettings', 'socksproxytype')
             CONFIG.get('bitmessagesettings', 'socksproxytype')
             CONFIG.getboolean('bitmessagesettings', 'keysencrypted')
             CONFIG.getboolean('bitmessagesettings', 'messagesencrypted')
@@ -413,7 +413,7 @@ class my_bitmessage(object):
                         if uInput in ['true', 'false']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
                     elif self.bmSettingsOptions[uinput] in ['none', 'SOCKS4a', 'SOCKS5']:
-                        if uInput2 in ['none', 'SOCKS4a', 'SOCKS5']:
+                        if uInput2 in ['none', 'socks4a', 'socks5']:
                             CONFIG.set('bitmessagesettings', uInput, uInput2)
                     elif self.bmSettingsOptions[uinput] in ['sha256', 'sha1']:
                         if uInput2 in ['sha256', 'sha1']:
