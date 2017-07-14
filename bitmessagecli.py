@@ -37,12 +37,14 @@ class my_bitmessage(object):
         self.bmActive = False
         # This is the subprocess we can check with .pid to verify Bitmessage is running ( runBM() )
         self.enableBM = ''
+        self.already_running = False
         self.apiImport = False
         # For whatever reason, the API doesn't connect right away unless we
         # pause for 1 second or more.
         # Not sure if it's a xmlrpclib or BM issue, but it's annoying.
         self.first_run = True
         self.commands = {'addinfo': self.addInfo,
+                         'apitest': self.apiTest,
                          'bmsettings': self.bmSettings,
                          'listaddresses': self.listAdd,
                          'generateaddress': self.generateAddress,
@@ -115,7 +117,10 @@ class my_bitmessage(object):
                 self.main()
             elif uInput.lower() in ['quit', 'q']:
                 print('Shutting down..')
-                os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                try:
+                    os.killpg(os.getpgid(self.enableBM.pid), signal.SIGTERM)
+                except OSError:
+                    pass
                 sys.exit(0)
             elif uInput.lower() in ['help', 'h', '?']:
                 self.viewHelp()
@@ -377,9 +382,20 @@ class my_bitmessage(object):
             self.configInit()
 
 
+    def apiTest(self):
+        try:
+            if self.apiCheck():
+                print('API connection test has: PASSED')
+            else:
+                print('API connection test has: FAILED')
+        except socket.error:
+            self.apiImport = False
+            return False
+
+
     # Tests the API connection to bitmessage.
     # Returns true if it is connected.
-    def apiTest(self):
+    def apiCheck(self):
         try:
             result = self.api.add(2,3)
             if result == 5:
@@ -1537,6 +1553,15 @@ class my_bitmessage(object):
                 print('Invalid address')
 
 
+    def IsBitmessageRunning(self):
+        my_stdout = self.enableBM.stdout.readlines()
+        if 'Another instance' in my_stdout[-1]:
+            self.already_running = True
+        if self.enableBM.poll() is None:
+            self.already_running = False
+            self.bmActive = True
+
+
     def runBM(self):
         try:
             if self.bmActive == False and self.enableBM.poll() is None:
@@ -1564,13 +1589,7 @@ class my_bitmessage(object):
             print('Is the CLI in the same directory as bitmessagemain.py?')
             print('Shutting down..')
             sys.exit(1)
-        my_stdout = self.enableBM.stdout.readlines()
-        if 'Another instance' in my_stdout[-1]:
-            print('Bitmessage is already running')
-            print('Shutting down..')
-            sys.exit(0)
-        if self.enableBM.poll() is None:
-            self.bmActive = True
+        self.IsBitmessageRunning()
 
 
     def unreadMessageInfo(self):
@@ -1793,13 +1812,17 @@ class my_bitmessage(object):
     def main(self):
         self.apiData()
         self.runBM()
+        if self.already_running:
+            print("Bitmessage is already running")
+            print("Shutting down..")
+            sys.exit(1)
         if not self.apiImport:
             self.api = xmlrpclib.ServerProxy(self.returnApi())
-        # Bitmessage is running so this may be the first run of apiTest
+        # Bitmessage is running so this may be the first run of apiCheck
         if self.bmActive == True and self.enableBM.poll() is None:
             self.apiImport = True
         else:
-            if not self.apiTest():
+            if not self.apiCheck():
                 self.apiImport = False
             else:
                 if not self.apiImport:
