@@ -21,6 +21,11 @@ import time
 import xmlrpclib
 import string
 
+if sys.platform.startswith('win'):
+    import pyreadline as readline
+else:
+    import readline
+
 APPNAME = 'PyBitmessage'
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
@@ -37,7 +42,6 @@ class Bitmessage(object):
         self.bm_active = False
         # This is the subprocess we can check with .pid to verify Bitmessage is running ( runBM() )
         self.enable_bm = ''
-        self.already_running = False
         self.api_import = False
         # For whatever reason, the API doesn't connect right away unless we
         # pause for 1 second or more.
@@ -113,27 +117,35 @@ class Bitmessage(object):
         try:
             print('\n{0}'.format(message))
             the_input = raw_input('> ').strip()
+        except(EOFError, KeyboardInterrupt):
+            print('Shutting down..')
+            try:
+                os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGKILL)
+            # AttributeError is if we didn't get far enough to actually execute Bitmessage
+            except AttributeError as e:
+                print('PID: {0}'.format(self.enable_bm.pid))
+                print(e)
+                print(self.enable_bm.poll())
+                print(self.enable_bm.pid)
+            sys.exit(0)
+        else:
             if the_input.lower() in ['exit', 'x']:
                 self.main()
             elif the_input.lower() in ['quit', 'q']:
                 print('Shutting down..')
                 try:
-                    os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
-                except OSError:
-                    pass
+                    os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGKILL)
+                    print('Success')
+                except(AttributeError, OSError) as e:
+                    print(e)
+                    print(self.enable_bm.poll())
+                    print(self.enable_bm.pid)
                 sys.exit(0)
             elif the_input.lower() in ['help', 'h', '?']:
                 self.viewHelp()
-                # This is used to prevent against
-                # AttributeError: 'NoneType' object has no attribute 'lower'
                 self.main()
             else:
                 return the_input
-        except(EOFError, KeyboardInterrupt):
-            # AttributeError is if we didn't get far enough to actually execute Bitmessage
-            print('Shutting down..')
-            os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
-            sys.exit(0)
 
 
     def lookup_appdata_folder(self):
@@ -178,7 +190,7 @@ class Bitmessage(object):
             self.api_import = False
         else:
             if self.first_run:
-                time.sleep(1)
+                time.sleep(1.5)
                 self.first_run = False
             # Build the api credentials
             self.api_import = True
@@ -307,8 +319,9 @@ class Bitmessage(object):
                                 break
             else:
                 CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-        # catches "AttributeError: 'str' object has no attribute 'pid'"
-        # from os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
+        # This caught  "AttributeError: 'str' object has no attribute 'pid'"
+        # from os.kill(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
+        # but not sure if this is necessary now. Will need to double-check.
         # 'q'/'quit' is already printing and exiting, we just need this caught
         # to prevent noise. Later a logger will be setup to follow these kinds
         # of things better.
@@ -1488,49 +1501,43 @@ class Bitmessage(object):
                 print('Invalid address')
 
 
-    def is_bitmessage_running(self):
-        my_stdout = self.enable_bm.stdout.readlines()
-        if 'Another instance' in my_stdout[-1]:
-            self.already_running = True
-            if self.already_running and not self.bm_active:
-                print("Bitmessage is already running")
-                print("Shutting down..")
-                sys.exit(1)
-
-        elif my_stdout[-1].startswith('Running as a daemon.'):
-            self.already_running = False
-            self.bm_active = True
-
-
     def run_bitmessage(self):
-        try:
-            if self.bm_active is False and self.enable_bm.poll() is None:
-                    os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
-            elif self.bm_active is True and self.enable_bm.poll() is None:
-                    return
-        except AttributeError:
-            pass
-        try:
-            if sys.platform.startswith('win'):
-                self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
-                                                  stdout=subprocess.PIPE,
-                                                  stderr=subprocess.PIPE,
-                                                  stdin=subprocess.PIPE,
-                                                  bufsize=0)
-            else:
-                self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
-                                                  stdout=subprocess.PIPE,
-                                                  stderr=subprocess.PIPE,
-                                                  stdin=subprocess.PIPE,
-                                                  bufsize=0,
-                                                  preexec_fn=os.setpgrp,
-                                                  close_fds=True)
-        except OSError:
-            print('Is the CLI in the same directory as bitmessagemain.py?')
-            print('Shutting down..')
-            sys.exit(1)
-        else:
-            self.is_bitmessage_running()
+        if self.bm_active is not True:
+            try:
+                if sys.platform.startswith('win'):
+                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE,
+                                                       stdin=subprocess.PIPE,
+                                                       bufsize=0)
+                else:
+                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      stdin=subprocess.PIPE,
+                                                      bufsize=0,
+                                                      preexec_fn=os.setpgrp,
+                                                      close_fds=True)
+                self.bm_active = True
+            except OSError:
+                print('Is the CLI in the same directory as bitmessagemain.py?')
+                print('Shutting down..')
+                sys.exit(1)
+            try:
+                while True:
+                    bitmessage_stdout = self.enable_bm.stdout.readline()
+                    if 'Another instance' in bitmessage_stdout:
+                        if self.first_run is True:
+                            print("Bitmessage is already running")
+                            print("Shutting down..")
+                            sys.exit(1)
+                        else:
+                            break
+                    elif bitmessage_stdout.startswith('Running as a daemon.'):
+                        self.bm_active = True
+                        break
+            except AttributeError :
+                pass
 
 
     def unreadMessageInfo(self):
@@ -1550,6 +1557,7 @@ class Bitmessage(object):
                 print('\nYou have {0} unread message(s)'.format(messagesUnread))
             else:
                 return
+
 
     def generateDeterministic(self):
         deterministic = True
@@ -1614,6 +1622,8 @@ class Bitmessage(object):
             self.generateRandom()
 
 
+    # I hate how there's +7 and +9 being used.
+    # This could be done so much better
     def detect_attachment(self, message):
         # Allows multiple messages to be downloaded/saved
         while True:
@@ -1641,7 +1651,6 @@ class Bitmessage(object):
                                                                                         message[(attEndPos+4):])
             else:
                 break
-
 
 
     def viewHelp(self):
@@ -1792,6 +1801,7 @@ class Bitmessage(object):
     def main(self):
         self.api_data()
         self.run_bitmessage()
+        print(self.enable_bm.pid)
         if not self.api_import:
             self.api = xmlrpclib.ServerProxy(self.return_api())
         # Bitmessage is running so this may be the first run of api_check
