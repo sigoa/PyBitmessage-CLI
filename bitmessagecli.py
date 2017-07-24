@@ -21,6 +21,8 @@ import time
 import xmlrpclib
 import string
 
+import shutdown
+
 if sys.platform.startswith('win'):
     import pyreadline as readline
 else:
@@ -40,12 +42,10 @@ class Bitmessage(object):
         self.keys_path = self.lookup_appdata_folder()
         self.keys_name = self.keys_path + 'keys.dat'
         self.bm_active = False
-        # This is the subprocess we can check with .pid to verify Bitmessage is running ( runBM() )
+        # This is for the subprocess call and the pid ( run_bitmessage() )
         self.enable_bm = ''
         self.api_import = False
-        # For whatever reason, the API doesn't connect right away unless we
-        # pause for 1 second or more.
-        # Not sure if it's a xmlrpclib or BM issue, but it's annoying.
+        # Used for the self.api call and initial running of bitmessage
         self.first_run = True
         self.commands = {'addinfo': self.add_info,
                          'apitest': self.api_test,
@@ -120,27 +120,26 @@ class Bitmessage(object):
         except(EOFError, KeyboardInterrupt):
             print('Shutting down..')
             try:
-                os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGKILL)
+                self.enable_bm.send_signal(signal.SIGTERM)
+                print('Success')
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
             except AttributeError as e:
                 print('PID: {0}'.format(self.enable_bm.pid))
-                print(e)
                 print(self.enable_bm.poll())
                 print(self.enable_bm.pid)
-            sys.exit(0)
+            sys.exit(1)
         else:
             if the_input.lower() in ['exit', 'x']:
                 self.main()
             elif the_input.lower() in ['quit', 'q']:
                 print('Shutting down..')
                 try:
-                    os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGKILL)
+                    self.enable_bm.send_signal(signal.SIGTERM)
                     print('Success')
+                    sys.exit(1)
                 except(AttributeError, OSError) as e:
-                    print(e)
                     print(self.enable_bm.poll())
                     print(self.enable_bm.pid)
-                sys.exit(0)
             elif the_input.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
@@ -190,6 +189,9 @@ class Bitmessage(object):
             self.api_import = False
         else:
             if self.first_run:
+                # For whatever reason, the API doesn't connect right away unless
+                # we pause for 1 second or more.
+                # Not sure if it's a xmlrpclib or BM issue, but it's annoying.
                 time.sleep(1.5)
                 self.first_run = False
             # Build the api credentials
@@ -260,7 +262,7 @@ class Bitmessage(object):
         CONFIG.set('bitmessagesettings', 'hidetrayconnectionnotifications', 'False')
         CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
         CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
-        CONFIG.set('bitmessagesettings', 'opencl', 'False')
+        CONFIG.set('bitmessagesettings', 'opencl', 'None')
         with open(self.keys_name, 'wb') as configfile:
             CONFIG.write(configfile)
         try:
@@ -319,9 +321,12 @@ class Bitmessage(object):
                                 break
             else:
                 CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-        # This caught  "AttributeError: 'str' object has no attribute 'pid'"
-        # from os.kill(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
-        # but not sure if this is necessary now. Will need to double-check.
+        # This caught  "AttributeError: 'str' object has no attribute 'pid'" from
+        # os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
+        # or
+        # os.kill(self.enable_bm.pid)
+        # Not sure if this is necessary now. Will need to double-check.
+
         # 'q'/'quit' is already printing and exiting, we just need this caught
         # to prevent noise. Later a logger will be setup to follow these kinds
         # of things better.
@@ -384,7 +389,7 @@ class Bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'hidetrayconnectionnotifications')
             CONFIG.getboolean('bitmessagesettings', 'trayonclose')
             CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
-            CONFIG.getboolean('bitmessagesettings', 'opencl')
+            CONFIG.get('bitmessagesettings', 'opencl')
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             print("I'm going to ask you a series of questions..")
@@ -1088,12 +1093,12 @@ class Bitmessage(object):
             # Get the from address
             print('From: {0}'.format(inbox_messages['inboxMessages'][message_number]['fromAddress']))
             # Get the subject
-            print('Subject: {0}'.format(base64.b64decode(inbox_messages['inboxMessages'][msgNum]['subject'])))
+            print('Subject: {0}'.format(base64.b64decode(inbox_messages['inboxMessages'][message_number]['subject'])))
 
             received_time = datetime.datetime.fromtimestamp(float(inbox_messages['inboxMessages'][message_number]['receivedTime']))
             print('Received: {0}'.format(received_time.strftime('%Y-%m-%d %H:%M:%S')))
             print('Message: {0}'.format(message))
-            return Inbox_messages['inboxMessages'][msgNum]['msgid']
+            return inbox_messages['inboxMessages'][msgNum]['msgid']
         except socket.error:
             self.api_import = False
             print('Couldn\'t access inbox due to an API connection issue')
@@ -1350,12 +1355,10 @@ class Bitmessage(object):
 
             if uInput in ['reply', 'r']:
                 print('Loading...')
-                print('')
                 self.replyMsg(msgNum,'reply')
 
             elif uInput in ['forward', 'f']:
                 print('Loading...')
-                print('')
                 self.replyMsg(msgNum,'forward')
 
             elif uInput in ['delete', 'd']:
@@ -1405,11 +1408,9 @@ class Bitmessage(object):
 
             if uInput in ['reply', 'r']:
                 print('Loading...')
-                print('')
                 self.replyMsg(msgNum,'reply')
             elif uInput in ['forward', 'f']:
                 print('Loading...')
-                print('')
                 self.replyMsg(msgNum,'forward')
             elif uInput in ['delete', 'd']:
                 # Prevent accidental deletion
@@ -1786,22 +1787,9 @@ class Bitmessage(object):
         print('namecoinuser = {0}'.format(namecoinuser))
 
 
-    # Main user menu
-    def UI(self, usrInput):
-        if usrInput in self.commands.keys():
-            try:
-                self.commands[usrInput]()
-            except TypeError:
-                self.commands[usrInput][0](self.commands[usrInput][1])
-        else:
-            print('"{0}" is not a command.'.format(usrInput))
-        self.main()
-
-
     def main(self):
         self.api_data()
         self.run_bitmessage()
-        print(self.enable_bm.pid)
         if not self.api_import:
             self.api = xmlrpclib.ServerProxy(self.return_api())
         # Bitmessage is running so this may be the first run of api_check
@@ -1814,7 +1802,23 @@ class Bitmessage(object):
                 if not self.api_import:
                     self.api_import = True
         self.unreadMessageInfo()
-        self.UI(self.user_input('Type (h)elp for a list of commands.').lower())
+
+        while True:
+            try:
+                command_input = self.user_input('Type (h)elp for a list of commands.').lower()
+            except AttributeError:
+                self.enable_bm.send_signal(signal.SIGTERM)
+                print('Success')
+                sys.exit(1)
+            else:
+                if command_input in self.commands.keys():
+                    try:
+                        self.commands[command_input]()
+                    except TypeError:
+                        self.commands[command_input][0](self.commands[command_input][1])
+                else:
+                    print('"{0}" is not a command.'.format(usrInput))
+                self.main()
 
 
 if __name__ == '__main__':
