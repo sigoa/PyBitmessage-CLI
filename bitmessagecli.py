@@ -21,13 +21,6 @@ import time
 import xmlrpclib
 import string
 
-import shutdown
-
-if sys.platform.startswith('win'):
-    import pyreadline as readline
-else:
-    import readline
-
 APPNAME = 'PyBitmessage'
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
@@ -40,9 +33,11 @@ class Bitmessage(object):
         self.api = ''
         self.program_dir = os.path.dirname(__file__)
         self.keys_path = self.lookup_appdata_folder()
+        self.lockfile = self.keys_path + 'singleton.lock'
+        self.bitmessage_pid = None
         self.keys_name = self.keys_path + 'keys.dat'
         self.bm_active = False
-        # This is for the subprocess call and the pid ( run_bitmessage() )
+        # This is for the subprocess call ( run_bitmessage() )
         self.enable_bm = ''
         self.api_import = False
         # Used for the self.api call and initial running of bitmessage
@@ -120,13 +115,13 @@ class Bitmessage(object):
         except(EOFError, KeyboardInterrupt):
             print('Shutting down..')
             try:
-                self.enable_bm.send_signal(signal.SIGTERM)
+                self.bitmessage_pid = self.bitmessage_process_id()
+                os.kill(self.bitmessage_pid, signal.SIGTERM)
                 print('Success')
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
             except AttributeError as e:
-                print('PID: {0}'.format(self.enable_bm.pid))
-                print(self.enable_bm.poll())
-                print(self.enable_bm.pid)
+                print(e)
+                print('AttributeError')
             sys.exit(1)
         else:
             if the_input.lower() in ['exit', 'x']:
@@ -134,12 +129,15 @@ class Bitmessage(object):
             elif the_input.lower() in ['quit', 'q']:
                 print('Shutting down..')
                 try:
-                    self.enable_bm.send_signal(signal.SIGTERM)
+                    self.bitmessage_pid = self.bitmessage_process_id()
+                    os.kill(self.bitmessage_pid, signal.SIGTERM)
                     print('Success')
                     sys.exit(1)
                 except(AttributeError, OSError) as e:
-                    print(self.enable_bm.poll())
-                    print(self.enable_bm.pid)
+                    print(e)
+                except Exception as e:
+                    print(e)
+                    print('EXCEPTION')
             elif the_input.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
@@ -180,7 +178,7 @@ class Bitmessage(object):
         except ConfigParser.MissingSectionHeaderError:
             print("'bitmessagesettings' header is missing.")
             print("I'm going to ask you a series of questions..")
-            self.configInit()
+            self.config_init()
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             print("I'm going to ask you a series of questions..")
@@ -321,17 +319,13 @@ class Bitmessage(object):
                                 break
             else:
                 CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-        # This caught  "AttributeError: 'str' object has no attribute 'pid'" from
-        # os.killpg(os.getpgid(self.enable_bm.pid), signal.SIGTERM)
-        # or
-        # os.kill(self.enable_bm.pid)
-        # Not sure if this is necessary now. Will need to double-check.
+        # TODO - Not sure if this is necessary now. Will need to double-check.
 
         # 'q'/'quit' is already printing and exiting, we just need this caught
         # to prevent noise. Later a logger will be setup to follow these kinds
         # of things better.
         except AttributeError:
-            pass
+            print('ATTRIBUTE ERROR 1')
         with open(self.keys_name, 'wb') as configfile:
             CONFIG.write(configfile)
 
@@ -393,11 +387,11 @@ class Bitmessage(object):
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             print("I'm going to ask you a series of questions..")
-            self.configInit()
+            self.config_init()
         except ConfigParser.NoSectionError:
             print("No section 'bitmessagesettings'")
             print("I'm going to ask you a series of questions..")
-            self.configInit()
+            self.config_init()
 
 
     def api_test(self):
@@ -1502,45 +1496,6 @@ class Bitmessage(object):
                 print('Invalid address')
 
 
-    def run_bitmessage(self):
-        if self.bm_active is not True:
-            try:
-                if sys.platform.startswith('win'):
-                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE,
-                                                       stdin=subprocess.PIPE,
-                                                       bufsize=0)
-                else:
-                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
-                                                      stdout=subprocess.PIPE,
-                                                      stderr=subprocess.PIPE,
-                                                      stdin=subprocess.PIPE,
-                                                      bufsize=0,
-                                                      preexec_fn=os.setpgrp,
-                                                      close_fds=True)
-                self.bm_active = True
-            except OSError:
-                print('Is the CLI in the same directory as bitmessagemain.py?')
-                print('Shutting down..')
-                sys.exit(1)
-            try:
-                while True:
-                    bitmessage_stdout = self.enable_bm.stdout.readline()
-                    if 'Another instance' in bitmessage_stdout:
-                        if self.first_run is True:
-                            print("Bitmessage is already running")
-                            print("Shutting down..")
-                            sys.exit(1)
-                        else:
-                            break
-                    elif bitmessage_stdout.startswith('Running as a daemon.'):
-                        self.bm_active = True
-                        break
-            except AttributeError :
-                pass
-
-
     def unreadMessageInfo(self):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
@@ -1787,6 +1742,55 @@ class Bitmessage(object):
         print('namecoinuser = {0}'.format(namecoinuser))
 
 
+    def run_bitmessage(self):
+        if self.bm_active is not True:
+            try:
+                if sys.platform.startswith('win'):
+                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                                                       stdout=subprocess.PIPE,
+                                                       stderr=subprocess.PIPE,
+                                                       stdin=subprocess.PIPE,
+                                                       bufsize=0)
+                else:
+                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      stdin=subprocess.PIPE,
+                                                      bufsize=0,
+                                                      preexec_fn=os.setpgrp,
+                                                      close_fds=True)
+                self.bm_active = True
+            except OSError:
+                print('Is the CLI in the same directory as bitmessagemain.py?')
+                print('Shutting down..')
+                sys.exit(1)
+            try:
+                for each in self.enable_bm.stdout:
+                    if 'Another instance' in each:
+                        if self.first_run is True:
+                            print("Bitmessage is already running")
+                            print("Shutting down..")
+                            sys.exit(1)
+                        else:
+                            break
+                    elif each.startswith('Running as a daemon.'):
+                        self.bm_active = True
+                        break
+            except AttributeError as e:
+                print(e)
+
+
+    def bitmessage_process_id(self):
+        with open(self.lockfile, 'r') as bm_lockfile:
+            try:
+                for each in bm_lockfile:
+                    bm_pid = int(each)
+                    break
+            except ValueError as e:
+                print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
+        return bm_pid
+
+
     def main(self):
         self.api_data()
         self.run_bitmessage()
@@ -1807,7 +1811,8 @@ class Bitmessage(object):
             try:
                 command_input = self.user_input('Type (h)elp for a list of commands.').lower()
             except AttributeError:
-                self.enable_bm.send_signal(signal.SIGTERM)
+                self.bitmessage_pid = self.bitmessage_process_id()
+                os.kill(self.bitmessage_pid, signal.SIGTERM)
                 print('Success')
                 sys.exit(1)
             else:
