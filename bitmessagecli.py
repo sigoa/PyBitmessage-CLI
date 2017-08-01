@@ -31,7 +31,9 @@ class Bitmessage(object):
     def __init__(self):
         # What we'll use to actually connect to Bitmessage ( main() )
         self.api = ''
-        self.program_dir = os.path.dirname(__file__)
+        # Works even if you're in the same directory as the cli
+        # and bitmessagemain, which os.path.dirname(__file__) didn't
+        self.program_dir = os.path.dirname(os.path.realpath(__file__))
         self.keys_path = self.lookup_appdata_folder()
         self.lockfile = self.keys_path + 'singleton.lock'
         self.bitmessage_pid = None
@@ -1729,20 +1731,22 @@ class Bitmessage(object):
             try:
                 if sys.platform.startswith('win'):
                     self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
-                                                       stdout=subprocess.PIPE,
-                                                       stderr=subprocess.PIPE,
-                                                       stdin=subprocess.PIPE,
-                                                       bufsize=0)
+                                                      stdout=subprocess.PIPE,
+                                                      stderr=subprocess.PIPE,
+                                                      stdin=subprocess.PIPE,
+                                                      bufsize=0,
+                                                      cwd=self.program_dir)
                 else:
                     self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.PIPE,
                                                       stdin=subprocess.PIPE,
                                                       bufsize=0,
+                                                      cwd=self.program_dir,
                                                       preexec_fn=os.setpgrp,
                                                       close_fds=True)
                 self.bm_active = True
-            except OSError:
+            except OSError as e:
                 print('Is the CLI in the same directory as bitmessagemain.py?')
                 print('Shutting down..')
                 sys.exit(1)
