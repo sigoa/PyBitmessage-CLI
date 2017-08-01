@@ -117,7 +117,6 @@ class Bitmessage(object):
             try:
                 self.bitmessage_pid = self.bitmessage_process_id()
                 os.kill(self.bitmessage_pid, signal.SIGTERM)
-                print('Success')
             # AttributeError is if we didn't get far enough to actually execute Bitmessage
             except AttributeError as e:
                 print(e)
@@ -131,13 +130,9 @@ class Bitmessage(object):
                 try:
                     self.bitmessage_pid = self.bitmessage_process_id()
                     os.kill(self.bitmessage_pid, signal.SIGTERM)
-                    print('Success')
-                    sys.exit(1)
                 except(AttributeError, OSError) as e:
                     print(e)
-                except Exception as e:
-                    print(e)
-                    print('EXCEPTION')
+                sys.exit(1)
             elif the_input.lower() in ['help', 'h', '?']:
                 self.viewHelp()
                 self.main()
@@ -798,7 +793,7 @@ class Bitmessage(object):
         return the_attachment
 
 
-    # With no arguments sent, sendMsg fills in the blanks
+    # With no arguments sent, send_message fills in the blanks
     # subject and message must be encoded before they are passed
     def send_message(self, to_address, from_address, subject, message):
         try:
@@ -1092,7 +1087,7 @@ class Bitmessage(object):
             received_time = datetime.datetime.fromtimestamp(float(inbox_messages['inboxMessages'][message_number]['receivedTime']))
             print('Received: {0}'.format(received_time.strftime('%Y-%m-%d %H:%M:%S')))
             print('Message: {0}'.format(message))
-            return inbox_messages['inboxMessages'][msgNum]['msgid']
+            return inbox_messages['inboxMessages'][message_number]['msgid']
         except socket.error:
             self.api_import = False
             print('Couldn\'t access inbox due to an API connection issue')
@@ -1100,25 +1095,25 @@ class Bitmessage(object):
 
     # Allows you to reply to the message you are currently on.
     # Saves typing in the addresses and subject.
-    def reply_message(msgNum,forwardORreply):
+    def reply_message(message_number, forward_or_reply):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             # Address it was sent To, now the From address
-            fromAdd = inboxMessages['inboxMessages'][msgNum]['toAddress']
+            from_address = inboxMessages['inboxMessages'][message_number]['toAddress']
             # Message that you are replying to
-            message = base64.b64decode(inboxMessages['inboxMessages'][msgNum]['message'])
-            subject = inboxMessages['inboxMessages'][msgNum]['subject']
+            message = base64.b64decode(inboxMessages['inboxMessages'][message_number]['message'])
+            subject = inboxMessages['inboxMessages'][message_number]['subject']
             subject = base64.b64decode(subject)
 
-            if forwardORreply == 'reply':
+            if forward_or_reply == 'reply':
                 # Address it was From, now the To address
-                toAdd = inboxMessages['inboxMessages'][msgNum]['fromAddress']
+                to_address = inboxMessages['inboxMessages'][message_number]['fromAddress']
                 subject = 'Re: {0}'.format(subject)
-            elif forwardORreply == 'forward':
+            elif forward_or_reply == 'forward':
                 subject = 'Fwd: {0}'.format(subject)
                 while True:
-                    toAdd = self.user_input('What is the To Address?')
-                    if not self.validAddress(toAdd):
+                    to_address = self.user_input('What is the To Address?')
+                    if not self.valid_address(to_address):
                         print('Invalid Address. Please try again.')
                     else:
                         break
@@ -1126,32 +1121,19 @@ class Bitmessage(object):
                 print('Invalid Selection. Reply or Forward only')
                 return
             subject = base64.b64encode(subject)
-            newMessage = self.user_input('Enter your Message.')
+            new_message = self.user_input('Enter your Message.')
 
-            uInput = self.user_input('Would you like to add an attachment, (Y)/(n)').lower()
-            if uInput in ['yes', 'y']:
-                newMessage = newMessage + '\n\n' + self.attachment()
-            newMessage = newMessage + '\n\n' + '-' * 55 + '\n'
-            newMessage = newMessage + message
-            newMessage = base64.b64encode(newMessage)
+            add_attachment = self.user_input('Would you like to add an attachment, (Y)/(n)').lower()
+            if add_attachment in ['yes', 'y']:
+                new_message = new_message + '\n\n' + self.attachment()
+            new_message = new_message + '\n\n' + '-' * 55 + '\n'
+            new_message = new_message + message
+            new_message = base64.b64encode(new_message)
 
-            self.sendMsg(toAdd, fromAdd, subject, newMessage)
+            self.send_message(to_address, from_address, subject, new_message)
         except socket.error:
             self.api_import = False
             print('Couldn\'t send message due to an API connection issue')
-
-
-    def delete_message(self, msgNum):
-        try:
-            # Deletes a specified message from the inbox
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-            # gets the message ID via the message index number
-            msgId = inboxMessages['inboxMessages'][int(msgNum)]['msgid']
-            msgAck = self.api.trashMessage(msgId)
-            return msgAck
-        except socket.error:
-            self.api_import = False
-            print('Couldn\'t delete message due to an API connection issue')
 
 
     # Deletes a specified message from the outbox
@@ -1317,9 +1299,9 @@ class Bitmessage(object):
             else:
                 print('Invald input')
         if uInput in ['message', 'm']:
-            self.sendMsg('','','','')
+            self.send_message('','','','')
         elif uInput in ['broadcast', 'b']:
-            self.sendBrd('','','')
+            self.send_broadcast('','','')
 
 
     def read_something(self):
@@ -1472,7 +1454,7 @@ class Bitmessage(object):
     def add_adress_book(self):
         while True:
             address = self.user_input('Enter address')
-            if self.validAddress(address):
+            if self.valid_address(address):
                 label = self.user_input('Enter label')
                 if label:
                     break
@@ -1488,7 +1470,7 @@ class Bitmessage(object):
     def deleteAddressBook(self):
         while True:
             address = self.user_input('Enter address')
-            if self.validAddress(address):
+            if self.valid_address(address):
                 res = self.deleteAddressFromAddressBook(address)
                 if res in 'Deleted address book entry':
                      print('{0} has been deleted!'.format(address))
@@ -1784,11 +1766,10 @@ class Bitmessage(object):
         with open(self.lockfile, 'r') as bm_lockfile:
             try:
                 for each in bm_lockfile:
-                    bm_pid = int(each)
-                    break
+                    return int(each)
             except ValueError as e:
                 print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-        return bm_pid
+                sys.exit(1)
 
 
     def main(self):
@@ -1797,7 +1778,7 @@ class Bitmessage(object):
         if not self.api_import:
             self.api = xmlrpclib.ServerProxy(self.return_api())
         # Bitmessage is running so this may be the first run of api_check
-        if self.bm_active == True and self.enable_bm.poll() is None:
+        if self.bm_active is True and self.enable_bm.poll() is None:
             self.api_import = True
         else:
             if not self.api_check():
@@ -1808,22 +1789,15 @@ class Bitmessage(object):
         self.unreadMessageInfo()
 
         while True:
-            try:
-                command_input = self.user_input('Type (h)elp for a list of commands.').lower()
-            except AttributeError:
-                self.bitmessage_pid = self.bitmessage_process_id()
-                os.kill(self.bitmessage_pid, signal.SIGTERM)
-                print('Success')
-                sys.exit(1)
+            command_input = self.user_input('Type (h)elp for a list of commands.').lower()
+            if command_input in self.commands.keys():
+                try:
+                    self.commands[command_input]()
+                except TypeError:
+                    self.commands[command_input][0](self.commands[command_input][1])
             else:
-                if command_input in self.commands.keys():
-                    try:
-                        self.commands[command_input]()
-                    except TypeError:
-                        self.commands[command_input][0](self.commands[command_input][1])
-                else:
-                    print('"{0}" is not a command.'.format(usrInput))
-                self.main()
+                print('"{0}" is not a command.'.format(command_input))
+            self.main()
 
 
 if __name__ == '__main__':
