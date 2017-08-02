@@ -1418,7 +1418,7 @@ class Bitmessage(object):
                     try:
                         if message_number in ['all', 'a'] or int(message_number) == total_messages:
                             break
-                        elif int(message_number) >= total_messages:, 
+                        elif int(message_number) >= total_messages:
                             break
                         else:
                             print('Invalid input')
