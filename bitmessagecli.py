@@ -187,7 +187,7 @@ class Bitmessage(object):
                 # For whatever reason, the API doesn't connect right away unless
                 # we pause for 1 second or more.
                 # Not sure if it's a xmlrpclib or BM issue, but it's annoying.
-                time.sleep(1.5)
+                time.sleep(2.5)
                 self.first_run = False
             # Build the api credentials
             self.api_import = True
@@ -984,11 +984,11 @@ class Bitmessage(object):
             self.api_import = False
             print('Couldn\'t access inbox due to an API connection issue')
         else:        
-            number_of_messages = len(inbox_messages['inboxMessages'])
+            total_messages = len(inbox_messages['inboxMessages'])
             messages_printed = 0
             messages_unread = 0
             # processes all of the messages in the inbox
-            for each in range (0, number_of_messages):
+            for each in range (0, total_messages):
                 message = inbox_messages['inboxMessages'][each]
                 # if we are displaying all messages or
                 # if this message is unread then display it
@@ -1007,16 +1007,16 @@ class Bitmessage(object):
                     if not message['read']:
                         messages_unread += 1
             print('-----------------------------------')
-            print('There are {0:d} unread messages of {1:d} in the inbox.'.format(messages_unread, number_of_messages))
+            print('There are {0:d} unread messages of {1:d} in the inbox.'.format(messages_unread, total_messages))
             print('-----------------------------------')
 
 
     def outbox(self):
         try:
             outbox_messages = json.loads(self.api.getAllSentMessages())
-            number_of_messages = len(outbox_messages['sentMessages'])
+            total_messages = len(outbox_messages['sentMessages'])
             # processes all of the messages in the outbox
-            for each in range(0, number_of_messages):
+            for each in range(0, total_messages):
                 print('-----------------------------------')
                 # Message Number
                 print('Message Number: {0}'.format(each))
@@ -1035,7 +1035,7 @@ class Bitmessage(object):
             print('Couldn\'t access outbox due to an API connection issue')
         else:
             print('-----------------------------------')
-            print('There are {0} messages in the outbox.'.format(number_of_messages))
+            print('There are {0} messages in the outbox.'.format(total_messages))
             print('-----------------------------------')
 
 
@@ -1043,8 +1043,8 @@ class Bitmessage(object):
     def read_sent_message(self, message_number):
         try:
             outbox_messages = json.loads(self.api.getAllSentMessages())
-            number_of_messages = len(outbox_messages['sentMessages'])
-            if message_number >= number_of_messages:
+            total_messages = len(outbox_messages['sentMessages'])
+            if message_number >= total_messages:
                 print('Invalid Message Number')
                 self.main()
 
@@ -1071,8 +1071,8 @@ class Bitmessage(object):
     def read_message(self, message_number):
         try:
             inbox_messages = json.loads(self.api.getAllInboxMessages())
-            number_of_messages = len(inbox_messages['inboxMessages'])
-            if message_number >= number_of_messages:
+            total_messages = len(inbox_messages['inboxMessages'])
+            if message_number >= total_messages:
                 print('Invalid Message Number.')
                 self.main()
 
@@ -1139,13 +1139,14 @@ class Bitmessage(object):
 
 
     # Deletes a specified message from the outbox
-    def delSentMsg(self, msgNum):
+    def delete_sent_message(self, message_number):
         try:
-            outboxMessages = json.loads(self.api.getAllSentMessages())
+            outbox_messages = json.loads(self.api.getAllSentMessages())
             # gets the message ID via the message index number
-            msgId = outboxMessages['sentMessages'][int(msgNum)]['msgid']
-            msgAck = self.api.trashSentMessage(msgId)
-            return msgAck
+            # TODO - message_number is wrapped in an int(), needed?
+            message_id = outbox_messages['sentMessages'][int(message_number)]['msgid']
+            message_ack = self.api.trashSentMessage(msgId)
+            return message_ack
         except socket.error:
             self.api_import = False
             print('Couldn\'t delete message due to an API connection issue')
@@ -1155,11 +1156,11 @@ class Bitmessage(object):
         try:
             response = self.api.listAddressBookEntries()
             if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-            addressBook = json.loads(response)
-            if addressBook['addresses']:
+                return self.get_api_error_code(response)
+            address_book = json.loads(response)
+            if address_book['addresses']:
                 print('-------------------------------------')
-                for each in addressBook['addresses']:
+                for each in address_book['addresses']:
                     print('Label: {0}'.format(base64.b64decode(each['label'])))
                     print('Address: {0}'.format(each['address']))
                     print('-------------------------------------')
@@ -1174,44 +1175,34 @@ class Bitmessage(object):
         try:
             response = self.api.addAddressBookEntry(address, base64.b64encode(label))
             if 'API Error' in response:
-                return self.getAPIErrorCode(response)
+                return self.get_api_error_code(response)
         except socket.error:
             self.api_import = False
             print('Couldn\'t add to address book due to an API connection issue')
 
 
-    def delete_address_book(self, address):
-        try:
-            response = self.api.deleteAddressBookEntry(address)
-            if 'API Error' in response:
-                return self.getAPIErrorCode(response)
-        except socket.error:
-            self.api_import = False
-            print('Couldn\'t delete from address book due to an API connection issue')
-
-
     def get_api_error_code(self, response):
         if 'API Error' in response:
-            # if we got an API error return the number by getting the number
+            # If we have an API error, return the number by getting
             # after the second space and removing the trailing colon
             return int(response.split()[2][:-1])
 
 
-    def markMessageRead(self, messageID):
+    def mark_message_read(self, message_id):
         try:
-            response = self.api.getInboxMessageByID(messageID, True)
+            response = self.api.getInboxMessageByID(message_id, True)
             if 'API Error' in response:
-                return self.getAPIErrorCode(response)
+                return self.get_api_error_code(response)
         except socket.error:
             self.api_import = False
             print('Couldn\'t mark message as read due to an API connection issue')
 
 
-    def markMessageUnread(self, messageID):
+    def mark_message_unread(self, message_id):
         try:
-            response = self.api.getInboxMessageByID(messageID, False)
+            response = self.api.getInboxMessageByID(message_id, False)
             if 'API Error' in response:
-               return self.getAPIErrorCode(response)
+               return self.get_api_error_code(response)
         except socket.error:
             self.api_import = False
             print('Couldn\'t mark message as unread due to an API connection issue')
@@ -1219,10 +1210,10 @@ class Bitmessage(object):
 
     def mark_all_messages_read(self):
         try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-            for message in inboxMessages:
+            inbox_messages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
+            for message in inbox_messages:
                 if not message['read']:
-                    markMessageRead(message['msgid'])
+                    mark_message_read(message['msgid'])
         except socket.error:
             self.api_import = False
             print('Couldn\'t mark all messages read due to an API connection issue')
@@ -1230,41 +1221,41 @@ class Bitmessage(object):
 
     def mark_all_messages_unread(self):
         try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
-            for message in inboxMessages:
+            inbox_messages = json.loads(self.api.getAllInboxMessages())['inboxMessages']
+            for message in inbox_messages:
                 if message['read']:
-                    markMessageUnread(message['msgid'])
+                    mark_message_unread(message['msgid'])
         except socket.error:
             self.api_import = False
             print('Couldn\'t mark all messages unread due to an API connection issue')
 
 
-    def deleteInboxMessages(self):
+    def delete_inbox_messages(self):
         try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
-            numMessages = len(inboxMessages['inboxMessages'])
+            inbox_messages = json.loads(self.api.getAllInboxMessages())
+            total_messages = len(inbox_messages['inboxMessages'])
 
             while True:
-                msgNum = self.user_input('Enter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
+                message_number = self.user_input('Enter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
                 try:
-                    if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                    if message_number in ['all', 'a'] or int(msgNum) == total_messages:
                         break
-                    elif int(msgNum) >= numMessages:
+                    elif int(message_number) >= total_messages:
                         print('Invalid Message Number')
-                    elif int(msgNum) <= numMessages:
+                    elif int(message_number) <= numMessages:
                         break
                     else:
                         print('Invalid input')
                 except ValueError:
                     print('Invalid input')
             # Prevent accidental deletion
-            uInput = self.user_input('Are you sure, (Y)/(n)').lower()
+            delete_verify = self.user_input('Are you sure, (Y)/(n)').lower()
 
-            if uInput in ['yes', 'y']:
-                if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+            if delete_verify in ['yes', 'y']:
+                if message_number in ['all', 'a'] or int(message_number) == total_messages:
                     # Processes all of the messages in the inbox
-                    for msgNum in range (0, numMessages):
-                        print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
+                    for message_number in range (0, total_messages):
+                        print('Deleting message {0} of {1}'.format(message_number+1, total_messages))
                         self.delMsg(0)
                     print('Inbox is empty.')
                 else:
@@ -1318,11 +1309,11 @@ class Bitmessage(object):
 
         if uInput in ['inbox', 'i']:
             print('Loading...')
-            messageID = self.readMsg(msgNum)
+            message_id = self.readMsg(message_number)
 
             uInput = self.user_input('Would you like to keep this message unread, (Y)/(n)').lower()
             if uInput not in ['yes', 'y']:
-                self.markMessageRead(messageID)
+                self.markMessageRead(message_id)
 
             while True:
                 uInput = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
@@ -1361,92 +1352,85 @@ class Bitmessage(object):
 
     def save_message(self):
         while True:
-            uInput = self.user_input('Would you like to read a message from the (I)nbox or (O)utbox?').lower()
-            if uInput in ['inbox', 'outbox', 'i', 'o']:
+            which_box = self.user_input('Would you like to read a message from the (I)nbox or (O)utbox?').lower()
+            if which_box in ['inbox', 'outbox', 'i', 'o']:
                 break
         try:
-            msgNum = int(self.user_input('What is the number of the message you wish to open?').lower())
+            message_number = int(self.user_input('What is the number of the message you wish to open?').lower())
         except ValueError:
             print("That's not a whole number")
 
-        if uInput in ['inbox', 'i']:
+        if which_box in ['inbox', 'i']:
             print('Loading...')
-            messageID = self.readMsg(msgNum)
-            uInput = self.user_input('Would you like to keep this message unread, (Y)/(n)').lower()
+            message_id = self.read_message(message_number)
+            keep_unread = self.user_input('Would you like to keep this message unread, (Y)/(n)').lower()
 
-            if uInput not in ['yes', 'y']:
-                self.markMessageRead(messageID)
+            if keep_unread not in ['yes', 'y']:
+                self.mark_message_read(message_id)
 
             while True:
-                uInput = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
-                if uInput in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
+                message_options = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
+                if message_options in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
                     break
                 else:
                     print('Invalid input')
 
-            if uInput in ['reply', 'r']:
+            if message_options in ['reply', 'r']:
                 print('Loading...')
-                self.replyMsg(msgNum,'reply')
-            elif uInput in ['forward', 'f']:
+                self.reply_message(message_number,'reply')
+            elif message_options in ['forward', 'f']:
                 print('Loading...')
-                self.replyMsg(msgNum,'forward')
-            elif uInput in ['delete', 'd']:
+                self.reply_message(message_number,'forward')
+            elif message_options in ['delete', 'd']:
                 # Prevent accidental deletion
-                uInput = self.user_input('Are you sure, (Y)/(n)').lower()
+                verify_delete = self.user_input('Are you sure, (Y)/(n)').lower()
 
-                if uInput in ['yes', 'y']:
-                    self.delMsg(msgNum)
+                if verify_delete in ['yes', 'y']:
+                    self.delete_message(message_number)
                     print('Message Deleted.')
  
-        elif uInput in ['outbox', 'o']:
-            self.readSentMsg(msgNum)
+        elif which_box in ['outbox', 'o']:
+            self.read_sent_message(message_number)
             # Gives the user the option to delete the message
-            uInput = self.user_input('Would you like to Delete this message, (Y)/(n)').lower()
+            delete_message = self.user_input('Would you like to Delete this message, (Y)/(n)').lower()
 
-            if uInput in ['yes', 'y']:
+            if delete_message in ['yes', 'y']:
                 # Prevent accidental deletion
-                uInput = self.user_input('Are you sure, (Y)/(n)').lower()
+                verify_delete = self.user_input('Are you sure, (Y)/(n)').lower()
 
-                if uInput in ['yes', 'y']:
-                    self.delSentMsg(msgNum)
+                if verify_delete in ['yes', 'y']:
+                    self.delete_sent_message(message_number)
                     print('Message Deleted.')
 
 
     def delete_message(self):
         try:
-            uInput = self.user_input('Would you like to delete a message from the (I)nbox or (O)utbox?').lower()
+            which_box = self.user_input('Would you like to delete a message from the (I)nbox or (O)utbox?').lower()
 
-            if uInput in ['inbox', 'i']:
-                self.deleteInboxMessages()
-            elif uInput in ['outbox', 'o']:
-                outboxMessages = json.loads(self.api.getAllSentMessages())
-                numMessages = len(outboxMessages['sentMessages'])
+            if which_box in ['inbox', 'i']:
+                self.delete_inbox_messages()
+            elif which_box in ['outbox', 'o']:
+                outbox_messages = json.loads(self.api.getAllSentMessages())
+                total_messages = len(outbox_messages['sentMessages'])
 
                 while True:
-                    msgNum = self.user_input('Enter the number of the message you wish to delete or (A)ll to empty the outbox.').lower()
+                    message_number = self.user_input('Enter the number of the message you wish to delete or (A)ll to empty the outbox.').lower()
                     try:
-                        if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                        if message_number in ['all', 'a'] or int(message_number) == total_messages:
                             break
-                        elif int(msgNum) >= numMessages:
-                            print('Invalid Message Number')
-                        elif int(msgNum) <= numMessages:
+                        elif int(message_number) >= total_messages:, 
                             break
-                        else:
-                            print('Invalid input')
-                    except ValueError:
-                        print('Invalid input')
-                # Prevent accidental deletion
-                uInput = self.user_input('Are you sure, (Y)/(n)').lower()
+                        else:.nfb.;;'>sut('Are you sure, (Y)/(n)').lower()
 
-                if uInput in ['yes', 'y']:
-                    if msgNum in ['all', 'a'] or int(msgNum) == numMessages:
+                if verify_deletion in ['yes', 'y']:
+                    if message_number in ['all', 'a'] or int(message_number) == total_messages:
                         # processes all of the messages in the outbox
-                        for msgNum in range (0, numMessages):
-                            print('Deleting message {0} of {1}'.format(msgNum+1, numMessages))
-                            self.delSentMsg(0)
+                        for message_number in range (0, total_messages):
+                            print('Deleting message {0} of {1}'.format(message_number+1, total_messages))
+                            self.delete_sent_message(0)
                         print('Outbox is empty.')
                     else:
-                        self.delSentMsg(int(msgNum))
+                        self.delete_sent_message(int(message_number))
                     print('Notice: Message numbers may have changed.')
         except socket.error:
             self.api_import = False
@@ -1469,15 +1453,27 @@ class Bitmessage(object):
             print('Error: Address already exists in Address Book.')
 
 
-    def deleteAddressBook(self):
+    def delete_address_book(self):
         while True:
             address = self.user_input('Enter address')
             if self.valid_address(address):
-                res = self.deleteAddressFromAddressBook(address)
+                res = self.delete_address_book2(address)
                 if res in 'Deleted address book entry':
                      print('{0} has been deleted!'.format(address))
             else:
                 print('Invalid address')
+
+
+    def delete_address_book2(self, address):
+        try:
+            response = self.api.deleteAddressBookEntry(address)
+            if 'API Error' in response:
+                return self.get_api_error_code(response)
+            else:
+                return response
+        except socket.error:
+            self.api_import = False
+            print('Couldn\'t delete from address book due to an API connection issue')
 
 
     def unreadMessageInfo(self):
@@ -1636,7 +1632,7 @@ class Bitmessage(object):
         print('-----------------------------------------------------------------------')
 
 
-    def currentSettings(self):
+    def current_settings(self):
         CONFIG.read(self.keys_name)
         daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
         timeformat = CONFIG.get('bitmessagesettings', 'timeformat')
