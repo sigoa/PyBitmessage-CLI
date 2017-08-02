@@ -462,7 +462,7 @@ class Bitmessage(object):
                     with open(self.keys_name, 'wb') as configfile:
                         CONFIG.write(configfile)
                         print('Changes made')
-                        self.currentSettings()
+                        self.current_settings()
                     uInput = self.user_input('Would you like to change another setting, (Y)/(n)').lower()
                     if uInput not in ['yes', 'y']:
                         break
@@ -1238,7 +1238,7 @@ class Bitmessage(object):
             while True:
                 message_number = self.user_input('Enter the number of the message you wish to delete or (A)ll to empty the inbox.').lower()
                 try:
-                    if message_number in ['all', 'a'] or int(msgNum) == total_messages:
+                    if message_number in ['all', 'a'] or int(message_number) == total_messages:
                         break
                     elif int(message_number) >= total_messages:
                         print('Invalid Message Number')
@@ -1256,10 +1256,11 @@ class Bitmessage(object):
                     # Processes all of the messages in the inbox
                     for message_number in range (0, total_messages):
                         print('Deleting message {0} of {1}'.format(message_number+1, total_messages))
-                        self.delMsg(0)
+                        self.delete_message(0)
                     print('Inbox is empty.')
                 else:
-                    self.delMsg(int(msgNum))
+                    # No need for a try/except since it was already verified up above!
+                    self.delete_message(int(message_number))
                 print('Notice: Message numbers may have changed.')
         except socket.error:
             self.api_import = False
@@ -1286,67 +1287,69 @@ class Bitmessage(object):
 
     def send_something(self):
         while True:
-            uInput = self.user_input('Would you like to send a (M)essage or (B)roadcast?').lower()
-            if uInput in ['message', 'm', 'broadcast', 'b']:
+            send_which = self.user_input('Would you like to send a (M)essage or (B)roadcast?').lower()
+            if send_which in ['message', 'm', 'broadcast', 'b']:
                 break
             else:
                 print('Invald input')
-        if uInput in ['message', 'm']:
+        if send_which in ['message', 'm']:
             self.send_message('','','','')
-        elif uInput in ['broadcast', 'b']:
+        elif send_which in ['broadcast', 'b']:
             self.send_broadcast('','','')
 
 
     def read_something(self):
         while True:
-            uInput = self.user_input('Would you like to read a message from the (I)nbox or (O)utbox?').lower()
-            if uInput in ['inbox', 'outbox', 'i', 'o']:
+            read_which = self.user_input('Would you like to read a message from the (I)nbox or (O)utbox?').lower()
+            if read_which in ['inbox', 'outbox', 'i', 'o']:
                 break
+            else:
+                print('Invalid input')
         try:
-            msgNum = int(self.user_input('What is the number of the message you wish to open?').lower())
+            message_number = int(self.user_input('What is the number of the message you wish to open?').lower())
         except ValueError:
             print("That's not a whole number")
 
-        if uInput in ['inbox', 'i']:
+        if read_which in ['inbox', 'i']:
             print('Loading...')
-            message_id = self.readMsg(message_number)
+            message_id = self.read_message(message_number)
 
-            uInput = self.user_input('Would you like to keep this message unread, (Y)/(n)').lower()
-            if uInput not in ['yes', 'y']:
-                self.markMessageRead(message_id)
+            verify_unread = self.user_input('Would you like to keep this message unread, (Y)/(n)').lower()
+            if verify_unread not in ['yes', 'y']:
+                self.mark_message_read(message_id)
 
             while True:
-                uInput = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
-                if uInput in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
+                do_which = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
+                if do_which in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
                     break
                 else:
                     print('Invalid input')
 
-            if uInput in ['reply', 'r']:
+            if do_which in ['reply', 'r']:
                 print('Loading...')
-                self.replyMsg(msgNum,'reply')
+                self.reply_message(message_number,'reply')
 
-            elif uInput in ['forward', 'f']:
+            elif do_which in ['forward', 'f']:
                 print('Loading...')
-                self.replyMsg(msgNum,'forward')
+                self.reply_message(message_number,'forward')
 
-            elif uInput in ['delete', 'd']:
+            elif do_which in ['delete', 'd']:
                 # Prevent accidental deletion
-                uInput = self.user_input('Are you sure, (Y)/(n)').lower()
-                if uInput in ['yes', 'y']:
-                    self.delMsg(msgNum)
+                verify_delete = self.user_input('Are you sure, (Y)/(n)').lower()
+                if verify_delete in ['yes', 'y']:
+                    self.delete_message(message_number)
                     print('Message Deleted.')
  
-        elif uInput in ['outbox', 'o']:
-            self.readSentMsg(msgNum)
+        elif read_which in ['outbox', 'o']:
+            self.read_sent_message(message_number)
             # Gives the user the option to delete the message
-            uInput = self.user_input('Would you like to Delete this message, (Y)/(n)').lower()
-            if uInput in ['yes', 'y']:
+            delete_this = self.user_input('Would you like to Delete this message, (Y)/(n)').lower()
+            if delete_this in ['yes', 'y']:
                 # Prevent accidental deletion
-                uInput = self.user_input('Are you sure, (Y)/(n)').lower()
+                verify_delete = self.user_input('Are you sure, (Y)/(n)').lower()
 
-                if uInput in ['yes', 'y']:
-                    self.delSentMsg(msgNum)
+                if verify_delete in ['yes', 'y']:
+                    self.delete_sent_message(message_number)
                     print('Message Deleted.')
 
 
@@ -1480,63 +1483,66 @@ class Bitmessage(object):
             print('Couldn\'t delete from address book due to an API connection issue')
 
 
-    def unreadMessageInfo(self):
+    def unread_message_info(self):
         try:
-            inboxMessages = json.loads(self.api.getAllInboxMessages())
+            inbox_messages = json.loads(self.api.getAllInboxMessages())
         except socket.error:
             self.api_import = False
             print('Can\'t retrieve unread messages due to an API connection issue')
         else:
             CONFIG.read(self.keys_name)
-            messagesUnread = 0
-            for each in inboxMessages['inboxMessages']:
+            unread_messages = 0
+            for each in inbox_messages['inboxMessages']:
                 if not each['read']:
                     if each['toAddress'] in CONFIG.sections():
-                        messagesUnread += 1
-            if messagesUnread >= 1 and len(CONFIG.sections()) >= 2:
-                print('\nYou have {0} unread message(s)'.format(messagesUnread))
+                        unread_messages += 1
+            # If the bitmessageheader is there, AND you have at least one address
+            if unread_messages >= 1 and len(CONFIG.sections()) >= 2:
+                print('\nYou have {0} unread message(s)'.format(unread_messages))
             else:
                 return
 
 
-    def generateDeterministic(self):
+    def generate_deterministic(self):
         deterministic = True
-        lbl = self.user_input('Label the new address:')
+        label = self.user_input('Label the new address:')
         passphrase = self.user_input('Enter the Passphrase.')
 
         while True:
             try:
-                numOfAdd = int(self.user_input('How many addresses would you like to generate?').lower())
+                number_of_addresses = int(self.user_input('How many addresses would you like to generate?').lower())
             except ValueError:
                 print("That's not a whole number.")
-            if numOfAdd <= 0:
-                print('How were you expecting that to work?')
-            elif numOfAdd >= 1000:
-                print('Limit of 999 addresses generated at once.')
             else:
-                break
-        addVNum = 3
-        streamNum = 1
-        isRipe = self.user_input('Shorten the address, (Y)/(n)').lower()
+                if number_of_addresses <= 0:
+                    print('How were you expecting that to work?')
+                elif number_of_addresses >= 1000:
+                    print('Limit of 999 addresses generated at once.')
+                else:
+                    break
+        address_version = 3
+        # TODO - I hate that this is hardcoded..
+        stream_number = 1
+        is_ripe = self.user_input('Shorten the address, (Y)/(n)').lower()
         print('Generating, please wait...')
 
-        if isRipe in ['yes', 'y']:
+        if is_ripe in ['yes', 'y']:
             ripe = True
         else:
             ripe = False
         # TODO - Catch the error that happens when deterministic is not True/False
-        genAddrs = self.generate_address(lbl,deterministic, passphrase, numOfAdd, addVNum, streamNum, ripe)
-        jsonAddresses = json.loads(genAddrs)
+        generated_address = self.generate_address(label,deterministic,passphrase,number_of_addresses,address_version,stream_number,ripe)
+        json_addresses = json.loads(generated_address)
 
-        if numOfAdd >= 2:
+        if number_of_addresses >= 2:
             print('Addresses generated: ')
-        elif numOfAdd == 1:
+        elif number_of_addresses == 1:
             print('Address generated: ')
-        for each in jsonAddresses['addresses']:
+        for each in json_addresses['addresses']:
             print(each)
 
 
-    def generateRandom(self):
+    def generate_random(self):
         deterministic = False
         lbl = self.user_input('Enter the label for the new address.')
         generated_address = self.generate_address(lbl, deterministic, '', '', '', '', '')
@@ -1547,19 +1553,19 @@ class Bitmessage(object):
             print('An error has occured')
 
 
-    def generateAddress(self):
+    def generate_address(self):
         while True:
-            uInput = self.user_input('Would you like to create a (D)eterministic or (R)andom address?').lower()
-            if uInput in ['deterministic', 'd', 'random', 'r']:
+            type_of_address = self.user_input('Would you like to create a (D)eterministic or (R)andom address?').lower()
+            if type_of_address in ['deterministic', 'd', 'random', 'r']:
                 break
             else:
                 print('Invalid input')
         # Creates a deterministic address
-        if uInput in ['deterministic', 'd']:
-            self.generateDeterministic()
+        if type_of_address in ['deterministic', 'd']:
+            self.generate_deterministic()
         # Creates a random address with user-defined label
-        elif uInput in ['random', 'r']:
-            self.generateRandom()
+        elif type_of_address in ['random', 'r']:
+            self.generate_random()
 
 
     # I hate how there's +7 and +9 being used.
@@ -1584,9 +1590,11 @@ class Bitmessage(object):
 
                 save_attachment = self.user_input('Attachment Detected. Would you like to save the attachment, (Y)/(n)').lower()
                 if save_attachment in ['yes', 'y']:
+                    # TODO - This is tacky and should be replaced
                     attachment = message[attachment_position+9:end_position]
                     self.save_file(file_name,attachment)
 
+                # TODO - This is also tacky and should also be replaced
                 message = '{0}~<Attachment data removed for easier viewing>~{1}'.format(message[:find_position],
                                                                                         message[(attEndPos+4):])
             else:
@@ -1674,7 +1682,7 @@ class Bitmessage(object):
         hidetrayconnectionnotifications = CONFIG.getboolean('bitmessagesettings', 'hidetrayconnectionnotifications')
         trayonclose = CONFIG.getboolean('bitmessagesettings', 'trayonclose')
         willinglysendtomobile = CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
-        opencl = CONFIG.getboolean('bitmessagesettings', 'opencl')
+        opencl = CONFIG.get('bitmessagesettings', 'opencl')
         print('-----------------------------------')
         print('|   Current Bitmessage Settings   |')
         print('-----------------------------------')
@@ -1790,7 +1798,7 @@ class Bitmessage(object):
             else:
                 if not self.api_import:
                     self.api_import = True
-        self.unreadMessageInfo()
+        self.unread_message_info()
 
         while True:
             command_input = self.user_input('Type (h)elp for a list of commands.').lower()
