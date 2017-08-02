@@ -1420,8 +1420,12 @@ class Bitmessage(object):
                             break
                         elif int(message_number) >= total_messages:, 
                             break
-                        else:.nfb.;;'>sut('Are you sure, (Y)/(n)').lower()
-
+                        else:
+                            print('Invalid input')
+                    except ValueError:
+                        print('Invalid input')
+                # Prevent accidental deletion
+                verify_deletion = self.user_input('Are you sure, (Y)/(n)').lower()
                 if verify_deletion in ['yes', 'y']:
                     if message_number in ['all', 'a'] or int(message_number) == total_messages:
                         # processes all of the messages in the outbox
