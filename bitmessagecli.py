@@ -5,6 +5,7 @@
 # Distributed under the MIT/X11 software license
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
+import argparse
 import base64
 import ConfigParser
 import datetime
@@ -22,9 +23,14 @@ import xmlrpclib
 import string
 
 APPNAME = 'PyBitmessage'
+PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
+
+PARSER.add_argument("--portable", action='store_true')
+PARSER.add_argument("--daemon", action='store_true')
+ARGS = PARSER.parse_args()
 
 
 class Bitmessage(object):
@@ -34,7 +40,11 @@ class Bitmessage(object):
         # Works even if you're in the same directory as the cli
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
-        self.keys_path = self.lookup_appdata_folder()
+        if ARGS.portable is True:
+            self.portable_mode_path()
+            self.keys_path = self.program_dir
+        else:
+            self.keys_path = self.lookup_appdata_folder()
         self.lockfile = self.keys_path + 'singleton.lock'
         self.bitmessage_pid = None
         self.keys_name = self.keys_path + 'keys.dat'
@@ -44,6 +54,7 @@ class Bitmessage(object):
         self.api_import = False
         # Used for the self.api call and initial running of bitmessage
         self.first_run = True
+        self.daemon_setting = None
         self.commands = {'addinfo': self.add_info,
                          'apitest': self.api_test,
                          'bmsettings': self.bm_settings,
@@ -108,6 +119,15 @@ class Bitmessage(object):
                                   'opencl': 'boolean'}
 
 
+    def portable_mode_path(self):
+        if sys.platform.startswith('darwin'):
+            self.program_dir = self.program_dir + '/'
+        elif sys.platform.startswith('win'):
+            self.program_dir = self.program_dir + '\\'
+        else:
+            self.program_dir = self.program_dir + '/'
+
+
     # Checks input for exit or quit, strips all input,
     # and catches keyboard exits
     def user_input(self, message):
@@ -132,7 +152,7 @@ class Bitmessage(object):
                 try:
                     self.bitmessage_pid = self.bitmessage_process_id()
                     os.kill(self.bitmessage_pid, signal.SIGTERM)
-                except(AttributeError, OSError) as e:
+                except(AttributeError, OSError, TypeError) as e:
                     print(e)
                 sys.exit(1)
             elif the_input.lower() in ['help', 'h', '?']:
@@ -198,8 +218,11 @@ class Bitmessage(object):
 
 
     def config_init(self):
-        if not os.path.isdir(self.keys_path):
-            os.mkdir(self.keys_path)
+        if ARGS.portable is True:
+            pass
+        else:
+            if not os.path.isdir(self.keys_path):
+                os.mkdir(self.keys_path)
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
@@ -1775,13 +1798,13 @@ class Bitmessage(object):
 
 
     def bitmessage_process_id(self):
-        with open(self.lockfile, 'r') as bm_lockfile:
-            try:
+        try:
+            with open(self.lockfile, 'r') as bm_lockfile:
                 for each in bm_lockfile:
                     return int(each)
-            except ValueError as e:
-                print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-                sys.exit(1)
+        except(IOError, ValueError) as e:
+            print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
+            sys.exit(1)
 
 
     def main(self):
