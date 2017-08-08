@@ -5,6 +5,7 @@
 # Distributed under the MIT/X11 software license
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
+import argparse
 import base64
 import ConfigParser
 import datetime
@@ -22,9 +23,14 @@ import xmlrpclib
 import string
 
 APPNAME = 'PyBitmessage'
+PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
+
+PARSER.add_argument("--portable", action='store_true')
+PARSER.add_argument("--daemon", action='store_true')
+ARGS = PARSER.parse_args()
 
 
 class Bitmessage(object):
@@ -34,10 +40,13 @@ class Bitmessage(object):
         # Works even if you're in the same directory as the cli
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
-        self.keys_path = self.lookup_appdata_folder()
-        self.lockfile = self.keys_path + 'singleton.lock'
+        if ARGS.portable is True:
+            self.keys_path = self.program_dir
+        else:
+            self.keys_path = self.lookup_appdata_folder()
+        self.lockfile = os.path.join(self.keys_path, 'singleton.lock')
         self.bitmessage_pid = None
-        self.keys_name = self.keys_path + 'keys.dat'
+        self.keys_name = os.path.join(self.keys_path, 'keys.dat')
         self.bm_active = False
         # This is for the subprocess call ( run_bitmessage() )
         self.enable_bm = ''
@@ -107,7 +116,6 @@ class Bitmessage(object):
                                   'willinglysendtomobile': '',
                                   'opencl': 'boolean'}
 
-
     # Checks input for exit or quit, strips all input,
     # and catches keyboard exits
     def user_input(self, message):
@@ -115,31 +123,27 @@ class Bitmessage(object):
             print('\n{0}'.format(message))
             the_input = raw_input('> ').strip()
         except(EOFError, KeyboardInterrupt):
-            print('Shutting down..')
-            try:
-                self.bitmessage_pid = self.bitmessage_process_id()
-                os.kill(self.bitmessage_pid, signal.SIGTERM)
-            # AttributeError is if we didn't get far enough to actually execute Bitmessage
-            except AttributeError as e:
-                print(e)
-                print('AttributeError')
-            sys.exit(1)
+            self.kill_program()
         else:
             if the_input.lower() in ['exit', 'x']:
                 self.main()
             elif the_input.lower() in ['quit', 'q']:
-                print('Shutting down..')
-                try:
-                    self.bitmessage_pid = self.bitmessage_process_id()
-                    os.kill(self.bitmessage_pid, signal.SIGTERM)
-                except(AttributeError, OSError) as e:
-                    print(e)
-                sys.exit(1)
+                self.kill_program()
             elif the_input.lower() in ['help', 'h', '?']:
-                self.viewHelp()
+                self.view_help()
                 self.main()
             else:
                 return the_input
+
+
+    def kill_program(self):
+        print('Shutting down..')
+        try:
+            self.bitmessage_pid = self.bitmessage_process_id()
+            os.kill(self.bitmessage_pid, signal.SIGTERM)
+        except(AttributeError, OSError, TypeError) as e:
+            print(e)
+        sys.exit(1)
 
 
     def lookup_appdata_folder(self):
@@ -153,7 +157,7 @@ class Bitmessage(object):
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
                 print('https://github.com/Bitmessage/PyBitmessage/issues/')
-                sys.exit(0)
+                self.kill_program()
         elif sys.platform.startswith('win'):
             self.program_dir = self.program_dir + '\\'
             data_folder = os.path.join(os.environ['APPDATA'],
@@ -198,8 +202,11 @@ class Bitmessage(object):
 
 
     def config_init(self):
-        if not os.path.isdir(self.keys_path):
-            os.mkdir(self.keys_path)
+        if ARGS.portable is True:
+            pass
+        else:
+            if not os.path.isdir(self.keys_path):
+                os.mkdir(self.keys_path)
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
@@ -432,7 +439,7 @@ class Bitmessage(object):
                 invalid_input = True
                 which_modify = self.user_input('What setting would you like to modify?').lower()
                 if which_modify in self.settings_options.keys():
-                    how_modify = self.user_input('What would you like to set {0} to?'.format(uInput)).lower()
+                    how_modify = self.user_input('What would you like to set {0} to?'.format(which_modify)).lower()
                     if how_modify in self.settings_options[which_modify].lower():
                         CONFIG.set('bitmessagesettings', which_modify, how_modify)
                         invalid_input = False
@@ -463,8 +470,8 @@ class Bitmessage(object):
                         CONFIG.write(configfile)
                         print('Changes made')
                         self.current_settings()
-                    uInput = self.user_input('Would you like to change another setting, (Y)/(n)').lower()
-                    if uInput not in ['yes', 'y']:
+                    change_another = self.user_input('Would you like to change another setting, (Y)/(n)').lower()
+                    if change_another not in ['yes', 'y']:
                         break
 
 
@@ -958,8 +965,8 @@ class Bitmessage(object):
             if message == '':
                     message = self.user_input('Enter your Message.')
 
-            uInput = self.user_input('Would you like to add an attachment, (Y)/(n)').lower()
-            if uInput in ['yes', 'y']:
+            add_attachment = self.user_input('Would you like to add an attachment, (Y)/(n)').lower()
+            if add_attachment in ['yes', 'y']:
                 message = message + '\n\n' + self.attachment()
             message = base64.b64encode(message)
 
@@ -1145,7 +1152,7 @@ class Bitmessage(object):
             # gets the message ID via the message index number
             # TODO - message_number is wrapped in an int(), needed?
             message_id = outbox_messages['sentMessages'][int(message_number)]['msgid']
-            message_ack = self.api.trashSentMessage(msgId)
+            message_ack = self.api.trashSentMessage(message_id)
             return message_ack
         except socket.error:
             self.api_import = False
@@ -1601,7 +1608,7 @@ class Bitmessage(object):
                 break
 
 
-    def viewHelp(self):
+    def view_help(self):
         # I could use neat formatting here, but all that really does is
         # shrink line space (good) and mess with readability. (bad)
         # Pros don't outweigh the cons, so this is staying as-is.
@@ -1738,14 +1745,14 @@ class Bitmessage(object):
         if self.bm_active is not True:
             try:
                 if sys.platform.startswith('win'):
-                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                    self.enable_bm = subprocess.Popen(os.path.join(self.program_dir, 'bitmessagemain.py'),
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.PIPE,
                                                       stdin=subprocess.PIPE,
                                                       bufsize=0,
                                                       cwd=self.program_dir)
                 else:
-                    self.enable_bm = subprocess.Popen([self.program_dir + 'bitmessagemain.py'],
+                    self.enable_bm = subprocess.Popen(os.path.join(self.program_dir, 'bitmessagemain.py'),
                                                       stdout=subprocess.PIPE,
                                                       stderr=subprocess.PIPE,
                                                       stdin=subprocess.PIPE,
@@ -1756,15 +1763,13 @@ class Bitmessage(object):
                 self.bm_active = True
             except OSError as e:
                 print('Is the CLI in the same directory as bitmessagemain.py?')
-                print('Shutting down..')
-                sys.exit(1)
+                self.kill_program()
             try:
                 for each in self.enable_bm.stdout:
                     if 'Another instance' in each:
                         if self.first_run is True:
                             print("Bitmessage is already running")
-                            print("Shutting down..")
-                            sys.exit(1)
+                            self.kill_program()
                         else:
                             break
                     elif each.startswith('Running as a daemon.'):
@@ -1775,13 +1780,13 @@ class Bitmessage(object):
 
 
     def bitmessage_process_id(self):
-        with open(self.lockfile, 'r') as bm_lockfile:
-            try:
+        try:
+            with open(self.lockfile, 'r') as bm_lockfile:
                 for each in bm_lockfile:
                     return int(each)
-            except ValueError as e:
-                print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-                sys.exit(1)
+        except(IOError, ValueError) as e:
+            print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
+            self.kill_program()
 
 
     def main(self):
@@ -1812,5 +1817,4 @@ class Bitmessage(object):
             self.main()
 
 
-if __name__ == '__main__':
-    Bitmessage().main()
+Bitmessage().main()
