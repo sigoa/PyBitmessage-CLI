@@ -138,34 +138,29 @@ class Bitmessage(object):
 
     def kill_program(self):
         print('Shutting down..')
-        try:
-            self.bitmessage_pid = self.bitmessage_process_id()
+        self.bitmessage_pid = self.bitmessage_process_id()
+        if self.bitmessage_pid is not None:
             os.kill(self.bitmessage_pid, signal.SIGTERM)
-        except(AttributeError, OSError, TypeError) as e:
-            print(e)
-        sys.exit(1)
+        sys.exit(0)
 
 
     def lookup_appdata_folder(self):
         if sys.platform.startswith('darwin'):
-            self.program_dir = self.program_dir + '/'
             if 'HOME' in os.environ:
                 data_folder = os.path.join(os.environ['HOME'],
                                        'Library/Application support/',
-                                       APPNAME) + '/'
+                                       APPNAME)
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
                 print('https://github.com/Bitmessage/PyBitmessage/issues/')
                 self.kill_program()
         elif sys.platform.startswith('win'):
-            self.program_dir = self.program_dir + '\\'
-            data_folder = os.path.join(os.environ['APPDATA'],
-                                   APPNAME) + '\\'
+            data_folder = os.path.join(os.environ[APPDATA],
+                                   APPNAME)
         else:
-            self.program_dir = self.program_dir + '/'
             data_folder = os.path.expanduser(os.path.join('~',
-                                        '.config/' + APPNAME + '/'))
+                                        '.config/' + APPNAME))
         return data_folder
 
 
@@ -178,11 +173,9 @@ class Bitmessage(object):
             api_port = CONFIG.getint('bitmessagesettings', 'apiport')
         except ConfigParser.MissingSectionHeaderError:
             print("'bitmessagesettings' header is missing.")
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except socket.error as e:
             self.api_import = False
@@ -202,9 +195,8 @@ class Bitmessage(object):
 
 
     def config_init(self):
-        if ARGS.portable is True:
-            pass
-        else:
+        print("I'm going to ask you a series of questions..")
+        if ARGS.portable is False:
             if not os.path.isdir(self.keys_path):
                 os.mkdir(self.keys_path)
         try:
@@ -220,7 +212,10 @@ class Bitmessage(object):
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
         CONFIG.set('bitmessagesettings', 'apipassword',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
-        CONFIG.set('bitmessagesettings', 'daemon', 'True')
+        if ARGS.daemon is True:
+            CONFIG.set('bitmessagesettings', 'daemon', True)
+        else:
+            CONFIG.set('bitmessagesettings', 'daemon', False)
         CONFIG.set('bitmessagesettings', 'timeformat', '%%c')
         CONFIG.set('bitmessagesettings', 'blackwhitelist', 'black')
         CONFIG.set('bitmessagesettings', 'startonlogon', 'False')
@@ -324,7 +319,9 @@ class Bitmessage(object):
             else:
                 CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
         # TODO - Not sure if this is necessary now. Will need to double-check.
-
+        # TODO - Besides, even if it is...
+        # TODO - ATTRIBUTE ERROR 1 isn't really all that descriptive, is it?
+        #
         # 'q'/'quit' is already printing and exiting, we just need this caught
         # to prevent noise. Later a logger will be setup to follow these kinds
         # of things better.
@@ -344,7 +341,6 @@ class Bitmessage(object):
             CONFIG.get('bitmessagesettings', 'apiinterface')
             CONFIG.get('bitmessagesettings', 'apiusername')
             CONFIG.get('bitmessagesettings', 'apipassword')
-            CONFIG.getboolean('bitmessagesettings', 'daemon')
             CONFIG.get('bitmessagesettings', 'timeformat')
             CONFIG.get('bitmessagesettings', 'blackwhitelist')
             CONFIG.getboolean('bitmessagesettings', 'startonlogon')
@@ -388,13 +384,17 @@ class Bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'trayonclose')
             CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
             CONFIG.get('bitmessagesettings', 'opencl')
+            if ARGS.daemon is True:
+                CONFIG.set('bitmessagesettings', 'daemon', True)
+            else:
+                CONFIG.set('bitmessagesettings', 'daemon', False)
+            with open(self.keys_name, 'wb') as configfile:
+                CONFIG.write(configfile)
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except ConfigParser.NoSectionError:
             print("No section 'bitmessagesettings'")
-            print("I'm going to ask you a series of questions..")
             self.config_init()
 
 
@@ -1784,9 +1784,11 @@ class Bitmessage(object):
             with open(self.lockfile, 'r') as bm_lockfile:
                 for each in bm_lockfile:
                     return int(each)
-        except(IOError, ValueError) as e:
+        except ValueError as e:
             print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-            self.kill_program()
+        except IOError as e:
+            print('Bitmessage lockfile: {0}'.format(e))
+        return
 
 
     def main(self):
