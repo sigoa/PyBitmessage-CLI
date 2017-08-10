@@ -23,14 +23,13 @@ import xmlrpclib
 import string
 
 APPNAME = 'PyBitmessage'
-PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
+#PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
 
-PARSER.add_argument("--portable", action='store_true')
-PARSER.add_argument("--daemon", action='store_true')
-ARGS = PARSER.parse_args()
+#PARSER.add_argument("--noportable", action='store_true')
+#ARGS = PARSER.parse_args()
 
 
 class Bitmessage(object):
@@ -40,13 +39,13 @@ class Bitmessage(object):
         # Works even if you're in the same directory as the cli
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
-        if ARGS.portable is True:
-            self.keys_path = self.program_dir
-        else:
-            self.keys_path = self.lookup_appdata_folder()
+#        if ARGS.noportable is True:
+#            self.lookup_appdata_folder()
+#        else:
+        self.keys_path = self.program_dir
         self.lockfile = os.path.join(self.keys_path, 'singleton.lock')
         self.bitmessage_pid = None
-        self.keys_name = os.path.join(self.keys_path, 'keys.dat')
+        self.keys_file = os.path.join(self.keys_path, 'keys.dat')
         self.bm_active = False
         # This is for the subprocess call ( run_bitmessage() )
         self.enable_bm = ''
@@ -137,52 +136,44 @@ class Bitmessage(object):
 
 
     def kill_program(self):
-        print('Shutting down..')
         try:
-            self.bitmessage_pid = self.bitmessage_process_id()
-            os.kill(self.bitmessage_pid, signal.SIGTERM)
-        except(AttributeError, OSError, TypeError) as e:
-            print(e)
-        sys.exit(1)
+            print('Shutting down..')
+            if self.bitmessage_pid is not None:
+                os.kill(self.bitmessage_pid, signal.SIGTERM)
+            sys.exit(0)
+        except OSError:
+            sys.exit(1)
 
 
     def lookup_appdata_folder(self):
         if sys.platform.startswith('darwin'):
-            self.program_dir = self.program_dir + '/'
             if 'HOME' in os.environ:
-                data_folder = os.path.join(os.environ['HOME'],
-                                       'Library/Application support/',
-                                       APPNAME) + '/'
+                self.keys_path = os.path.join(os.environ['HOME'],
+                                              'Library/Application support/',
+                                              APPNAME)
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
                 print('https://github.com/Bitmessage/PyBitmessage/issues/')
                 self.kill_program()
         elif sys.platform.startswith('win'):
-            self.program_dir = self.program_dir + '\\'
-            data_folder = os.path.join(os.environ['APPDATA'],
-                                   APPNAME) + '\\'
+            self.keys_path = os.path.join(os.environ['APPDATA'], APPNAME)
         else:
-            self.program_dir = self.program_dir + '/'
-            data_folder = os.path.expanduser(os.path.join('~',
-                                        '.config/' + APPNAME + '/'))
-        return data_folder
+            self.keys_path = os.path.join(os.path.expanduser('~'), '.config', APPNAME)
 
 
     def return_api(self):
         try:
-            CONFIG.read(self.keys_name)
+            CONFIG.read(self.keys_file)
             api_username = CONFIG.get('bitmessagesettings', 'apiusername')
             api_password = CONFIG.get('bitmessagesettings', 'apipassword')
             api_interface = CONFIG.get('bitmessagesettings', 'apiinterface')
             api_port = CONFIG.getint('bitmessagesettings', 'apiport')
         except ConfigParser.MissingSectionHeaderError:
             print("'bitmessagesettings' header is missing.")
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except socket.error as e:
             self.api_import = False
@@ -202,17 +193,15 @@ class Bitmessage(object):
 
 
     def config_init(self):
-        if ARGS.portable is True:
-            pass
-        else:
-            if not os.path.isdir(self.keys_path):
-                os.mkdir(self.keys_path)
+        print("I'm going to ask you a series of questions..")
+#        if ARGS.noportable is True:
+#            if not os.path.isdir(self.keys_path):
+#                os.mkdir(self.keys_path)
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
             pass
         CONFIG.set('bitmessagesettings', 'port', '8444')
-        CONFIG.set('bitmessagesettings', 'apienabled', 'True')
         CONFIG.set('bitmessagesettings', 'settingsversion', '10')
         CONFIG.set('bitmessagesettings', 'apiport', '8444')
         CONFIG.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
@@ -220,7 +209,7 @@ class Bitmessage(object):
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
         CONFIG.set('bitmessagesettings', 'apipassword',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
-        CONFIG.set('bitmessagesettings', 'daemon', 'True')
+        CONFIG.set('bitmessagesettings', 'daemon', True)
         CONFIG.set('bitmessagesettings', 'timeformat', '%%c')
         CONFIG.set('bitmessagesettings', 'blackwhitelist', 'black')
         CONFIG.set('bitmessagesettings', 'startonlogon', 'False')
@@ -265,78 +254,73 @@ class Bitmessage(object):
         CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
         CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
         CONFIG.set('bitmessagesettings', 'opencl', 'None')
-        with open(self.keys_name, 'wb') as configfile:
+        with open(self.keys_file, 'wb') as configfile:
             CONFIG.write(configfile)
-        try:
-            enable_proxy = self.user_input('Enable proxy (Y/n)?').lower()
-            if enable_proxy in ['yes', 'y']:
-                print('Proxy settings are:')
-                print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
-                print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
-                print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
+        enable_proxy = self.user_input('Enable proxy (Y/n)?').lower()
+        if enable_proxy in ['yes', 'y']:
+            print('Proxy settings are:')
+            print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+            print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
+            print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
 
-                double_check_proxy = self.user_input('Do these need to be changed? (Y/n)').lower()
-                if double_check_proxy in ['yes', 'y']:
-                    while True:
-                        invalid_input = False
-                        setting_input = self.user_input('What setting would you like to modify? (enter to exit)').lower()
-                        if setting_input == 'type':
-                            setting_input = self.user_input('Possibilities: \'none\', \'SOCKS4a\', \'SOCKS5\'').lower()
-                            if setting_input in ['none', 'socks4a', 'socks5']:
-                                CONFIG.set('bitmessagesettings', 'socksproxytype', setting_input)
-                                with open(self.keys_name, 'wb') as configfile:
+            double_check_proxy = self.user_input('Do these need to be changed? (Y/n)').lower()
+            if double_check_proxy in ['yes', 'y']:
+                while True:
+                    invalid_input = False
+                    setting_input = self.user_input('What setting would you like to modify? (enter to exit)').lower()
+                    if setting_input == 'type':
+                        setting_type_dict = {'none': 'none', 'socks4a': 'SOCKS4a', 'socks5': 'SOCKS5'}
+                        setting_input = self.user_input('Possibilities: \'none\', \'SOCKS4a\', \'SOCKS5\'').lower()
+                        if setting_input in setting_type_dict.keys():                            
+                            CONFIG.set('bitmessagesettings', 'socksproxytype', setting_type_dict[setting_input])
+                            with open(self.keys_file, 'wb') as configfile:
+                                CONFIG.write(configfile)
+                        else:
+                            print('socksproxytype was not changed')
+                            invalidInput = True
+                    elif setting_input == 'port':
+                        try:
+                            setting_input = int(self.user_input('Please input proxy port'))
+                            if 1 <= setting_input <= 65535:
+                                CONFIG.set('bitmessagesettings', 'socksport', setting_input)
+                                with open(self.keys_file, 'wb') as configfile:
                                     CONFIG.write(configfile)
                             else:
-                                print('socksproxytype was not changed')
-                                invalidInput = True
-                        elif setting_input == 'port':
-                            try:
-                                setting_input = int(self.user_input('Please input proxy port'))
-                                if 1 <= setting_input <= 65535:
-                                    CONFIG.set('bitmessagesettings', 'socksport', setting_input)
-                                    with open(self.keys_name, 'wb') as configfile:
-                                        CONFIG.write(configfile)
-                                else:
-                                    print('That\'s an invalid port number')
-                            except ValueError:
-                                print('How were you expecting that to work?')
-                                invalidInput = True
-                        elif setting_input == 'host':
-                            setting_input = int(self.user_input('Please input proxy hostname'))
-                            CONFIG.set('bitmessagesettings', 'sockshostname', setting_input)
-                            with open(self.keys_name, 'wb') as configfile:
-                                CONFIG.write(configfile)
-                        elif setting_input == '':
-                            break
+                                print('That\'s an invalid port number')
+                        except ValueError:
+                            print('How were you expecting that to work?')
+                            invalidInput = True
+                    elif setting_input == 'host':
+                        setting_input = int(self.user_input('Please input proxy hostname'))
+                        CONFIG.set('bitmessagesettings', 'sockshostname', setting_input)
+                        with open(self.keys_file, 'wb') as configfile:
+                            CONFIG.write(configfile)
+                    elif setting_input == '':
+                        break
+                    else:
+                        print('That\'s not an option.')
+                        invalid_input = True
+                    if not invalid_input:
+                        print('Proxy settings are:')
+                        print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
+                        print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
+                        print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
+                        exit_verification = self.user_input('Would you like to change anything else? (Y/n)')
+                        if exit_verification in ['yes', 'y']:
+                            pass
                         else:
-                            print('That\'s not an option.')
-                            invalid_input = True
-                        if not invalid_input:
-                            print('Proxy settings are:')
-                            print('Type: {0}'.format(CONFIG.get('bitmessagesettings', 'socksproxytype')))
-                            print('Port: {0}'.format(CONFIG.getint('bitmessagesettings', 'socksport')))
-                            print('Host: {0}'.format(CONFIG.get('bitmessagesettings', 'sockshostname')))
-                            exit_verification = self.user_input('Would you like to change anything else? (Y/n)')
-                            if exit_verification in ['yes', 'y']:
-                                pass
-                            else:
-                                break
-            else:
-                CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
-        # TODO - Not sure if this is necessary now. Will need to double-check.
-
-        # 'q'/'quit' is already printing and exiting, we just need this caught
-        # to prevent noise. Later a logger will be setup to follow these kinds
-        # of things better.
-        except AttributeError:
-            print('ATTRIBUTE ERROR 1')
-        with open(self.keys_name, 'wb') as configfile:
+                            break
+        else:
+            CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
+        # Prevents Exit or Quit from overriding the proxy question
+        CONFIG.set('bitmessagesettings', 'apienabled', 'True')
+        with open(self.keys_file, 'wb') as configfile:
             CONFIG.write(configfile)
 
 
     def api_data(self):
-        CONFIG.read(self.keys_name)
         try:
+            CONFIG.read(self.keys_file)
             CONFIG.getint('bitmessagesettings', 'port')
             CONFIG.getboolean('bitmessagesettings', 'apienabled')
             CONFIG.getint('bitmessagesettings', 'settingsversion')
@@ -388,13 +372,14 @@ class Bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'trayonclose')
             CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
             CONFIG.get('bitmessagesettings', 'opencl')
+            CONFIG.set('bitmessagesettings', 'daemon', True)
+            with open(self.keys_file, 'wb') as configfile:
+                CONFIG.write(configfile)
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
-            print("I'm going to ask you a series of questions..")
             self.config_init()
         except ConfigParser.NoSectionError:
             print("No section 'bitmessagesettings'")
-            print("I'm going to ask you a series of questions..")
             self.config_init()
 
 
@@ -410,7 +395,7 @@ class Bitmessage(object):
 
 
     # Tests the API connection to bitmessage.
-    # Returns true if it is connected.
+    # Returns True if it is connected.
     def api_check(self):
         try:
             result = self.api.add(2,3)
@@ -428,7 +413,6 @@ class Bitmessage(object):
     def bm_settings(self):
         # Read the keys.dat
         self.current_settings()
-
         while True:
             modify_settings = self.user_input('Would you like to modify any of these settings, (Y)/(n)').lower()
             if modify_settings:
@@ -466,7 +450,7 @@ class Bitmessage(object):
                     invalidInput = True
                 # don't prompt if they made a mistake
                 if not invalid_input:
-                    with open(self.keys_name, 'wb') as configfile:
+                    with open(self.keys_file, 'wb') as configfile:
                         CONFIG.write(configfile)
                         print('Changes made')
                         self.current_settings()
@@ -1497,7 +1481,7 @@ class Bitmessage(object):
             self.api_import = False
             print('Can\'t retrieve unread messages due to an API connection issue')
         else:
-            CONFIG.read(self.keys_name)
+            CONFIG.read(self.keys_file)
             unread_messages = 0
             for each in inbox_messages['inboxMessages']:
                 if not each['read']:
@@ -1652,7 +1636,7 @@ class Bitmessage(object):
 
 
     def current_settings(self):
-        CONFIG.read(self.keys_name)
+        CONFIG.read(self.keys_file)
         daemon = CONFIG.getboolean('bitmessagesettings', 'daemon')
         timeformat = CONFIG.get('bitmessagesettings', 'timeformat')
         blackwhitelist = CONFIG.get('bitmessagesettings', 'blackwhitelist')
@@ -1769,9 +1753,8 @@ class Bitmessage(object):
                     if 'Another instance' in each:
                         if self.first_run is True:
                             print("Bitmessage is already running")
-                            self.kill_program()
-                        else:
-                            break
+#                            self.kill_program()
+                        break
                     elif each.startswith('Running as a daemon.'):
                         self.bm_active = True
                         break
@@ -1781,12 +1764,17 @@ class Bitmessage(object):
 
     def bitmessage_process_id(self):
         try:
-            with open(self.lockfile, 'r') as bm_lockfile:
-                for each in bm_lockfile:
-                    return int(each)
-        except(IOError, ValueError) as e:
+            if os.path.isfile(self.lockfile):
+                with open(self.lockfile, 'r') as bm_lockfile:
+                    for each in bm_lockfile:
+                        return int(each)
+            else:
+                print('Bitmessage lockfile does not exist.')
+        except ValueError as e:
             print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-            self.kill_program()
+        except IOError as e:
+            print('Bitmessage lockfile: {0}'.format(e))
+        return
 
 
     def main(self):
@@ -1803,6 +1791,7 @@ class Bitmessage(object):
             else:
                 if not self.api_import:
                     self.api_import = True
+        self.bitmessage_pid = self.bitmessage_process_id()
         self.unread_message_info()
 
         while True:
