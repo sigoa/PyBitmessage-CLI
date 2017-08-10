@@ -23,14 +23,13 @@ import xmlrpclib
 import string
 
 APPNAME = 'PyBitmessage'
-PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
+#PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
 
-PARSER.add_argument("--portable", action='store_true')
-PARSER.add_argument("--daemon", action='store_true')
-ARGS = PARSER.parse_args()
+#PARSER.add_argument("--noportable", action='store_true')
+#ARGS = PARSER.parse_args()
 
 
 class Bitmessage(object):
@@ -40,10 +39,10 @@ class Bitmessage(object):
         # Works even if you're in the same directory as the cli
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
-        if ARGS.portable is True:
-            self.keys_path = self.program_dir
-        else:
-            self.lookup_appdata_folder()
+#        if ARGS.noportable is True:
+#            self.lookup_appdata_folder()
+#        else:
+        self.keys_path = self.program_dir
         self.lockfile = os.path.join(self.keys_path, 'singleton.lock')
         self.bitmessage_pid = None
         self.keys_file = os.path.join(self.keys_path, 'keys.dat')
@@ -150,15 +149,15 @@ class Bitmessage(object):
         if sys.platform.startswith('darwin'):
             if 'HOME' in os.environ:
                 self.keys_path = os.path.join(os.environ['HOME'],
-                                           'Library/Application support/',
-                                           APPNAME)
+                                              'Library/Application support/',
+                                              APPNAME)
             else:
                 print('Could not find your home folder.')
                 print('Please report this message and your OS X version at:')
                 print('https://github.com/Bitmessage/PyBitmessage/issues/')
                 self.kill_program()
         elif sys.platform.startswith('win'):
-            self.keys_path = os.path.join(os.environ[APPDATA], APPNAME)
+            self.keys_path = os.path.join(os.environ['APPDATA'], APPNAME)
         else:
             self.keys_path = os.path.join(os.path.expanduser('~'), '.config', APPNAME)
 
@@ -195,10 +194,9 @@ class Bitmessage(object):
 
     def config_init(self):
         print("I'm going to ask you a series of questions..")
-        if ARGS.portable is False:
-            print(self.keys_path)
-            if not os.path.isdir(self.keys_path):
-                os.mkdir(self.keys_path)
+#        if ARGS.noportable is True:
+#            if not os.path.isdir(self.keys_path):
+#                os.mkdir(self.keys_path)
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
@@ -211,10 +209,7 @@ class Bitmessage(object):
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
         CONFIG.set('bitmessagesettings', 'apipassword',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
-        if ARGS.daemon is True:
-            CONFIG.set('bitmessagesettings', 'daemon', True)
-        else:
-            CONFIG.set('bitmessagesettings', 'daemon', False)
+        CONFIG.set('bitmessagesettings', 'daemon', True)
         CONFIG.set('bitmessagesettings', 'timeformat', '%%c')
         CONFIG.set('bitmessagesettings', 'blackwhitelist', 'black')
         CONFIG.set('bitmessagesettings', 'startonlogon', 'False')
@@ -274,9 +269,10 @@ class Bitmessage(object):
                     invalid_input = False
                     setting_input = self.user_input('What setting would you like to modify? (enter to exit)').lower()
                     if setting_input == 'type':
+                        setting_type_dict = {'none': 'none', 'socks4a': 'SOCKS4a', 'socks5': 'SOCKS5'}
                         setting_input = self.user_input('Possibilities: \'none\', \'SOCKS4a\', \'SOCKS5\'').lower()
-                        if setting_input in ['none', 'socks4a', 'socks5']:
-                            CONFIG.set('bitmessagesettings', 'socksproxytype', setting_input)
+                        if setting_input in setting_type_dict.keys():                            
+                            CONFIG.set('bitmessagesettings', 'socksproxytype', setting_type_dict[setting_input])
                             with open(self.keys_file, 'wb') as configfile:
                                 CONFIG.write(configfile)
                         else:
@@ -324,13 +320,6 @@ class Bitmessage(object):
 
     def api_data(self):
         try:
-            CONFIG.read(self.keys_file)
-            if ARGS.daemon is True:
-                CONFIG.set('bitmessagesettings', 'daemon', True)
-            else:
-                CONFIG.set('bitmessagesettings', 'daemon', False)
-            with open(self.keys_file, 'wb') as configfile:
-                CONFIG.write(configfile)
             CONFIG.read(self.keys_file)
             CONFIG.getint('bitmessagesettings', 'port')
             CONFIG.getboolean('bitmessagesettings', 'apienabled')
@@ -383,6 +372,9 @@ class Bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'trayonclose')
             CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
             CONFIG.get('bitmessagesettings', 'opencl')
+            CONFIG.set('bitmessagesettings', 'daemon', True)
+            with open(self.keys_file, 'wb') as configfile:
+                CONFIG.write(configfile)
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
             self.config_init()
