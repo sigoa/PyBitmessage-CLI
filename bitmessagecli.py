@@ -25,6 +25,7 @@ APPNAME = 'PyBitmessage'
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
+PROXY_TYPE_DICT = {'none': 'none', 'socks4a': 'SOCKS4a', 'socks5': 'SOCKS5'}
 
 
 class Bitmessage(object):
@@ -261,10 +262,9 @@ class Bitmessage(object):
                     invalid_input = False
                     setting_input = self.user_input('What setting would you like to modify? (enter to exit)').lower()
                     if setting_input == 'type':
-                        setting_type_dict = {'none': 'none', 'socks4a': 'SOCKS4a', 'socks5': 'SOCKS5'}
                         setting_input = self.user_input('Possibilities: \'none\', \'SOCKS4a\', \'SOCKS5\'').lower()
-                        if setting_input in setting_type_dict.keys():                            
-                            CONFIG.set('bitmessagesettings', 'socksproxytype', setting_type_dict[setting_input])
+                        if setting_input in PROXY_TYPE_DICT.keys():                            
+                            CONFIG.set('bitmessagesettings', 'socksproxytype', PROXY_TYPE_DICT[setting_input])
                             with open(self.keys_file, 'wb') as configfile:
                                 CONFIG.write(configfile)
                         else:
@@ -416,30 +416,30 @@ class Bitmessage(object):
                 which_modify = self.user_input('What setting would you like to modify?').lower()
                 if which_modify in self.settings_options.keys():
                     how_modify = self.user_input('What would you like to set {0} to?'.format(which_modify)).lower()
-                    if how_modify in self.settings_options[which_modify].lower():
+                    if how_modify in self.settings_options[which_modify]:
                         CONFIG.set('bitmessagesettings', which_modify, how_modify)
                         invalid_input = False
                     elif self.settings_options[which_modify] == 'boolean':
                         if how_modify in ['true', 'false']:
                             CONFIG.set('bitmessagesettings', which_modify, how_modify)
                             invalid_input = False
-                    elif self.settings_options[which_modify] in ['none', 'SOCKS4a', 'SOCKS5']:
-                        if how_modify in ['none', 'socks4a', 'socks5']:
-                            CONFIG.set('bitmessagesettings', which_modify, how_modify)
-                            invalid_input = False
+                    elif self.settings_options[which_modify] == ['none', 'SOCKS4a', 'SOCKS5']:
+                        CONFIG.set('bitmessagesettings', which_modify, PROXY_TYPE_DICT[how_modify])
+                        invalid_input = False
                     elif self.settings_options[which_modify] in ['sha256', 'sha1']:
-                        if how_modify in ['sha256', 'sha1']:
-                            CONFIG.set('bitmessagesettings', which_modify, how_modify)
-                            invalid_input = False
+                        CONFIG.set('bitmessagesettings', which_modify, how_modify)
+                        invalid_input = False
                     elif self.settings_options[which_modify] == '':
                         CONFIG.set('bitmessagesettings', which_modify, how_modify)
                         invalid_input = False
                     else:
-                        print('Invalid input. Please try again')
+                        print("The way you were trying to modify {0} is invalid.".format(which_modify))
+                        print("Your input was: {0}".format(how_modify))
                         invalid_input = True
                 else:
-                    print('Invalid input. Please try again')
-                    invalidInput = True
+                    print("What you wanted to modify isn't an option")
+                    print("Your input was: {0}".format(which_modify))
+                    invalid_input = True
                 # don't prompt if they made a mistake
                 if not invalid_input:
                     with open(self.keys_file, 'wb') as configfile:
