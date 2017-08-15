@@ -48,7 +48,7 @@ class Bitmessage(object):
                          'apitest': self.api_test,
                          'bmsettings': self.bm_settings,
                          'listaddresses': self.list_add,
-                         'generateaddress': self.generate_address,
+                         'generateaddress': self.generate_an_address,
                          'getaddress': self.get_address,
                          'deleteaddress': self.delete_address,
                          'listaddressbook': self.list_address_book,
@@ -632,8 +632,6 @@ class Bitmessage(object):
                 passphrase = base64.b64encode(passphrase)
                 generated_address = self.api.createDeterministicAddresses(passphrase, number_of_addresses, address_version_number, stream_number, ripe)
                 return generatedAddress
-            else:
-                return False
         except socket.error:
             self.api_import = False
             print('Couldn\'t generate address(es) due to an API connection issue')
@@ -1536,7 +1534,7 @@ class Bitmessage(object):
             print('An error has occured')
 
 
-    def generate_address(self):
+    def generate_an_address(self):
         while True:
             type_of_address = self.user_input('Would you like to create a (D)eterministic or (R)andom address?').lower()
             if type_of_address in ['deterministic', 'd', 'random', 'r']:
