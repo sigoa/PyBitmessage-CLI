@@ -56,6 +56,7 @@ class Bitmessage(object):
                          'addaddressbook': self.add_address_book,
                          'deleteaddressbook': self.delete_address_book,
                          'listsubscriptions': self.list_subscriptions,
+                         'status': self.client_status,
                          'subscribe': self.subscribe,
                          'unsubscribe': self.unsubscribe,
                          'inbox': [self.inbox, False],
@@ -1714,6 +1715,18 @@ class Bitmessage(object):
         print('namecoinrpcport = {0}'.format(namecoinrpcport))
         print('namecoinrpctype = {0}'.format(namecoinrpctype))
         print('namecoinuser = {0}'.format(namecoinuser))
+
+
+    def client_status(self):
+        try:
+            status = json.loads(self.api.clientStatus())
+            print("Network Status: {0}".format(status['networkStatus']))
+            print("Network Connections: {0}".format(status['networkConnections']))
+            print("Number Of Pubkeys Processed: {0}".format(status['numberOfPubkeysProcessed']))
+            print("Number Of Messages Processed: {0}".format(status['numberOfMessagesProcessed']))
+            print("Number Of Broadcasts Processed: {0}".format(status['numberOfBroadcastsProcessed']))
+        except socket.error:
+            print('Couldn\'t check network status due to an API connection issue')
 
 
     def run_bitmessage(self):
