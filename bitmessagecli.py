@@ -868,7 +868,7 @@ class Bitmessage(object):
             message = base64.b64encode(message)
 
             ack_data = self.api.sendMessage(to_address, from_address, subject, message)
-            sending_message = self.api.getStatus(ackData)
+            sending_message = self.api.getStatus(ack_data)
             # TODO - There are more statuses that should be paid attention to
             if sending_message == 'doingmsgpow':
                 print('Doing POW, will send soon.')
@@ -995,21 +995,22 @@ class Bitmessage(object):
     def outbox(self):
         try:
             outbox_messages = json.loads(self.api.getAllSentMessages())
-            total_messages = len(outbox_messages['sentMessages'])
+            json_outbox = outbox_messages['sentMessages']
+            total_messages = len(json_outbox)
             # processes all of the messages in the outbox
             for each in range(0, total_messages):
                 print('-----------------------------------')
                 # Message Number
                 print('Message Number: {0}'.format(each))
                 # Get the to address
-                print('To: {0}'.format(outbox_messages['toAddress'][each]))
+                print('To: {0}'.format(json_outbox[each]['toAddress']))
                 # Get the from address
-                print('From: {0}'.format(outbox_messages['fromAddress'][each]))
+                print('From: {0}'.format(json_outbox[each]['fromAddress']))
                 # Get the subject
-                print('Subject: {0}'.format(base64.b64decode(outbox_messages['subject'][each])))
+                print('Subject: {0}'.format(base64.b64decode(json_outbox[each]['subject'])))
                 # Get the subject
-                print('Status: {0}'.format(outbox_messages['status'][each]))
-                last_action_time = datetime.datetime.fromtimestamp(float(outbox_messages['lastActionTime'][each]))
+                print('Status: {0}'.format(json_outbox[each]['status']))
+                last_action_time = datetime.datetime.fromtimestamp(float(json_outbox[each]['lastActionTime']))
                 print('Last Action Time: {0}'.format(last_action_time.strftime('%Y-%m-%d %H:%M:%S')))
         except socket.error:
             self.api_import = False
@@ -1743,7 +1744,8 @@ class Bitmessage(object):
                     if 'Another instance' in each:
                         if self.first_run is True:
                             print("Bitmessage is already running")
-#                            self.kill_program()
+                            print("Please close it and re-run the CLI")
+                            self.kill_program()
                         break
                     elif each.startswith('Running as a daemon.'):
                         self.bm_active = True
