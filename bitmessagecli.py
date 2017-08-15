@@ -628,12 +628,11 @@ class Bitmessage(object):
             if deterministic is False:
                 address_label = base64.b64encode(label)
                 generated_address = self.api.createRandomAddress(address_label)
-                return generated_address
             # Generates a new deterministic address with the user inputs
             elif deterministic is True:
                 passphrase = base64.b64encode(passphrase)
                 generated_address = self.api.createDeterministicAddresses(passphrase, number_of_addresses, address_version_number, stream_number, ripe)
-                return generatedAddress
+            return generated_address
         except socket.error:
             self.api_import = False
             print('Couldn\'t generate address(es) due to an API connection issue')
@@ -1528,8 +1527,8 @@ class Bitmessage(object):
 
     def generate_random(self):
         deterministic = False
-        lbl = self.user_input('Enter the label for the new address.')
-        generated_address = self.generate_address(lbl, deterministic, '', '', '', '', '')
+        label = self.user_input('Enter the label for the new address.')
+        generated_address = self.generate_address(label,deterministic,'', '', '', '', '')
         if generated_address:
             print('Generated Address: {0}'.format(generated_address))
         else:
