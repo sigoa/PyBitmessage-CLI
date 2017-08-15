@@ -5,7 +5,6 @@
 # Distributed under the MIT/X11 software license
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
-import argparse
 import base64
 import ConfigParser
 import datetime
@@ -23,13 +22,9 @@ import xmlrpclib
 import string
 
 APPNAME = 'PyBitmessage'
-#PARSER = argparse.ArgumentParser(prog=APPNAME, usage='%(prog)s [options]')
 CHARACTERS = string.digits + string.ascii_letters
 SECURE_RANDOM = random.SystemRandom()
 CONFIG = ConfigParser.RawConfigParser()
-
-#PARSER.add_argument("--noportable", action='store_true')
-#ARGS = PARSER.parse_args()
 
 
 class Bitmessage(object):
@@ -39,9 +34,6 @@ class Bitmessage(object):
         # Works even if you're in the same directory as the cli
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
-#        if ARGS.noportable is True:
-#            self.lookup_appdata_folder()
-#        else:
         self.keys_path = self.program_dir
         self.lockfile = os.path.join(self.keys_path, 'singleton.lock')
         self.bitmessage_pid = None
@@ -194,16 +186,16 @@ class Bitmessage(object):
 
     def config_init(self):
         print("I'm going to ask you a series of questions..")
-#        if ARGS.noportable is True:
-#            if not os.path.isdir(self.keys_path):
-#                os.mkdir(self.keys_path)
         try:
             CONFIG.add_section('bitmessagesettings')
         except ConfigParser.DuplicateSectionError:
             pass
         CONFIG.set('bitmessagesettings', 'port', '8444')
         CONFIG.set('bitmessagesettings', 'settingsversion', '10')
-        CONFIG.set('bitmessagesettings', 'apiport', '8444')
+        # 17600 - 17650 is set for OnionShare in the Tails OS.
+        # If this is randomized, it won't work.
+        # Thus, won't connect using xmlrpclib.
+        CONFIG.set('bitmessagesettings', 'apiport', '17650')
         CONFIG.set('bitmessagesettings', 'apiinterface', '127.0.0.1')
         CONFIG.set('bitmessagesettings', 'apiusername',
                    ''.join([SECURE_RANDOM.choice(CHARACTERS) for x in range(0,64)]))
