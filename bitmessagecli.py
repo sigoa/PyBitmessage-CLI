@@ -1289,7 +1289,7 @@ class Bitmessage(object):
             else:
                 print('Invalid input')
         try:
-            message_number = int(self.user_input('What is the number of the message you wish to open?').lower())
+            message_number = int(self.user_input('What is the number of the message you wish to open?'))
         except ValueError:
             print("That's not a whole number")
 
@@ -1342,7 +1342,7 @@ class Bitmessage(object):
             if which_box in ['inbox', 'outbox', 'i', 'o']:
                 break
         try:
-            message_number = int(self.user_input('What is the number of the message you wish to open?').lower())
+            message_number = int(self.user_input('What is the number of the message you wish to open?'))
         except ValueError:
             print("That's not a whole number")
 
@@ -1493,7 +1493,7 @@ class Bitmessage(object):
 
         while True:
             try:
-                number_of_addresses = int(self.user_input('How many addresses would you like to generate?').lower())
+                number_of_addresses = int(self.user_input('How many addresses would you like to generate?'))
             except ValueError:
                 print("That's not a whole number.")
             else:
