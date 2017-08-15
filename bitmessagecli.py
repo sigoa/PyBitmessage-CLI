@@ -18,6 +18,7 @@ import subprocess
 import sys
 # Because without it we'll be warned about not being connected to the API
 import time
+import xml
 import xmlrpclib
 import string
 
@@ -1601,7 +1602,7 @@ class Bitmessage(object):
         print('| (Q)uit                  | Quits the program                          |')
         print('|-------------------------|--------------------------------------------|')
         print('| Status                  | Network information and connectivity       |')
-        print('| ListAddresses           | Lists all of the user\'s addresses         |')
+        print("| ListAddresses           | Lists all of the user's addresses          |")
         print('| GenerateAddress         | Generate a new address                     |')
         print('| GetAddress              | Create Deterministic address from a phrase |')
         print('| DeleteAddress           | Delete a generated address                 |')
@@ -1807,6 +1808,8 @@ class Bitmessage(object):
                     self.commands[command_input]()
                 except TypeError:
                     self.commands[command_input][0](self.commands[command_input][1])
+                except xml.parsers.expat.ExpatError as e:
+                    self.kill_program()
             else:
                 print('"{0}" is not a command.'.format(command_input))
             self.main()
