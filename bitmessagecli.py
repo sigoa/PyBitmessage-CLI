@@ -1780,6 +1780,7 @@ class Bitmessage(object):
         if self.bm_active is True and self.enable_bm.poll() is None:
             self.api_import = True
         else:
+            self.bm_active = False
             if not self.api_check():
                 self.api_import = False
             else:
