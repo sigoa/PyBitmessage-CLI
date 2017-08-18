@@ -37,8 +37,6 @@ class Bitmessage(object):
         # and bitmessagemain, which os.path.dirname(__file__) didn't
         self.program_dir = os.path.dirname(os.path.realpath(__file__))
         self.keys_path = self.program_dir
-        self.lockfile = os.path.join(self.keys_path, 'singleton.lock')
-        self.bitmessage_pid = None
         self.keys_file = os.path.join(self.keys_path, 'keys.dat')
         self.bm_active = False
         # This is for the subprocess call ( run_bitmessage() )
@@ -1773,21 +1771,6 @@ class Bitmessage(object):
                 print(e)
 
 
-    def bitmessage_process_id(self):
-        try:
-            if os.path.isfile(self.lockfile):
-                with open(self.lockfile, 'r') as bm_lockfile:
-                    for each in bm_lockfile:
-                        return int(each)
-            else:
-                print('Bitmessage lockfile does not exist.')
-        except ValueError as e:
-            print('Bitmessage lockfile: Expected an int, got {0}'.format(e))
-        except IOError as e:
-            print('Bitmessage lockfile: {0}'.format(e))
-        return
-
-
     def main(self):
         self.api_data()
         self.run_bitmessage()
@@ -1802,7 +1785,6 @@ class Bitmessage(object):
             else:
                 if not self.api_import:
                     self.api_import = True
-        self.bitmessage_pid = self.bitmessage_process_id()
         self.unread_message_info()
 
         while True:
