@@ -133,13 +133,12 @@ class Bitmessage(object):
     def kill_program(self):
         try:
             print('Shutting down..')
-            if self.bitmessage_pid is not None:
-                os.kill(self.bitmessage_pid, signal.SIGTERM)
+            self.enable_bm.terminate()
             sys.exit(0)
         except OSError:
             sys.exit(1)
 
-
+    # This isn't currently used, but best to keep it in as it may be used later.
     def lookup_appdata_folder(self):
         if sys.platform.startswith('darwin'):
             if 'HOME' in os.environ:
@@ -1721,8 +1720,14 @@ class Bitmessage(object):
     def client_status(self):
         try:
             status = json.loads(self.api.clientStatus())
-            print("Network Status: {0}".format(status['networkStatus']))
-            print("Network Connections: {0}".format(status['networkConnections']))
+            if status['networkStatus'] == 'notConnected':
+                connection = 'RED'
+            elif status['networkStatus'] == 'connectedButHaveNotReceivedIncomingConnections':
+                connection = 'YELLOW'
+            else:
+                connection = 'GREEN'
+            print("Network Status: {0}".format(connection))
+            print("Number Of Network Connections: {0}".format(status['networkConnections']))
             print("Number Of Pubkeys Processed: {0}".format(status['numberOfPubkeysProcessed']))
             print("Number Of Messages Processed: {0}".format(status['numberOfMessagesProcessed']))
             print("Number Of Broadcasts Processed: {0}".format(status['numberOfBroadcastsProcessed']))
