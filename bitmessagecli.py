@@ -40,7 +40,7 @@ class Bitmessage(object):
         self.keys_file = os.path.join(self.keys_path, 'keys.dat')
         self.bm_active = False
         # This is for the subprocess call ( run_bitmessage() )
-        self.enable_bm = ''
+        self.enable_bm = 0
         self.api_import = False
         # Used for the self.api call and initial running of bitmessage
         self.first_run = True
@@ -125,15 +125,18 @@ class Bitmessage(object):
                 self.view_help()
                 self.main()
             else:
+                if self.enable_bm.poll() is not None:
+                    self.preparations()
+                    time.sleep(2.5)
                 return the_input
 
 
     def kill_program(self):
         try:
             print('Shutting down..')
-            self.enable_bm.terminate()
+            self.api.shutdown()
             sys.exit(0)
-        except OSError:
+        except(AttributeError, OSError, socket.error):
             sys.exit(1)
 
     # This isn't currently used, but best to keep it in as it may be used later.
@@ -510,7 +513,7 @@ class Bitmessage(object):
             while True:
                 unsubscribe_verify = self.user_input('Are you sure, (Y)/(n)').lower()
                 if unsubscribe_verify in ['yes', 'y']:
-                    self.api.deleteSubscription(address)
+                    a = self.api.deleteSubscription(address)
                     print('You are now unsubscribed from: {0}'.format(address))
                 else:
                     print("You weren't unsubscribed from anything.")
@@ -1754,41 +1757,52 @@ class Bitmessage(object):
                                                       close_fds=True)
                 self.bm_active = True
             except OSError as e:
-                print('Is the CLI in the same directory as bitmessagemain.py?')
+                if 'Permission denied' in e:
+                    print('Got "Permission denied" when trying to access bitmessagemain.py')
+                    print("Please double-check the permissions on the file and ensure it can be ran.")
+                    print("Otherwise, it may be a folder permission issue.")
+                else:
+                    print('Is the CLI in the same directory as bitmessagemain.py?')
                 self.kill_program()
-            try:
-                for each in self.enable_bm.stdout:
-                    if 'Another instance' in each:
-                        if self.first_run is True:
-                            print("Bitmessage is already running")
-                            print("Please close it and re-run the CLI")
-                            self.kill_program()
-                        break
-                    elif each.startswith('Running as a daemon.'):
-                        self.bm_active = True
-                        break
-            except AttributeError as e:
-                print(e)
+            for each in self.enable_bm.stdout:
+                if 'Another instance' in each:
+                    if self.first_run is True:
+#                        print("bitmessagemain.py is already running")
+#                        print("Please close it and re-run the Bitmessage CLI")
+#                        self.kill_program()
+                        pass
+                    break
+                elif each.startswith('Running as a daemon.'):
+                    self.bm_active = True
+                    break
+
+
+    def preparations(self):
+        self.api_data()
+        try:
+            if self.enable_bm.poll() is None:
+                self.bm_active = True
+            else:
+                self.bm_active = False
+                self.run_bitmessage()
+        except AttributeError:
+            self.bm_active = False
+            self.run_bitmessage()
+
+        if not self.api_import:
+            self.api = xmlrpclib.ServerProxy(self.return_api())
+
+        if not self.api_check():
+            self.api_import = False
+        else:
+            if not self.api_import:
+                self.api_import = True
 
 
     def main(self):
-        self.api_data()
-        self.run_bitmessage()
-        if not self.api_import:
-            self.api = xmlrpclib.ServerProxy(self.return_api())
-        # Bitmessage is running so this may be the first run of api_check
-        if self.bm_active is True and self.enable_bm.poll() is None:
-            self.api_import = True
-        else:
-            self.bm_active = False
-            if not self.api_check():
-                self.api_import = False
-            else:
-                if not self.api_import:
-                    self.api_import = True
-        self.unread_message_info()
-
         while True:
+            self.preparations()
+            self.unread_message_info()
             command_input = self.user_input('Type (h)elp for a list of commands.').lower()
             if command_input in self.commands.keys():
                 try:
@@ -1796,10 +1810,11 @@ class Bitmessage(object):
                 except TypeError:
                     self.commands[command_input][0](self.commands[command_input][1])
                 except xml.parsers.expat.ExpatError as e:
+                    print(e)
                     self.kill_program()
             else:
                 print('"{0}" is not a command.'.format(command_input))
-            self.main()
+
 
 
 Bitmessage().main()
