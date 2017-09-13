@@ -125,9 +125,12 @@ class Bitmessage(object):
                 self.view_help()
                 self.main()
             else:
-                if self.enable_bm.poll() is not None:
-                    self.preparations()
-                    time.sleep(2.5)
+                try:
+                    if self.enable_bm.poll() is not None:
+                        self.preparations()
+                        time.sleep(2.5)
+                except AttributeError:
+                    pass                  
                 return the_input
 
 
