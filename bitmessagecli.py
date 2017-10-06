@@ -1,7 +1,6 @@
 #!/usr/bin/env python2.7
 # Originally created by Adam Melton (Dokument)
 # Modified by Scott King (Lvl4Sword)
-# Modified for use in the Taskhive project (taskhive.io)
 # Distributed under the MIT/X11 software license
 # See http://www.opensource.org/licenses/mit-license.php
 # https://bitmessage.org/wiki/API_Reference for API documentation
