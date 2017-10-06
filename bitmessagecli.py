@@ -252,7 +252,7 @@ class Bitmessage(object):
         CONFIG.set('bitmessagesettings', 'trayonclose', 'False')
         CONFIG.set('bitmessagesettings', 'willinglysendtomobile', 'False')
         CONFIG.set('bitmessagesettings', 'opencl', 'None')
-        with open(self.keys_file, 'wb') as configfile:
+        with open(self.keys_file, 'w') as configfile:
             CONFIG.write(configfile)
         enable_proxy = self.user_input('Enable proxy (Y/n)?').lower()
         if enable_proxy in ['yes', 'y']:
@@ -270,7 +270,7 @@ class Bitmessage(object):
                         setting_input = self.user_input('Possibilities: \'none\', \'SOCKS4a\', \'SOCKS5\'').lower()
                         if setting_input in PROXY_TYPE_DICT.keys():                            
                             CONFIG.set('bitmessagesettings', 'socksproxytype', PROXY_TYPE_DICT[setting_input])
-                            with open(self.keys_file, 'wb') as configfile:
+                            with open(self.keys_file, 'w') as configfile:
                                 CONFIG.write(configfile)
                         else:
                             print('socksproxytype was not changed')
@@ -280,7 +280,7 @@ class Bitmessage(object):
                             setting_input = int(self.user_input('Please input proxy port'))
                             if 1 <= setting_input <= 65535:
                                 CONFIG.set('bitmessagesettings', 'socksport', setting_input)
-                                with open(self.keys_file, 'wb') as configfile:
+                                with open(self.keys_file, 'w') as configfile:
                                     CONFIG.write(configfile)
                             else:
                                 print('That\'s an invalid port number')
@@ -290,7 +290,7 @@ class Bitmessage(object):
                     elif setting_input == 'host':
                         setting_input = int(self.user_input('Please input proxy hostname'))
                         CONFIG.set('bitmessagesettings', 'sockshostname', setting_input)
-                        with open(self.keys_file, 'wb') as configfile:
+                        with open(self.keys_file, 'w') as configfile:
                             CONFIG.write(configfile)
                     elif setting_input == '':
                         break
@@ -311,7 +311,7 @@ class Bitmessage(object):
             CONFIG.set('bitmessagesettings', 'socksproxytype', 'none')
         # Prevents Exit or Quit from overriding the proxy question
         CONFIG.set('bitmessagesettings', 'apienabled', 'True')
-        with open(self.keys_file, 'wb') as configfile:
+        with open(self.keys_file, 'w') as configfile:
             CONFIG.write(configfile)
 
 
@@ -370,7 +370,7 @@ class Bitmessage(object):
             CONFIG.getboolean('bitmessagesettings', 'willinglysendtomobile')
             CONFIG.get('bitmessagesettings', 'opencl')
             CONFIG.set('bitmessagesettings', 'daemon', True)
-            with open(self.keys_file, 'wb') as configfile:
+            with open(self.keys_file, 'w') as configfile:
                 CONFIG.write(configfile)
         except ConfigParser.NoOptionError as e:
             print("{0} and possibly others are missing.".format(str(e).split("'")[1]))
@@ -447,7 +447,7 @@ class Bitmessage(object):
                     invalid_input = True
                 # don't prompt if they made a mistake
                 if not invalid_input:
-                    with open(self.keys_file, 'wb') as configfile:
+                    with open(self.keys_file, 'w') as configfile:
                         CONFIG.write(configfile)
                         print('Changes made')
                         self.current_settings()
@@ -696,7 +696,7 @@ class Bitmessage(object):
                 file_path = directory + file_name
                 # Begin saving to file
                 try:
-                    with open(file_path, 'wb+') as outfile:
+                    with open(file_path, 'w') as outfile:
                         outfile.write(base64.b64decode(file_data))
                 except IOError:
                     print("Failed to save the attachment. Choose another directory")
@@ -1817,7 +1817,6 @@ class Bitmessage(object):
                     self.kill_program()
             else:
                 print('"{0}" is not a command.'.format(command_input))
-
 
 
 Bitmessage().main()
