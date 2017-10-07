@@ -1,3 +1,9 @@
+WARNING
+===================
+
+While this is a better version of the CLI, I can't be held liable for interacting with the Bitmessage network.
+Bitmessage itself has not been audited, and could possibly destroy your computer. Just a heads up!
+
 PyBitmessage-CLI
 ===================
 
@@ -16,15 +22,6 @@ To clean up old code and get rid of the places eval() and 'Global' statements we
 Help!
 -------------
 
-If you require any help at all with specifically the CLI, there are multiple ways to get in contact with me.
-
-> - Lvl4Sword on irc.freenode.net in #bitmessage
-> - BM-2cWFLTBnLm3CR9v4jv6FTParrvjumcbdRB via Bitmessage
-> - My e-mail which is posted at https://sking.io/contact
+If you require any help at all with the CLI, please post an issue.
 
 ----------
-
-Donate
--------------------
-
-Even though it's not necessary, I've been approached by a couple people asking about how they can donate to me. https://sking.io/pay would be the way to do that. Thank you in advance if you do choose to donate :-)!
