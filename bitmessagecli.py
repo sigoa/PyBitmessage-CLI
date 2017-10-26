@@ -795,7 +795,7 @@ class Bitmessage(object):
                     if self.valid_address(to_address):
                         break
                     else:
-                        for each in range (0, num_of_addresses):
+                        for each in range (0, number_of_addresses):
                             label = json_addresses['addresses'][each]['label']
                             address = json_addresses['addresses'][each]['address']
                             if label.startswith('[chan] '):
@@ -832,7 +832,7 @@ class Bitmessage(object):
                             if not found:
                                 print('Invalid Address. Please try again.')
                         else:
-                            for each in range (0, numAddresses):
+                            for each in range (0, number_of_addresses):
                                 address = json_addresses['addresses'][each]['address']
                                 # address entered was found in our address book
                                 if from_address == address:
@@ -891,7 +891,7 @@ class Bitmessage(object):
                 number_of_addresses = len(json_addresses['addresses'])
 
                 # Ask what address to send from if multiple addresses
-                if numAddresses > 1:
+                if number_of_addresses > 1:
                     found = False
                     while True:
                         from_address = self.user_input('Enter an Address or Address Label to send from')
