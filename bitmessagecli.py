@@ -1292,11 +1292,11 @@ class Bitmessage(object):
                     # Processes all of the messages in the inbox
                     for message_number in range (0, total_messages):
                         print('Deleting message {0} of {1}'.format(message_number+1, total_messages))
-                        delete_inbox_message(self, 0)
+                        self.delete_inbox_message(0)
                     print('Inbox is empty.')
                 else:
                     # No need for a try/except since it was already verified up above!
-                    delete_inbox_message(self, message_number)
+                    self.delete_inbox_message(message_number)
                 print('Notice: Message numbers may have changed.')
         except socket.error:
             self.api_import = False
@@ -1425,7 +1425,7 @@ class Bitmessage(object):
                 verify_delete = self.user_input('Are you sure, (Y)/(n)').lower()
 
                 if verify_delete in ['yes', 'y']:
-                    delete_inbox_message(self, message_number)
+                    self.delete_inbox_message(message_number)
                     print('Message Deleted.')
  
         elif which_box in ['outbox', 'o']:
