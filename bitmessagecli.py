@@ -680,7 +680,7 @@ class Bitmessage(object):
         # This section finds all invalid characters and replaces them with ~
         filename_replacements = ["/", "\\", ":", "*", "?", "'", "<", ">", "|"]
         for each in filename_replacements:
-            file_name = file_name.replace(keys, '~')
+            file_name = file_name.replace(each, '~')
         while True:
             directory = self.user_input('Where would you like to save the attachment?: ')
             if not os.path.isdir(directory):
@@ -1082,7 +1082,7 @@ class Bitmessage(object):
 
     # Allows you to reply to the message you are currently on.
     # Saves typing in the addresses and subject.
-    def reply_message(message_number, forward_or_reply):
+    def reply_message(self, message_number, forward_or_reply):
         try:
             inboxMessages = json.loads(self.api.getAllInboxMessages())
             # Address it was sent To, now the From address
@@ -1213,7 +1213,6 @@ class Bitmessage(object):
         except socket.error:
             self.api_import = False
             print('Couldn\'t mark all messages unread due to an API connection issue')
-
 
 
     def delete_message(self):
@@ -1529,8 +1528,8 @@ class Bitmessage(object):
         else:
             ripe = False
         # TODO - Catch the error that happens when deterministic is not True/False
-        generated_address = self.generate_address(label,deterministic,passphrase,number_of_addresses,address_version,stream_number,ripe)
-        json_addresses = json.loads(generated_address)
+        new_deterministic_address = self.generate_address(label,deterministic,passphrase,number_of_addresses,address_version,stream_number,ripe)
+        json_addresses = json.loads(new_deterministic_address)
 
         if number_of_addresses >= 2:
             print('Addresses generated: ')
@@ -1543,9 +1542,9 @@ class Bitmessage(object):
     def generate_random(self):
         deterministic = False
         label = self.user_input('Enter the label for the new address.')
-        generated_address = self.generate_address(label,deterministic,'', '', '', '', '')
-        if generated_address:
-            print('Generated Address: {0}'.format(generated_address))
+        new_random_address = self.generate_address(label,deterministic,'', '', '', '', '')
+        if new_random_address:
+            print('Generated Address: {0}'.format(new_random_address))
         else:
             # TODO - Have a more obvious error message here
             print('An error has occured')
