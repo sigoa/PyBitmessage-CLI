@@ -9,6 +9,14 @@ PyBitmessage-CLI
 
 Wecome to the **new** and **improved** Command Line Interface for Bitmessage!
 
+---------
+
+LGTM
+-------------
+https://lgtm.com/projects/g/Lvl4Sword/PyBitmessage-CLI/alerts/?mode=tree&severity=warning
+
+Now with only a single issue! (warning that 'label' variable is overused)
+
 ----------
 
 Why?
