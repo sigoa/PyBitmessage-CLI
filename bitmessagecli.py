@@ -1354,7 +1354,7 @@ class Bitmessage(object):
 
             while True:
                 do_which = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
-                if do_which in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
+                if do_which in ['delete','d','forward','f','reply','r']:
                     break
                 else:
                     print('Invalid input')
@@ -1392,10 +1392,14 @@ class Bitmessage(object):
             which_box = self.user_input('Would you like to read a message from the (I)nbox or (O)utbox?').lower()
             if which_box in ['inbox', 'outbox', 'i', 'o']:
                 break
-        try:
-            message_number = int(self.user_input('What is the number of the message you wish to open?'))
-        except ValueError:
-            print("That's not a whole number")
+
+        while True:
+            try:
+                message_number = int(self.user_input('What is the number of the message you wish to open?'))
+            except ValueError:
+                print("That's not a whole number")
+            else:
+                break
 
         if which_box in ['inbox', 'i']:
             print('Loading...')
@@ -1407,7 +1411,7 @@ class Bitmessage(object):
 
             while True:
                 message_options = self.user_input('Would you like to (D)elete, (F)orward or (R)eply?').lower()
-                if message_options in ['reply','r','forward','f','delete','d','forward','f','reply','r']:
+                if message_options in ['delete','d','forward','f','reply','r']:
                     break
                 else:
                     print('Invalid input')
@@ -1829,4 +1833,5 @@ class Bitmessage(object):
                 print('"{0}" is not a command.'.format(command_input))
 
 
-Bitmessage().main()
+if __name__ == "__main__":
+    Bitmessage().main()
